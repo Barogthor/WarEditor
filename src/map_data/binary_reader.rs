@@ -1,7 +1,7 @@
 use std::io::{Cursor, BufRead, Seek, SeekFrom};
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::mem::size_of;
-use std::ffi::{CString, CStr};
+use std::ffi::{CString};
 
 pub struct BinaryReader{
     buffer: Cursor<Vec<u8>>
@@ -57,7 +57,7 @@ impl BinaryReader{
 
     pub fn read_chars(&mut self, size: usize) -> Vec<char>{
         let mut chars = Vec::new();
-        for i in 0..size{
+        for _i in 0..size{
             chars.push(self.read_char());
         }
         chars
@@ -67,6 +67,48 @@ impl BinaryReader{
         self.buffer.seek(SeekFrom::Current(count_bytes_to_skip));
     }
 
+    pub fn read<T: BinaryConverter>(&mut self) -> T{
+        T::read(self)
+    }
+
+    pub fn read_vec<T: BinaryConverter>(&mut self, size: usize) -> Vec<T>{
+        let mut vec: Vec<T> = vec![];
+        for _i in 0..size{
+            vec.push(T::read(self));
+        }
+        vec
+    }
+
+    pub fn read_vec_i32(&mut self, size: usize) -> Vec<i32>{
+        let mut vec: Vec<i32> = vec![];
+        for _i in 0..size{
+            vec.push(self.read_i32());
+        }
+        vec
+    }
+
+    pub fn read_vec_f32(&mut self, size: usize) -> Vec<f32>{
+        let mut vec: Vec<f32> = vec![];
+        for _i in 0..size{
+            vec.push(self.read_f32());
+        }
+        vec
+    }
+
+    pub fn read_bytes(&mut self, size: usize) -> Vec<u8>{
+        let mut vec: Vec<u8> = vec![];
+        for _i in 0..size{
+            vec.push(self.read_u8());
+        }
+        vec
+    }
+
+    pub fn pos(&self) -> u64{
+        self.buffer.position()
+    }
 
 }
 
+pub trait BinaryConverter{
+    fn read(reader: &mut BinaryReader) -> Self;
+}

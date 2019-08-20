@@ -1,5 +1,6 @@
 use std::ffi::CString;
 use crate::map_data::binary_reader::BinaryReader;
+use crate::map_data::binary_reader::BinaryConverter;
 
 pub mod player_data {
     use super::*;
@@ -33,8 +34,8 @@ pub mod player_data {
         }
     }
 
-    impl PlayerData{
-        pub fn read(reader: &mut BinaryReader) -> Self{
+    impl BinaryConverter for PlayerData{
+        fn read(reader: &mut BinaryReader) -> Self{
             let mut player = Self::default();
             player.player_id = reader.read_i32();
             player.player_type = reader.read_i32();
@@ -79,8 +80,8 @@ pub mod force_data{
         }
     }
 
-    impl ForceData{
-        pub fn read(reader: &mut BinaryReader) -> Self{
+    impl BinaryConverter for ForceData{
+        fn read(reader: &mut BinaryReader) -> Self{
             let mut force = Self::default();
             force.flags = reader.read_i32();
             force.allied = force.flags & 0x0001 == 1;
@@ -100,7 +101,7 @@ pub mod upgrade_availability{
     #[derive(Debug)]
     pub struct UpgradeAvailability{
         player_availability: i32,
-        upgrade_id: [char;4],
+        upgrade_id: String,
         upgrade_level: i32,
         availability: i32
     }
@@ -109,19 +110,18 @@ pub mod upgrade_availability{
         fn default() -> Self {
             UpgradeAvailability{
                 player_availability: 0,
-                upgrade_id: ['\0';4],
+                upgrade_id: Default::default(),
                 upgrade_level: 0,
                 availability: 0
             }
         }
     }
 
-    impl UpgradeAvailability{
-        pub fn read(reader: &mut BinaryReader) -> Self{
+    impl BinaryConverter for UpgradeAvailability{
+        fn read(reader: &mut BinaryReader) -> Self{
             let mut upg = Self::default();
             upg.player_availability = reader.read_i32();
-            let size = upg.upgrade_id.len();
-            upg.upgrade_id.copy_from_slice(&reader.read_chars(size)[0..]);
+            upg.upgrade_id = String::from_utf8(reader.read_bytes(4)).unwrap();
             upg.upgrade_level = reader.read_i32();
             upg.availability =  reader.read_i32();
             upg
@@ -134,26 +134,134 @@ pub mod tech_availability{
     #[derive(Debug)]
     pub struct TechAvailability{
         player_availability: i32,
-        tech_id: [char;4],
+        tech_id: String,
     }
 
     impl Default for TechAvailability{
         fn default() -> Self {
             TechAvailability{
                 player_availability: 0,
-                tech_id: ['\0';4],
+                tech_id: Default::default(),
             }
         }
     }
 
-    impl TechAvailability{
-        pub fn read(reader: &mut BinaryReader) -> Self{
+    impl BinaryConverter for TechAvailability{
+        fn read(reader: &mut BinaryReader) -> Self{
             let mut tech = Self::default();
             tech.player_availability = reader.read_i32();
-            let size = tech.upgrade_id.len();
-            tech.upgrade_id.copy_from_slice(&reader.read_chars(size)[0..]);
+            tech.tech_id = String::from_utf8(reader.read_bytes(4)).unwrap();
             tech
         }
     }
 }
+pub mod random_unit_table {
+    use super::*;
+    use crate::map_data::binary_reader::BinaryConverter;
 
+    #[derive(Debug)]
+    pub struct RandomUnitSet{
+        chance: i32,
+        ids: Vec<u8>,
+    }
+
+    impl Default for RandomUnitSet{
+        fn default() -> Self {
+            RandomUnitSet{
+                chance: 0,
+                ids: vec![]
+            }
+        }
+    }
+
+    #[derive(Debug)]
+    pub struct RandomUnitTable{
+        id: i32,
+        name: CString,
+        position_types: Vec<i32>,
+        sets: Vec<RandomUnitSet>,
+    }
+
+    impl Default for RandomUnitTable{
+        fn default() -> Self {
+            RandomUnitTable{
+                id: 0,
+                name: Default::default(),
+                position_types: vec![],
+                sets: vec![]
+            }
+        }
+    }
+    impl BinaryConverter for RandomUnitTable{
+        fn read(reader: &mut BinaryReader) -> Self {
+            let mut table = Self::default();
+            table.id = reader.read_i32();
+            table.name = reader.read_c_string();
+            let count_pos = reader.read_i32() as usize;
+            table.position_types = reader.read_vec_i32(count_pos);
+            for _i in 0..count_pos{
+                let mut set = RandomUnitSet::default();
+                set.chance = reader.read_i32();
+                set.ids = reader.read_bytes( count_pos*4);
+                table.sets.push(set);
+            }
+            table
+        }
+    }
+}
+pub mod random_item_table{
+    use super::*;
+
+    #[derive(Debug)]
+    pub struct RandomItemSet{
+        items: Vec<(i32,String)>
+    }
+
+    impl Default for RandomItemSet{
+        fn default() -> Self {
+            RandomItemSet{
+                items: vec![]
+            }
+        }
+    }
+    impl BinaryConverter for RandomItemSet{
+        fn read(reader: &mut BinaryReader) -> Self {
+            let mut set = Self::default();
+            let count_items = reader.read_i32();
+            for _i in 0..count_items{
+                let chance = reader.read_i32();
+                let id = String::from_utf8(reader.read_bytes(4)).unwrap();
+                set.items.push((chance, id));
+            }
+            set
+        }
+    }
+
+    #[derive(Debug)]
+    pub struct RandomItemTable{
+        id: i32,
+        name: CString,
+        sets: Vec<RandomItemSet>,
+    }
+
+    impl Default for RandomItemTable{
+        fn default() -> Self {
+            RandomItemTable{
+                id: 0,
+                name: Default::default(),
+                sets: vec![]
+            }
+        }
+    }
+
+    impl BinaryConverter for RandomItemTable{
+        fn read(reader: &mut BinaryReader) -> Self {
+            let mut table = Self::default();
+            table.id = reader.read_i32();
+            table.name = reader.read_c_string();
+            let count_sets = reader.read_i32() as usize;
+            table.sets = reader.read_vec::<RandomItemSet>(count_sets);
+            table
+        }
+    }
+}
