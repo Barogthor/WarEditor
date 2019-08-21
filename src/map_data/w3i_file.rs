@@ -257,5 +257,9 @@ impl W3iFile{
         println!("pos: {}, size: {}", reader.pos(), buffer_size);
         w3i
     }
+
+    pub fn debug(&self){
+        println!("{:#?}",self);
+    }
 }
 

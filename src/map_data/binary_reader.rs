@@ -1,15 +1,17 @@
 use std::io::{Cursor, BufRead, Seek, SeekFrom};
-use byteorder::{LittleEndian, ReadBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, BigEndian};
 use std::mem::size_of;
 use std::ffi::{CString};
+use crate::map_data::binary_writer::BinaryWriter;
 
 pub struct BinaryReader{
-    buffer: Cursor<Vec<u8>>
+    buffer: Cursor<Vec<u8>>,
+    size: usize,
 }
 
 impl BinaryReader{
     pub fn new(buffer: Vec<u8>) -> BinaryReader{
-        BinaryReader{buffer: Cursor::new(buffer)}
+        BinaryReader{size:buffer.len(), buffer: Cursor::new(buffer)}
     }
 
     pub fn read_char(&mut self) -> char{
@@ -32,8 +34,16 @@ impl BinaryReader{
         self.buffer.read_i32::<LittleEndian>().unwrap()
     }
 
+    pub fn read_i32_big(&mut self) -> i32{
+        self.buffer.read_i32::<BigEndian>().unwrap()
+    }
+
     pub fn read_u32(&mut self) -> u32{
         self.buffer.read_u32::<LittleEndian>().unwrap()
+    }
+
+    pub fn read_u32_big(&mut self) -> u32{
+        self.buffer.read_u32::<BigEndian>().unwrap()
     }
 
     pub fn read_u64(&mut self) -> u64{
@@ -63,8 +73,8 @@ impl BinaryReader{
         chars
     }
 
-    pub fn skip(&mut self, count_bytes_to_skip: i64){
-        self.buffer.seek(SeekFrom::Current(count_bytes_to_skip));
+    pub fn skip(&mut self, bytes_to_skip: i64){
+        self.buffer.seek(SeekFrom::Current(bytes_to_skip));
     }
 
     pub fn read<T: BinaryConverter>(&mut self) -> T{
@@ -106,9 +116,13 @@ impl BinaryReader{
     pub fn pos(&self) -> u64{
         self.buffer.position()
     }
+    pub fn size(&self) -> usize{
+        self.size
+    }
 
 }
 
 pub trait BinaryConverter{
     fn read(reader: &mut BinaryReader) -> Self;
+    fn write(&self, writer: &mut BinaryWriter);
 }

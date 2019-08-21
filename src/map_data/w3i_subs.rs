@@ -1,6 +1,7 @@
 use std::ffi::CString;
 use crate::map_data::binary_reader::BinaryReader;
 use crate::map_data::binary_reader::BinaryConverter;
+use crate::map_data::binary_writer::BinaryWriter;
 
 pub mod player_data {
     use super::*;
@@ -48,6 +49,10 @@ pub mod player_data {
             player.ally_high_priorities = reader.read_i32();
             player
         }
+
+        fn write(&self, writer: &mut BinaryWriter) {
+            unimplemented!()
+        }
     }
 }
 pub mod force_data{
@@ -93,6 +98,10 @@ pub mod force_data{
             force.name = reader.read_c_string();
             force
         }
+
+        fn write(&self, writer: &mut BinaryWriter) {
+            unimplemented!()
+        }
     }
 }
 pub mod upgrade_availability{
@@ -126,6 +135,10 @@ pub mod upgrade_availability{
             upg.availability =  reader.read_i32();
             upg
         }
+
+        fn write(&self, writer: &mut BinaryWriter) {
+            unimplemented!()
+        }
     }
 }
 pub mod tech_availability{
@@ -152,6 +165,10 @@ pub mod tech_availability{
             tech.player_availability = reader.read_i32();
             tech.tech_id = String::from_utf8(reader.read_bytes(4)).unwrap();
             tech
+        }
+
+        fn write(&self, writer: &mut BinaryWriter) {
+            unimplemented!()
         }
     }
 }
@@ -207,6 +224,10 @@ pub mod random_unit_table {
             }
             table
         }
+
+        fn write(&self, writer: &mut BinaryWriter) {
+            unimplemented!()
+        }
     }
 }
 pub mod random_item_table{
@@ -235,6 +256,10 @@ pub mod random_item_table{
             }
             set
         }
+
+        fn write(&self, writer: &mut BinaryWriter) {
+            unimplemented!()
+        }
     }
 
     #[derive(Debug)]
@@ -262,6 +287,10 @@ pub mod random_item_table{
             let count_sets = reader.read_i32() as usize;
             table.sets = reader.read_vec::<RandomItemSet>(count_sets);
             table
+        }
+
+        fn write(&self, writer: &mut BinaryWriter) {
+            unimplemented!()
         }
     }
 }
