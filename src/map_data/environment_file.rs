@@ -2,6 +2,7 @@ use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
 use crate::map_data::binary_writer::BinaryWriter;
 use std::fs::File;
 use std::io::Read;
+use crate::map_data::{PREFIX_SAMPLE_PATH, concat_path};
 
 #[derive(Debug)]
 pub struct TilePoint {
@@ -77,7 +78,6 @@ impl BinaryConverter for TilePoint{
     }
 }
 
-
 #[derive(Debug)]
 pub struct EnvironmentFile {
     id: String,
@@ -98,7 +98,7 @@ pub struct EnvironmentFile {
 
 impl EnvironmentFile{
     pub fn read_file() -> Self{
-        let mut f = File::open("resources/war3map.w3e").unwrap();
+        let mut f = File::open(concat_path("war3map.w3e")).unwrap();
         let mut buffer: Vec<u8> = Vec::new();
         f.read_to_end(&mut buffer).unwrap();
         let buffer_size = buffer.len();

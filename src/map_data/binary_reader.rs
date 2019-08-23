@@ -17,7 +17,6 @@ impl BinaryReader{
     pub fn read_char(&mut self) -> char{
         char::from(self.read_u8())
     }
-
     pub fn read_u8(&mut self) -> u8{
         self.buffer.read_u8().unwrap()
     }
@@ -25,23 +24,26 @@ impl BinaryReader{
     pub fn read_i16(&mut self) -> i16{
         self.buffer.read_i16::<LittleEndian>().unwrap()
     }
-
     pub fn read_u16(&mut self) -> u16{
         self.buffer.read_u16::<LittleEndian>().unwrap()
+    }
+
+    pub fn read_i24(&mut self) -> i32{
+        self.buffer.read_i24::<LittleEndian>().unwrap()
+    }
+    pub fn read_u24(&mut self) -> u32{
+        self.buffer.read_u24::<LittleEndian>().unwrap()
     }
 
     pub fn read_i32(&mut self) -> i32{
         self.buffer.read_i32::<LittleEndian>().unwrap()
     }
-
     pub fn read_i32_big(&mut self) -> i32{
         self.buffer.read_i32::<BigEndian>().unwrap()
     }
-
     pub fn read_u32(&mut self) -> u32{
         self.buffer.read_u32::<LittleEndian>().unwrap()
     }
-
     pub fn read_u32_big(&mut self) -> u32{
         self.buffer.read_u32::<BigEndian>().unwrap()
     }
@@ -53,7 +55,6 @@ impl BinaryReader{
     pub fn read_f32(&mut self) -> f32{
         self.buffer.read_f32::<LittleEndian>().unwrap()
     }
-
     pub fn read_f64(&mut self) -> f64{
         self.buffer.read_f64::<LittleEndian>().unwrap()
     }
@@ -64,7 +65,6 @@ impl BinaryReader{
         result_buf.pop();
         CString::new(result_buf).unwrap()
     }
-
     pub fn read_chars(&mut self, size: usize) -> Vec<char>{
         let mut chars = Vec::new();
         for _i in 0..size{
@@ -97,6 +97,24 @@ impl BinaryReader{
         vec
     }
 
+    pub fn read_vec_u32(&mut self, size: usize) -> Vec<u32>{
+        let mut vec: Vec<u32> = vec![];
+        for _i in 0..size{
+            let v = self.read_u32();
+            vec.push(v);
+        }
+        vec
+    }
+
+    pub fn read_vec_u32_be(&mut self, size: usize) -> Vec<u32>{
+        let mut vec: Vec<u32> = vec![];
+        for _i in 0..size{
+            let v = self.read_u32_big();
+            vec.push(v);
+        }
+        vec
+    }
+
     pub fn read_vec_f32(&mut self, size: usize) -> Vec<f32>{
         let mut vec: Vec<f32> = vec![];
         for _i in 0..size{
@@ -111,6 +129,16 @@ impl BinaryReader{
             vec.push(self.read_u8());
         }
         vec
+    }
+
+    pub fn read_string_sized(&mut self, size: usize) -> CString{
+        let v = self.read_bytes(size);
+//        println!("pos: {}",self.pos());
+        CString::new(v).unwrap()
+    }
+
+    pub fn seek_begin(&mut self){
+        &self.buffer.seek(SeekFrom::Start(0));
     }
 
     pub fn pos(&self) -> u64{

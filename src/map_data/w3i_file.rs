@@ -1,6 +1,6 @@
 use std::ffi::{CString};
 use std::fs::File;
-use crate::map_data::{is_TFT, is_RoC};
+use crate::map_data::{is_TFT, is_RoC, PREFIX_SAMPLE_PATH, concat_path};
 use std::fmt::{Debug, Formatter, Error};
 use crate::map_data::binary_reader::BinaryReader;
 use std::io::Read;
@@ -164,7 +164,7 @@ impl Default for W3iFile{
 impl W3iFile{
 
     pub fn read_file() -> Self{
-        let mut f = File::open("resources/war3map.w3i").unwrap();
+        let mut f = File::open(concat_path("war3map.w3i")).unwrap();
         let mut buffer: Vec<u8> = Vec::new();
         f.read_to_end(&mut buffer).unwrap();
         let buffer_size = buffer.len();
@@ -253,8 +253,6 @@ impl W3iFile{
         let random_item_table_count = reader.read_u32() as usize;
         w3i.random_item_tables = reader.read_vec::<RandomItemTable>(random_item_table_count);
 
-        println!("{:#?}",w3i);
-        println!("pos: {}, size: {}", reader.pos(), buffer_size);
         w3i
     }
 
