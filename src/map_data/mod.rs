@@ -16,7 +16,6 @@ pub fn concat_path(path: &str) -> String{
     format!("{}/{}",PREFIX_SAMPLE_PATH, path)
 }
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum OpeningError {
     Protected(String),
@@ -33,6 +32,7 @@ pub enum OpeningError {
     Info(String),
 }
 
+
 pub mod binary_reader;
 pub mod binary_writer;
 pub mod w3i_subs;
@@ -48,3 +48,4 @@ pub mod minimap_file;
 pub mod import_file;
 pub mod trigger_string_file;
 pub mod custom_text_trigger_file;
+pub mod triggers_names_file;
