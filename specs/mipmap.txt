@@ -1,0 +1,57 @@
+https://gist.github.com/maxogden/5279640
+-------------------------------------------
+thanks to @mikolalysenko for explaining
+
+```
+20:14 < mikolalysenko> basically mip maps were a hack some guy came up with in the 80s to do filtering with variable sized kernels
+20:14 < mikolalysenko> it turns out that if you just draw a texture at full resolution some distance away, then you will get these shimmering aliasing
+                       artefacts
+20:14 < mikolalysenko> so the solution to this is to just smooth out the texture, so it isn't so noisy
+20:15 < mikolalysenko> however the amount you smooth has to be proportional to the distance
+20:15 < mikolalysenko> so what a mip pyramid basically is just a collection of filtered images at different down sampled resolutions
+20:15 < mikolalysenko> and you can interpolate between them to approximate a blur by a kernel of variable radius
+20:16 < mikolalysenko> here is a wiki page that explains the basics:  http://en.wikipedia.org/wiki/Mipmap
+20:16 <@mbalho> oooH
+20:16 < mikolalysenko> it basically tells you how they work, but doesn't really tell you why
+20:16 < mikolalysenko> here is a good explanation of the why (in a picture:
+                       http://3.bp.blogspot.com/-5AWSsEEiJiE/TprhJMs6_7I/AAAAAAAAAl8/6h_zhBb-19k/s1600/mipmap.jpg)
+20:17 < mikolalysenko> right hand side is filtered, left side not so much
+20:17 <@mbalho> left looks like moire
+20:17 < mikolalysenko> basically no mipmaps = shimmering headache
+20:17 < mikolalysenko> yeah, it will generate a moire pattern
+20:17 < mikolalysenko> but it will move depending on your view
+20:17 <@mbalho> yea
+20:17 <@mbalho> this reminds me of LOD
+20:17 < mikolalysenko> basically it is a big mess, and it is caused by the irregular sampling
+20:18 < mikolalysenko> right, mipmaps are a kind of lod
+20:18 < mikolalysenko> but what they are doing really is modeling a physical image process
+20:18 < mikolalysenko> in a real camera, pixels don't measure a single photon ray
+20:18 <@mbalho> whoa 'texels'
+20:18 < mikolalysenko> instead they capture incoming light over some area
+20:18 <@mbalho> ahhh
+20:18 < mikolalysenko> so they average the observed colors over some region
+20:19 < mikolalysenko> that region gets larger as you get farther from the camera
+20:19 < mikolalysenko> so if you draw a texture with one texture pixel / screen pixel, you are doing it wrong
+20:19 < mikolalysenko> unless the texture is sufficiently close to the screen
+20:19 < mikolalysenko> but if it gets far away, then weird rounding issues come into play and you get crappy noisy looking results that are unphysical
+20:19 < mikolalysenko> so the solution is to average over all the pixels in a region
+20:20 < mikolalysenko> which is what mipmaps try to approximate
+20:20 <@mbalho> wow that is cool
+20:20 < mikolalysenko> it is a super retro idea, but it is still used today
+20:20 < mikolalysenko> however, mip pyramids can mess with texture atlases if you are not careful
+20:20 < mikolalysenko> if you read out a pixel at a mip level, you can sometimes get bleeding across a texture seam
+20:21 < mikolalysenko> this can appear as weird swatches of color at the boundary of your textures
+20:21 <@mbalho> cause of the averaging algorithm in the 3d engine?
+20:21 < mikolalysenko> yeah
+20:21 <@mbalho> ah i see, hence the buffer you suggested
+20:21 < mikolalysenko> basically you are averaging pixels form neighboring textures
+20:21 < mikolalysenko> and that is no good
+20:21 < mikolalysenko> right
+20:21 < mikolalysenko> so if you do a texture atlas, then you also have to build the mip pyramid taking that into account
+20:22 < mikolalysenko> otherwise at the boundary you will get crap
+20:22 <@mbalho> ah
+20:22 < mikolalysenko> and you need to modify your shader to do this too
+20:22 < mikolalysenko> now:  in the example mrdoob posted I don't think this would matter
+20:22 < mikolalysenko> because he sneakily (https://github.com/mrdoob/three.js/commit/8934c44b6d261ea2bc3e6e691b397f57c8271bc9) put the green grass texture along the green boundary of the dirt
+20:22 <@mbalho> lol
+```

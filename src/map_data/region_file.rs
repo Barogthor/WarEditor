@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io::Read;
 use std::borrow::Borrow;
 use crate::map_data::binary_writer::BinaryWriter;
+use crate::map_data::{PREFIX_SAMPLE_PATH, concat_path};
 
 #[derive(Debug)]
 pub struct Region {
@@ -69,7 +70,7 @@ pub struct RegionFile {
 
 impl RegionFile{
     pub fn read_file() -> Self{
-        let mut f = File::open("resources/war3map.w3r").unwrap();
+        let mut f = File::open(concat_path("war3map.w3r")).unwrap();
         let mut buffer: Vec<u8> = Vec::new();
         f.read_to_end(&mut buffer).unwrap();
         let buffer_size = buffer.len();
