@@ -2,20 +2,14 @@ use std::io::{Read};
 use std::fs::File;
 use crate::slk::record::SLKRecord;
 use std::collections::HashMap;
-use crate::slk::EndParsing;
+use crate::slk::document::SLKDocument;
+use crate::slk::RecordType;
+use std::cell::Cell;
+use crate::slk::record::cell::RecordCell;
 
 //const END_RECORD: char = '\n';
 const END_RECORD: &str = "\r\n";
 const FIELD_SEPARATOR: &str = ";";
-const EOF: &str = "E";
-
-type Line= u32;
-type Column= u32;
-type Cell = (Column,String);
-
-pub struct SLK{
-    cells: HashMap<Line, Cell>
-}
 
 pub struct SLKReader {
     buffer: Vec<String>,
@@ -34,22 +28,40 @@ impl SLKReader{
         }
     }
 
-    pub fn parse(&mut self) -> Vec<SLKRecord>{
-        let mut records: Vec<SLKRecord> = Vec::new();
+    pub fn parse(&mut self) -> Result<SLKDocument,String>{
+        let mut document = SLKDocument::default();
         for record in self.buffer.iter(){
             let line: Vec<&str> = record.split(FIELD_SEPARATOR).collect();
-            if line[0] == EOF {
-                return records
+            let id = RecordType::from_id(line[0]);
+
+            match id{
+                Some(RecordType::Info) => {
+                    let mut iter = line.iter();
+                    iter.next();
+                    for field in iter{
+                        let kind = &field[..1];
+                        if kind == "X" {
+                            document.set_columns(field[1..].parse::<u32>().unwrap());
+                        }
+                        else if kind == "Y" {
+                            document.set_rows(field[1..].parse::<u32>().unwrap());
+                        }
+                    }
+                }
+                Some(RecordType::CellContent) => {
+                    let record = RecordCell::parse(line);
+
+                    document.add_cell(record);
+                },
+                Some(RecordType::EOF) => return Ok(document),
+                None => return Err("Unknown record type".to_string()),
+                _ => {}
             }
-            let record = self.read_record(line);
-            records.push(record);
+
         }
-        records
+        Err("Missing EOF: File invalid".to_string())
     }
 
-    pub fn read_record(&self, line: Vec<&str>) -> SLKRecord{
-        SLKRecord::parse(line)
-    }
 }
 
 
