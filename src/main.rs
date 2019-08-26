@@ -1,4 +1,6 @@
-extern crate regex;
+
+#[macro_use] extern crate lazy_static;
+#[macro_use] extern crate getset;
 
 use war_editor::map_data::w3i_file::W3iFile;
 use war_editor::map_data::mmp_file::MMPFile;
@@ -7,10 +9,13 @@ use war_editor::map_data::camera_file::CameraFile;
 use war_editor::map_data::pathmap_file::PathMapFile;
 use war_editor::map_data::shadowmap_file::ShadowMapFile;
 use war_editor::map_data::environment_file::EnvironmentFile;
+use war_editor::slk::document::SLKDocument;
+use war_editor::slk::merge_slk;
 use war_editor::map_data::minimap_file::MinimapFile;
 use war_editor::map_data::trigger_string_file::TriggerStringFile;
 use std::time::Instant;
 use war_editor::map_data::custom_text_trigger_file::CustomTextTriggerFile;
+
 
 fn elapsed_time(instant: &Instant) {
     let elasped = instant.elapsed().as_millis();
@@ -21,8 +26,19 @@ fn elapsed_time(instant: &Instant) {
     println!("Elapsed time: {}:{}:{}::{}", hours, mins, seconds, millis);
 }
 
-
 fn main() {
+
+    println!("Hello, world!");
+    let mut slk_reader = SLKReader::open_file("resources/slk/test.slk".to_string());
+    let document = slk_reader.parse().unwrap();
+//    document.debug();
+    let mut lines = document.get_cells_value_sorted_by_line();
+    let mut slk_reader = SLKReader::open_file("resources/slk/test_2.slk".to_string());
+    let document = slk_reader.parse().unwrap();
+    merge_slk(&mut lines, &document);
+    println!("{:#?}", lines);
+
+
     let now = Instant::now();
     println!("Hello, world!");
 //    println!("size rgba: {}",size_of_val(&vec![0u8,0u8,0u8,0u8][0..]));
