@@ -1,11 +1,19 @@
 extern crate war_editor;
 
-macro_rules! assert_cell{
+macro_rules! assert_cell {
     ($cell:expr, $x: expr, $value: expr) => {{
         let cell: &RecordCell = $cell;
         assert_eq!(*cell.column(), $x);
         assert_eq!(*cell.value(), $value);
     }};
+}
+
+macro_rules! assert_line_cell{
+    ($cell:expr, $x: expr, $value: expr) => {{
+        let tuple = $cell.get(*$x-1).unwrap();
+        assert_eq!(*$x, tuple.0);
+        assert_eq!($value, tuple.1);
+    }}
 }
 
 #[cfg(test)]
@@ -37,6 +45,17 @@ mod slk_tests {
         let mut slk_reader = SLKReader::open_file("resources/slk/test_2.slk".to_string());
         let document = slk_reader.parse().unwrap();
         merge_slk(&mut lines, &document);
+        let line1 = lines.get(&1).unwrap();
+        assert_line_cell!(line1, &1, CellValue::Text( "a".to_string() ));
+        assert_line_cell!(line1, &2, CellValue::Text( "b".to_string() ));
+        assert_line_cell!(line1, &3, CellValue::Text( "c".to_string() ));
+        assert_line_cell!(line1, &4, CellValue::Text( "d".to_string() ));
+        let line2 = lines.get(&2).unwrap();
+        assert_line_cell!(line2, &1, CellValue::Integer( 1 ));
+        assert_line_cell!(line2, &2, CellValue::Integer( 2 ));
+        assert_line_cell!(line2, &3, CellValue::Integer( 3 ));
+        assert_line_cell!(line2, &4, CellValue::Integer( 4 ));
+
     }
 
 
