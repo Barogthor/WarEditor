@@ -6,6 +6,8 @@ use std::borrow::Borrow;
 use crate::map_data::binary_writer::BinaryWriter;
 use crate::map_data::{PREFIX_SAMPLE_PATH, concat_path};
 use regex::Error;
+use crate::globals::MAP_TRIGGERS_SCRIPT;
+use mpq::Archive;
 
 type TextScript = CString;
 
@@ -18,11 +20,11 @@ pub struct CustomTextTriggerFile {
 }
 
 impl CustomTextTriggerFile {
-    pub fn read_file() -> Self{
-        let mut f = File::open(concat_path("war3map.wct")).unwrap();
-        let mut buffer: Vec<u8> = Vec::new();
-        f.read_to_end(&mut buffer).unwrap();
-        let buffer_size = buffer.len();
+    pub fn read_file(mpq: &mut Archive) -> Self{
+        let file = mpq.open_file(MAP_TRIGGERS_SCRIPT).unwrap();
+        let mut buffer: Vec<u8> = vec![0; file.size() as usize];
+
+        file.read(mpq, &mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer);
         reader.read::<CustomTextTriggerFile>()
     }

@@ -3,6 +3,8 @@ use std::fs::File;
 use std::io::Read;
 use crate::map_data::binary_writer::BinaryWriter;
 use crate::map_data::{PREFIX_SAMPLE_PATH, concat_path};
+use mpq::Archive;
+use crate::globals::MAP_PATH_MAP;
 
 type Flag = u8;
 #[derive(Debug)]
@@ -44,11 +46,16 @@ pub struct PathMapFile {
 }
 
 impl PathMapFile {
-    pub fn read_file() -> Self{
-        let mut f = File::open(concat_path("war3map.wpm")).unwrap();
-        let mut buffer: Vec<u8> = Vec::new();
-        f.read_to_end(&mut buffer).unwrap();
-        let buffer_size = buffer.len();
+    pub fn read_file(mpq: &mut Archive) -> Self{
+        let file = mpq.open_file(MAP_PATH_MAP).unwrap();
+
+        let mut buffer: Vec<u8> = vec![0; file.size() as usize];
+
+        file.read(mpq, &mut buffer).unwrap();
+//        let mut f = File::open(concat_path("war3map.wpm")).unwrap();
+//        let mut buffer: Vec<u8> = Vec::new();
+//        f.read_to_end(&mut buffer).unwrap();
+//        let buffer_size = buffer.len();
         let mut reader = BinaryReader::new(buffer);
         reader.read::<PathMapFile>()
     }

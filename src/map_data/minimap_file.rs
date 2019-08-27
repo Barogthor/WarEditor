@@ -2,8 +2,9 @@ use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
 use std::fs::File;
 use std::io::{Read, BufReader, Cursor};
 use crate::map_data::binary_writer::BinaryWriter;
-use jpeg_decoder::Decoder;
 use crate::map_data::{PREFIX_SAMPLE_PATH, concat_path};
+use mpq::Archive;
+use crate::globals::MAP_MINIMAP;
 
 type RGBA = Vec<u8>;
 pub const JPG_BLP: bool = false;
@@ -161,11 +162,11 @@ impl BinaryConverter for MinimapFile {
 }
 
 impl MinimapFile {
-    pub fn read_file() -> Self{
-        let mut f = File::open(concat_path("war3mapMap.blp")).unwrap();
-        let mut buffer: Vec<u8> = Vec::new();
-        f.read_to_end(&mut buffer).unwrap();
-        let buffer_size = buffer.len();
+    pub fn read_file(mpq: &mut Archive) -> Self{
+        let file = mpq.open_file(MAP_MINIMAP).unwrap();
+        let mut buffer: Vec<u8> = vec![0; file.size() as usize];
+
+        file.read(mpq, &mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer);
         reader.read::<MinimapFile>()
     }

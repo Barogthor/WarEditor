@@ -4,7 +4,10 @@ use std::fs::File;
 use std::io::Read;
 use crate::map_data::binary_writer::BinaryWriter;
 use crate::map_data::{PREFIX_SAMPLE_PATH, concat_path};
+use mpq::Archive;
+use crate::globals::MAP_SOUNDS;
 
+const DEFAULT_FLOAT: f32 = 4.2949673e+009;
 
 #[derive(Debug)]
 pub struct Sound {
@@ -26,6 +29,7 @@ pub struct Sound {
     channel: u32,
     min_dist: f32,
     max_dist: f32,
+    dist_cutoff: f32,
     unknown3: f32,
     unknown4: f32,
     unknown5: i32,
@@ -48,24 +52,45 @@ impl Default for Sound {
             fadein: 0,
             fadeout: 0,
             volume: -1,
-            pitch: 4.2949673e+009,
-            unknown1: 4.2949673e+009,
+            pitch: DEFAULT_FLOAT,
+            unknown1: DEFAULT_FLOAT,
             unknown2: 0,
             channel: 0,
-            min_dist: 4.2949673e+009,
-            max_dist: 4.2949673e+009,
-            unknown3: 4.2949673e+009,
-            unknown4: 4.2949673e+009,
+            min_dist: DEFAULT_FLOAT,
+            max_dist: DEFAULT_FLOAT,
+            dist_cutoff: DEFAULT_FLOAT,
+            unknown3: DEFAULT_FLOAT,
+            unknown4: DEFAULT_FLOAT,
             unknown5: 0,
-            unknown6: 4.2949673e+009,
-            unknown7: 4.2949673e+009,
-            unknown8: 4.2949673e+009
+            unknown6: DEFAULT_FLOAT,
+            unknown7: DEFAULT_FLOAT,
+            unknown8: DEFAULT_FLOAT
         }
     }
 }
 impl BinaryConverter for Sound {
     fn read(reader: &mut BinaryReader) -> Self {
         let mut sound = Self::default();
+        sound.id = reader.read_c_string();
+        sound.file = reader.read_c_string();
+        sound.effect = reader.read_c_string();
+        sound.flags = reader.read_i32();
+        sound.fadein = reader.read_i32();
+        sound.fadeout = reader.read_i32();
+        sound.volume = reader.read_i32();
+        sound.pitch = reader.read_f32();
+        sound.unknown1 = reader.read_f32();
+        sound.unknown2 = reader.read_i32();
+        sound.channel = reader.read_u32();
+        sound.min_dist = reader.read_f32();
+        sound.max_dist = reader.read_f32();
+        sound.dist_cutoff = reader.read_f32();
+        sound.unknown3 = reader.read_f32();
+        sound.unknown4 = reader.read_f32();
+        sound.unknown5 = reader.read_i32();
+        sound.unknown6 = reader.read_f32();
+        sound.unknown7 = reader.read_f32();
+        sound.unknown8 = reader.read_f32();
         sound
     }
 
@@ -82,11 +107,12 @@ pub struct SoundFile {
 }
 
 impl SoundFile {
-    pub fn read_file() -> Self{
-        let mut f = File::open(concat_path("war3map.w3s")).unwrap();
-        let mut buffer: Vec<u8> = Vec::new();
-        f.read_to_end(&mut buffer).unwrap();
-        let buffer_size = buffer.len();
+    pub fn read_file(mpq: &mut Archive) -> Self{
+        let file = mpq.open_file(MAP_SOUNDS).unwrap();
+
+        let mut buffer: Vec<u8> = vec![0; file.size() as usize];
+
+        file.read(mpq, &mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer);
         reader.read::<SoundFile>()
     }
