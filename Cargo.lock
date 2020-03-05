@@ -483,6 +483,10 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "slkparser"
+version = "0.1.0"
+
+[[package]]
 name = "smart-default"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -549,6 +553,7 @@ dependencies = [
  "rand 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust-ini 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "slkparser 0.1.0",
  "smart-default 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "vec_map 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

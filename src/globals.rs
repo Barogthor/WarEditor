@@ -60,6 +60,7 @@ pub const CAMPAIGN_CUSTOM_BUFFS:                &str = "war3campaign.w3h";
 pub const CAMPAIGN_INFOS:                       &str = "war3campaign.w3f";
 pub const CAMPAIGN_ROOT_IMPORTED_FILES:         &str = "war3campaignImported";
 
+pub const SLK_SAMPLE_1:                         &str = "sample_1.slk";
 pub const SLK_ABILITY_DATA:                     &str = "AbilityData.slk";
 pub const SLK_ENVIRONMENT_SOUNDS:               &str = "EnvironmentSounds.slk";
 pub const SLK_UBER_SPLAT_DATA:                  &str = "UberSplatData.slk";

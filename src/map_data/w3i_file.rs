@@ -1,27 +1,28 @@
-use std::ffi::{CString};
-use crate::map_data::{is_TFT, is_RoC, PREFIX_SAMPLE_PATH, concat_path};
-use std::fmt::{Debug, Formatter, Error};
-use crate::map_data::binary_reader::BinaryReader;
-use std::io::Read;
-use crate::map_data::w3i_subs::player_data::PlayerData;
-use crate::map_data::w3i_subs::force_data::ForceData;
-use crate::map_data::w3i_subs::upgrade_availability::UpgradeAvailability;
-use crate::map_data::w3i_subs::tech_availability::TechAvailability;
-use crate::map_data::w3i_subs::random_unit_table::RandomUnitTable;
-use crate::map_data::w3i_subs::random_item_table::RandomItemTable;
+use std::ffi::CString;
+use std::fmt::{Debug, Error, Formatter};
+
 use mpq::Archive;
+
 use crate::globals::MAP_INFOS;
+use crate::map_data::{is_RoC, is_TFT};
+use crate::map_data::binary_reader::BinaryReader;
+use crate::map_data::w3i_subs::force_data::ForceData;
+use crate::map_data::w3i_subs::player_data::PlayerData;
+use crate::map_data::w3i_subs::random_item_table::RandomItemTable;
+use crate::map_data::w3i_subs::random_unit_table::RandomUnitTable;
+use crate::map_data::w3i_subs::tech_availability::TechAvailability;
+use crate::map_data::w3i_subs::upgrade_availability::UpgradeAvailability;
 
-pub union GlobalWeather{
-    value: i32,
-    id: [char;4]
-}
-
-impl Debug for GlobalWeather{
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f,"")
-    }
-}
+//pub union GlobalWeather{
+//    value: i32,
+//    id: [char;4]
+//}
+//
+//impl Debug for GlobalWeather{
+//    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+//        write!(f,"")
+//    }
+//}
 
 #[derive(Debug, Default)]
 pub struct W3iFile{

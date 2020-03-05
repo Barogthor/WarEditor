@@ -1,13 +1,10 @@
 use std::ffi::CString;
-use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
-use std::fs::File;
-use std::io::{Read, ErrorKind};
-use std::borrow::Borrow;
-use crate::map_data::binary_writer::BinaryWriter;
-use crate::map_data::{PREFIX_SAMPLE_PATH, concat_path};
-use regex::Error;
-use crate::globals::MAP_TRIGGERS_SCRIPT;
+
 use mpq::Archive;
+
+use crate::globals::MAP_TRIGGERS_SCRIPT;
+use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
+use crate::map_data::binary_writer::BinaryWriter;
 
 type TextScript = CString;
 
@@ -37,7 +34,7 @@ impl BinaryConverter for CustomTextTriggerFile {
     fn read(reader: &mut BinaryReader) -> Self {
 
         let version = Version::from(reader.read_u32()).unwrap();
-        let mut count_triggers: usize;
+        let count_triggers: usize;
         let mut global_comment: CString = Default::default();
         let mut global_script: CString = Default::default();
         let mut text_triggers: Vec<TextScript> = Vec::new();

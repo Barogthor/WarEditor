@@ -1,7 +1,8 @@
-use std::io::{Cursor, BufRead, Seek, SeekFrom};
-use byteorder::{LittleEndian, ReadBytesExt, BigEndian};
-use std::mem::size_of;
-use std::ffi::{CString};
+use std::ffi::CString;
+use std::io::{BufRead, Cursor, Seek, SeekFrom};
+
+use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
+
 use crate::map_data::binary_writer::BinaryWriter;
 
 pub struct BinaryReader{

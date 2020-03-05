@@ -1,13 +1,10 @@
-use std::ffi::CString;
-use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
-use std::fs::File;
-use std::io::Read;
-use std::borrow::Borrow;
-use crate::map_data::binary_writer::BinaryWriter;
-use regex::Regex;
-use crate::map_data::{PREFIX_SAMPLE_PATH, concat_path};
+
 use mpq::Archive;
+use regex::Regex;
+
 use crate::globals::MAP_STRINGS;
+use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
+use crate::map_data::binary_writer::BinaryWriter;
 
 const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)\s+\{\r\n+([^\}]*)\r\n\}";
 //const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)";

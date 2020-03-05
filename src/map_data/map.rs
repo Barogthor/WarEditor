@@ -1,17 +1,18 @@
-use crate::map_data::environment_file::EnvironmentFile;
+use mpq::Archive;
+
 use crate::map_data::camera_file::CameraFile;
-use crate::map_data::region_file::RegionFile;
+use crate::map_data::custom_text_trigger_file::CustomTextTriggerFile;
+use crate::map_data::environment_file::EnvironmentFile;
+use crate::map_data::import_file::ImportFile;
 use crate::map_data::minimap_file::MinimapFile;
 use crate::map_data::mmp_file::MMPFile;
+use crate::map_data::pathmap_file::PathMapFile;
+use crate::map_data::region_file::RegionFile;
 use crate::map_data::shadowmap_file::ShadowMapFile;
 use crate::map_data::sound_file::SoundFile;
 use crate::map_data::trigger_string_file::TriggerStringFile;
-use crate::map_data::custom_text_trigger_file::CustomTextTriggerFile;
 use crate::map_data::triggers_names_file::TriggersNameFile;
-use crate::map_data::import_file::ImportFile;
 use crate::map_data::w3i_file::W3iFile;
-use mpq::Archive;
-use crate::map_data::pathmap_file::PathMapFile;
 
 pub struct Map{
     path: String,

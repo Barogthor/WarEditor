@@ -1,8 +1,8 @@
 use std::collections::HashMap;
-use ini::Ini;
-use regex::{Regex, Captures};
 use std::fs::File;
 use std::io::Read;
+
+use regex::{Captures, Regex};
 
 const EOL: &str = "\r\n";
 

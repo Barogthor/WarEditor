@@ -1,10 +1,9 @@
+
+use mpq::Archive;
+
+use crate::globals::MAP_TERRAIN;
 use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
 use crate::map_data::binary_writer::BinaryWriter;
-use std::fs::File;
-use std::io::Read;
-use crate::map_data::{PREFIX_SAMPLE_PATH, concat_path};
-use mpq::Archive;
-use crate::globals::MAP_TERRAIN;
 
 #[derive(Debug)]
 pub struct TilePoint {

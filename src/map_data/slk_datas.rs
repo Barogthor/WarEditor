@@ -1,126 +1,146 @@
 use std::collections::HashMap;
-use crate::slk::record::cell::{CellValue, RecordCell};
-use crate::slk::document::SLKDocument;
-use crate::slk::slk::SLKReader;
-use vec_map::VecMap;
+use crate::map_data::slk_datas::adapter::{ScannerAdapter, DocumentAdapter};
+use slkparser::record::cell::Cell;
 
 type MetaID = String;
-type FieldName = String;
+type FieldColumn = u32;
+
+mod adapter{
+    use slkparser::document::Document;
+    use slkparser::SLKScanner;
+    use slkparser::slk_type::Record;
+    use slkparser::record::cell::Cell;
+
+    pub struct ScannerAdapter {
+        scanner: SLKScanner
+    }
+
+    impl ScannerAdapter {
+        pub fn open(path: &str) -> ScannerAdapter{
+            ScannerAdapter{
+                scanner: SLKScanner::open(path)
+            }
+        }
+    }
+    impl Iterator for ScannerAdapter{
+        type Item = Record;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            self.scanner.next()
+        }
+    }
+
+    pub struct DocumentAdapter {
+        document: Document
+    }
+
+    impl DocumentAdapter {
+        pub fn load(scanner: ScannerAdapter) -> DocumentAdapter{
+            let mut document = Document::default();
+            document.load(scanner.scanner);
+            DocumentAdapter{
+                document
+            }
+        }
+
+        pub fn get_contents(&self) -> &Vec<Cell>{
+            self.document.get_contents()
+        }
+        pub fn row_count(&self) -> u32 {self.document.row_count()}
+        pub fn column_count(&self) -> u32 {self.document.column_count()}
+    }
+}
 
 #[derive(Debug)]
 pub struct SLKData {
-    header: VecMap<String>,
+    headers: HashMap<FieldColumn, String>,
 //    map: HashMap<FieldID, VecMap<CellValue>>
-    map: HashMap<MetaID, HashMap<FieldName,CellValue>>
+    lines: HashMap<MetaID, HashMap<FieldColumn,String>>
+}
+
+fn process_cells(cells: &Vec<Cell>) -> (HashMap<FieldColumn, String>, HashMap<MetaID, HashMap<FieldColumn,String>>){
+    let mut headers = HashMap::new();
+    let mut lines = HashMap::new();
+    let mut row = 0;
+    let mut meta_id_holder = String::default();
+    for cell in cells{
+        if cell.get_row().is_some(){
+            row = cell.get_row().unwrap();
+        }
+        if row == 1{
+            let header_pos = cell.get_column();
+            let header_label = cell.get_value().unwrap().to_string();
+            headers.insert(header_pos, header_label);
+        } else {
+            let column_header = cell.get_column();
+            let field_value = cell.get_value().unwrap().to_string();
+            if cell.get_row().is_some(){
+                meta_id_holder = field_value;
+                lines.insert(meta_id_holder.clone(), HashMap::new());
+            } else {
+                let parameters = lines.get_mut(&meta_id_holder).unwrap();
+                parameters.insert(column_header, field_value);
+            }
+        }
+    }
+    (headers, lines)
 }
 
 impl SLKData {
-
     pub fn new() -> Self{
         Self{
-            header: Default::default(),
-            map: Default::default()
+            headers: Default::default(),
+            lines: Default::default()
         }
     }
+    pub fn load(path: &str) -> Self{
+        let scanner = ScannerAdapter::open(path);
+        let document = DocumentAdapter::load(scanner);
+        let cells = document.get_contents();
 
-    pub fn debug(&self){
-        println!("[Header]: {:?}",self.header);
-        for (id, value) in self.map.iter() {
-            println!("[{:?}] : {:?}",*id,*value);
-        }
-    }
-    pub fn sizeof(&self) -> u32{
-        let mut size = 0;
-        size
-    }
+        let (headers, lines) = process_cells(cells);
 
-    fn process_cells(slk: &SLKDocument) -> VecMap<Vec<(FieldName,CellValue)>>{
-        let mut header = VecMap::new();
-        let mut lines = VecMap::new();
-        let mut current_line = 0usize;
-        for cell in slk.get_cells().iter(){
-            if cell.row().is_some() {
-                current_line = match cell.row() {
-                    Some(line) => *line as usize,
-                    _ => panic!("row can't be anything but integer")
-                };
-                if current_line > 1 {
-                    lines.insert(current_line.to_owned(),Vec::new());
-                }
-            }
-            let value = cell.value();
-            if value.is_none() {continue;}
-            let value = value.to_owned().unwrap();
-            let x = cell.column();
-            if current_line == 1{
-                   let column_text = match value{
-                     CellValue::Text(text) => text,
-                       _ => panic!("Column head should be a string")
-                   };
-                header.insert(*x as usize, column_text);
-            }
-            else {
-                let field_name = header.get(*x as usize);
-                if field_name.is_none(){
-                    continue;
-                }
-                let field_name = field_name.unwrap();
-                let line = lines.get_mut(current_line).unwrap();
-//                line.push((*x, value));
-                line.push((field_name.to_owned(), value));
-            }
-        }
-        lines
-    }
-
-    pub fn open<'a>(path: &str) -> Self{
-        let doc = SLKReader::open_file(path.to_string()).parse().unwrap();
-        let lines = Self::process_cells(&doc);
-        let mut map: HashMap<MetaID, HashMap<FieldName,CellValue>> = HashMap::new();
-        for (line, values) in lines{
-            let mut id = String::new();
-            let mut iter = values.iter();
-            let (name,id_value) = iter.next().unwrap();
-            let id = match id_value{
-              CellValue::Text(id) => id,
-                _ => panic!("First field value should be a string")
-            };
-            map.insert(id.to_owned(),HashMap::new());
-            map.get_mut(id).unwrap().insert(name.to_owned(),id_value.to_owned());
-            for (name,value) in iter{
-                map.get_mut(id).unwrap().insert(name.to_owned(),value.to_owned());
-            }
-        }
-        Self{
-            map,
-            header: Default::default()
+        SLKData{
+            headers,
+            lines
         }
     }
 
     pub fn merge(&mut self, path: &str){
-        let mut last_pos = self.header.len();
-        let mut datas = Self::open(path);
-        for (id, newline) in datas.map.iter(){
-            if !self.map.contains_key(id){
-                self.map.insert(id.to_owned(),newline.to_owned());
+        let scanner = ScannerAdapter::open(path);
+        let document = DocumentAdapter::load(scanner);
+        let cells = document.get_contents();
+        let (headers, lines) = process_cells(cells);
+        let headers_count = self.headers.len() as u32;
+        for (meta_id, parameters) in lines{
+            if !self.lines.contains_key(&meta_id){
+                self.lines.insert(meta_id.clone(), HashMap::new());
             }
-            else {
-                let current_line = self.map.get_mut(id).unwrap();
-                for (field, value) in newline.iter(){
-                    if !current_line.contains_key(field) {
-                        current_line.insert(field.to_owned(), value.to_owned());
-                    }
-                }
+            let self_parameters = self.lines.get_mut(&meta_id).unwrap();
+            for (column, parameter) in parameters{
+                self_parameters.insert(headers_count + column, parameter);
             }
-
         }
+
     }
 
-    pub fn get(&self, id: &str) -> Option<&HashMap<FieldName,CellValue>>{
-        self.map.get(id)
-    }
-    pub fn get_mut(&mut self, id: &str) -> Option<&mut HashMap<FieldName,CellValue>>{
-        self.map.get_mut(id)
-    }
+//
+//    pub fn debug(&self){
+//        println!("[Header]: {:?}",self.header);
+//        for (id, value) in self.map.iter() {
+//            println!("[{:?}] : {:?}",*id,*value);
+//        }
+//    }
+//    pub fn sizeof(&self) -> u32{
+//        let mut size = 0;
+//        size
+//    }
+
+//    pub fn get(&self, id: &str) -> Option<&HashMap<FieldName,CellValue>>{
+//        self.map.get(id)
+//    }
+//    pub fn get_mut(&mut self, id: &str) -> Option<&mut HashMap<FieldName,CellValue>>{
+//        self.map.get_mut(id)
+//    }
 
 }

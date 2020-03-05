@@ -1,10 +1,9 @@
-use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
-use std::fs::File;
-use std::io::{Read, BufReader, Cursor};
-use crate::map_data::binary_writer::BinaryWriter;
-use crate::map_data::{PREFIX_SAMPLE_PATH, concat_path};
+
 use mpq::Archive;
+
 use crate::globals::MAP_MINIMAP;
+use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
+use crate::map_data::binary_writer::BinaryWriter;
 
 type RGBA = Vec<u8>;
 pub const JPG_BLP: bool = false;
@@ -144,7 +143,7 @@ impl BinaryConverter for MinimapFile {
 //                    decoder.read_info();
 //                    let info = decoder.info();
 //                    let res = decoder.decode().unwrap();
-                    let p = 0;
+//                    let p = 0;
 //                    println!("{:#?}", info);
 //                    mmap.jpeg_mipmaps.push();
                 }

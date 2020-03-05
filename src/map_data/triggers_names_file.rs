@@ -1,12 +1,11 @@
 use std::ffi::CString;
+
 use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
-use std::fs::File;
-use std::io::{Read, ErrorKind};
-use std::borrow::Borrow;
 use crate::map_data::binary_writer::BinaryWriter;
-use crate::map_data::{PREFIX_SAMPLE_PATH, concat_path};
-use regex::Error;
 use crate::map_data::triggers_names_file::category::TriggerCategory;
+use std::fs::File;
+use crate::map_data::concat_path;
+use std::io::Read;
 
 mod function{
     use super::*;

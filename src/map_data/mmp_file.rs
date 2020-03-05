@@ -1,10 +1,9 @@
-use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
-use std::fs::File;
-use std::io::Read;
-use crate::map_data::binary_writer::BinaryWriter;
-use crate::map_data::{PREFIX_SAMPLE_PATH, concat_path};
+
 use mpq::Archive;
+
 use crate::globals::MAP_MENU_MINIMAP;
+use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
+use crate::map_data::binary_writer::BinaryWriter;
 
 type RGBA = Vec<u8>;
 
@@ -44,7 +43,7 @@ impl BinaryConverter for MMPFile{
     fn read(reader: &mut BinaryReader) -> Self {
         let unknown = reader.read_i32();
         let count_dataset = reader.read_i32() as usize;
-        let mut datasets = reader.read_vec::<MMPDataset>(count_dataset);
+        let datasets = reader.read_vec::<MMPDataset>(count_dataset);
         MMPFile{unknown, datasets}
     }
 

@@ -1,8 +1,6 @@
 use std::io::{Read};
 use std::fs::File;
-use std::borrow::BorrowMut;
 use crate::slk_type::{RecordType, Record};
-use crate::record::cell::Cell;
 
 pub mod slk_type;
 pub mod record;
@@ -29,11 +27,11 @@ impl SLKScanner {
         }
     }
 
-    fn get_record_type(&mut self) -> Option<RecordType>{
+    fn get_record_type(&mut self) -> Result<RecordType, String>{
         let start_pos = self.pos;
         let t = &self.buffer[self.pos..self.pos+1];
         if t == "E"{
-            return Some(RecordType::EOF);
+            return Ok(RecordType::EOF);
         }
         while &self.buffer[self.pos..self.pos+1] != FIELD_SEPARATOR{
             self.pos+=1;
@@ -48,7 +46,6 @@ impl SLKScanner {
             return Err(String::from("EOF"));
         }
         let record_type = self.get_record_type();
-        let star_pos = self.pos;
         let mut fields: Vec<String> = vec![];
         let mut field_start_pos = self.pos;
         while self.pos < self.buffer.len() && &self.buffer[self.pos..self.pos+2] != END_RECORD{

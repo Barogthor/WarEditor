@@ -1,9 +1,29 @@
+const TRUE: &str = "TRUE";
+const FALSE: &str = "FALSE";
+
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum CellValue {
     Text(String),
     Integer(i64),
     Float(f64),
     Bool(bool),
+}
+
+impl ToString for CellValue {
+    fn to_string(&self) -> String {
+        match self.clone(){
+            CellValue::Text(text) => text,
+            CellValue::Integer(value) => value.to_string(),
+            CellValue::Float(value) => value.to_string(),
+            CellValue::Bool(value) => {
+                if value{
+                    "true".to_string()
+                } else {
+                    "false".to_string()
+                }
+            }
+        }
+    }
 }
 
 #[derive(Default, Debug, PartialEq, PartialOrd, Clone)]
@@ -37,7 +57,7 @@ impl Cell{
 }
 
 impl Cell {
-    pub fn new(column: u32, row: Option<u32>, value: Option<CellValue>) -> Cell{
+    pub fn new(column: u32, row: Option<u32>, value: Option<CellValue>) -> Self{
         Cell{
             column,
             row,
@@ -45,11 +65,12 @@ impl Cell {
         }
     }
 
-    pub fn parse(fields: &Vec<String>, line: Option<u32>) -> Cell{
+    pub fn parse(fields: &Vec<String>, line: Option<u32>) -> Self{
         let mut cell = Cell::default();
         for field in fields.iter(){
             let field_id = &field[0..1];
             let field_content = &field[1..];
+            println!("{:?}",field_content);
             match field_id{
                 "Y" => cell.row = Some(field_content.parse::<u32>().unwrap()),
                 "X" => cell.column = field_content.parse::<u32>().unwrap(),
@@ -58,7 +79,7 @@ impl Cell {
                         let slice = &field_content[1..field_content.len()-1];
                         cell.value = Some(CellValue::Text(String::from(slice)));
                     }
-                    else if field_content == "true" || field_content == "false"{
+                    else if field_content == TRUE || field_content == FALSE{
                         cell.value = Some(CellValue::Bool(field_content == "true"));
                     }
                     else if field_content.contains(",") || field_content.contains("."){
@@ -66,8 +87,8 @@ impl Cell {
                         cell.value = Some(CellValue::Float(v));
                     }
                     else {
-                        let v= field_content.parse::<i64>().unwrap();
-                        cell.value = Some(CellValue::Integer(v));
+                        let v= field_content.parse::<i64>();
+                        cell.value = Some(CellValue::Integer(v.unwrap()));
                     }
                 }
                 _ => ()

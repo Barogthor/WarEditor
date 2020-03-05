@@ -17,15 +17,16 @@ pub enum Record {
 }
 
 impl Record {
-    pub fn from(record_type: Option<RecordType>, fields: &Vec<String>) -> Result<Record, String>{
+    pub fn from(record_type: Result<RecordType, String>, fields: &Vec<String>) -> Result<Record, String>{
+//        println!("{:?}",record_type);
         match record_type{
-            Some(RecordType::EOF) => {
+            Ok(RecordType::EOF) => {
                 Ok(Record::EOF)
             },
-            Some(RecordType::Header) => {
+            Ok(RecordType::Header) => {
                 Ok(Record::Header)
             },
-            Some(RecordType::Info) => {
+            Ok(RecordType::Info) => {
                 let mut columns = 0u32;
                 let mut rows = 0u32;
                 for field in fields.iter(){
@@ -39,10 +40,18 @@ impl Record {
                 }
                 Ok(Record::Info(rows,columns))
             },
-            Some(RecordType::CellContent) => {
+            Ok(RecordType::CellContent) => {
                 Ok(Record::CellContent(Cell::parse(fields, None)))
             },
-            _ => Err(String::from("Unkown Record"))
+            Ok(RecordType::Format) => Ok(Record::Format),
+            Ok(RecordType::ChartExtLink) => Ok(Record::ChartExtLink),
+            Ok(RecordType::CellFormat) => Ok(Record::CellFormat),
+            Ok(RecordType::Options) => Ok(Record::Options),
+            Ok(RecordType::Substitution) => Ok(Record::Substitution),
+            Ok(RecordType::ExtLink) => Ok(Record::ExtLink),
+            Ok(RecordType::NameDefinitions) => Ok(Record::NameDefinitions),
+            Ok(RecordType::WindowDefinitions) => Ok(Record::WindowDefinitions),
+            Err(msg) => Err(msg),
         }
     }
 }
@@ -68,21 +77,21 @@ impl RecordType {
         *self == RecordType::EOF
     }
 
-    pub fn from_id(id: &str) -> Option<Self>{
+    pub fn from_id(id: &str) -> Result<Self, String>{
         match id {
-            "ID" => Some(RecordType::Header),
-            "B" => Some(RecordType::Info),
-            "C" => Some(RecordType::CellContent),
-            "P" => Some(RecordType::CellFormat),
-            "F" => Some(RecordType::Format),
-            "O" => Some(RecordType::Options),
-            "NU" => Some(RecordType::Substitution),
-            "NE" => Some(RecordType::ExtLink),
-            "NN" => Some(RecordType::NameDefinitions),
-            "W" => Some(RecordType::WindowDefinitions),
-            "NL" => Some(RecordType::ChartExtLink),
-            "E" => Some(RecordType::EOF),
-            _ => None
+            "ID" => Ok(RecordType::Header),
+            "B" => Ok(RecordType::Info),
+            "C" => Ok(RecordType::CellContent),
+            "P" => Ok(RecordType::CellFormat),
+            "F" => Ok(RecordType::Format),
+            "O" => Ok(RecordType::Options),
+            "NU" => Ok(RecordType::Substitution),
+            "NE" => Ok(RecordType::ExtLink),
+            "NN" => Ok(RecordType::NameDefinitions),
+            "W" => Ok(RecordType::WindowDefinitions),
+            "NL" => Ok(RecordType::ChartExtLink),
+            "E" => Ok(RecordType::EOF),
+            _ => Err(format!("Unknown record {}", id))
         }
     }
 }

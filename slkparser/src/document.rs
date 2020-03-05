@@ -28,6 +28,9 @@ impl Document {
         &self.contents
     }
 
+    pub fn row_count(&self) -> u32 {self.rows}
+    pub fn column_count(&self) -> u32 {self.columns}
+
     pub fn debug(&self){
         println!("{:#?}", self);
     }

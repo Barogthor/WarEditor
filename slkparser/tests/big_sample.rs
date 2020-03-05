@@ -10,7 +10,7 @@ mod big_sample {
     #[test]
     fn test_ability_data() {
         let now = Instant::now();
-        let mut slk_reader = SLKScanner::open("../resources/slk/AbilityData.slk");
+        let slk_reader = SLKScanner::open("../resources/slk/AbilityData.slk");
         let mut document = Document::default();
         document.load(slk_reader);
         elapsed_time(&now);
