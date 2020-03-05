@@ -1,18 +1,11 @@
+use std::time::Instant;
+
 #[cfg(test)]
 mod sample {
     use slkparser::SLKScanner;
-    use std::str::Lines;
     use slkparser::slk_type::{RecordType, Record};
     use slkparser::record::cell::{CellValue, Cell};
-
-    #[test]
-    fn test_func() {
-//        let mut slk_reader = SLKReader();
-        let a = String::from("Hello");
-        let b = &a[0..1];
-        assert_eq!(b,"H");
-        assert_eq!(1, 1);
-    }
+    use slkparser::document::Document;
 
     #[test]
     fn test_open(){
@@ -53,9 +46,12 @@ mod sample {
         }
         assert_eq!(count,14);
     }
+
     #[test]
-    fn test_time() {
-        let mut slk_reader = SLKScanner::open("../resources/slk/AbilityData.slk");
-        for _ in slk_reader{}
+    fn document_test() {
+        let mut slk_reader = SLKScanner::open("resources/sample_1.slk");
+        let mut document = Document::default();
+        document.load(slk_reader);
+        document.debug();
     }
 }
