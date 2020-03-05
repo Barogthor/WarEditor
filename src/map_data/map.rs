@@ -34,7 +34,7 @@ impl Map {
         let mut map = Archive::open(path.to_owned()).unwrap();
 
         let w3i = W3iFile::read_file(&mut map);
-        w3i.debug();
+//        w3i.debug();
         let mmp = MMPFile::read_file(&mut map);
 //        mmp.debug();
         let regions = RegionFile::read_file(&mut map);

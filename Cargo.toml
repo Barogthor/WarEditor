@@ -17,6 +17,8 @@ getset = "0.0.7"
 smart-default = "0.5.2"
 mpq = "0.6.0"
 image = "0.22.1"
+vec_map = "0.8.1"
+rust-ini = "0.13.0"
 #num-derive = "0.2.5"
 #num = "0.2.0"
 

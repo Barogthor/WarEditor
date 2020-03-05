@@ -50,4 +50,5 @@ pub mod trigger_string_file;
 pub mod custom_text_trigger_file;
 pub mod triggers_names_file;
 pub mod map;
-pub mod meta_datas;
+//pub mod slk_datas;
+pub mod data_ini;

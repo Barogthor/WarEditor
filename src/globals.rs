@@ -6,6 +6,7 @@ pub enum GameVersion {
     TFT,
     TFT131,
 }
+
 impl Default for GameVersion{
     fn default() -> Self {
         GameVersion::TFT
@@ -63,6 +64,8 @@ pub const SLK_ABILITY_DATA:                     &str = "AbilityData.slk";
 pub const SLK_ENVIRONMENT_SOUNDS:               &str = "EnvironmentSounds.slk";
 pub const SLK_UBER_SPLAT_DATA:                  &str = "UberSplatData.slk";
 pub const SLK_ABILITY_META_DATA:                &str = "AbilityMetaData.slk";
+pub const SLK_ABILITY_BUFF_META_DATA:           &str = "AbilityBuffMetaData.slk";
+pub const SLK_ABILITY_BUFF_DATA:                &str = "AbilityBuffData.slk";
 pub const SLK_ITEM_DATA:                        &str = "ItemData.slk";
 pub const SLK_UISOUNDS:                         &str = "UISounds.slk";
 pub const SLK_ABILITY_SOUNDS:                   &str = "AbilitySounds.slk";
@@ -84,8 +87,7 @@ pub const SLK_CLIFFS:                           &str = "Cliffs.slk";
 pub const SLK_PORTRAIT_ANIMS:                   &str = "PortraitAnims.slk";
 pub const SLK_UNIT_META_DATA:                   &str = "UnitMetaData.slk";
 pub const SLK_CLIFF_TYPES:                      &str = "CliffTypes.slk";
-pub const SLK_AMPLE_1:                          &str = "sample_1.slk";
-pub const SLK_NIT_UI:                           &str = "unitUI.slk";
+pub const SLK_UNIT_UI:                          &str = "unitUI.slk";
 pub const SLK_DESTRUCTABLE_DATA:                &str = "DestructableData.slk";
 pub const SLK_SKIN_META_DATA:                   &str = "SkinMetaData.slk";
 pub const SLK_UNIT_WEAPONS:                     &str = "UnitWeapons.slk";
@@ -103,45 +105,47 @@ pub const SLK_WATER:                            &str = "Water.slk";
 pub const SLK_EAXDEFS:                          &str = "EAXDefs.slk";
 pub const SLK_WEATHER:                          &str = "Weather.slk";
 
-pub const PROFILE_AIEDITOR_DATA:                &str = "AIEditorData.txt";
-pub const PROFILE_MAC_WORLD_EDIT_STRINGS:       &str = "MacWorldEditStrings.txt";
-pub const PROFILE_TRIGGER_DATA:                 &str = "TriggerData.txt";
+
+pub const PROFILE_HUMAN_UNIT_FUNC:              &str = "HumanUnitFunc.txt";
+pub const PROFILE_HUMAN_ABILITY_FUNC:           &str = "HumanAbilityFunc.txt";
+pub const PROFILE_HUMAN_UPGRADE_FUNC:           &str = "HumanUpgradeFunc.txt";
+pub const PROFILE_ORC_UNIT_FUNC:                &str = "OrcUnitFunc.txt";
+pub const PROFILE_ORC_ABILITY_FUNC:             &str = "OrcAbilityFunc.txt";
+pub const PROFILE_ORC_UPGRADE_FUNC:             &str = "OrcUpgradeFunc.txt";
+pub const PROFILE_UNDEAD_UNIT_FUNC:             &str = "UndeadUnitFunc.txt";
+pub const PROFILE_UNDEAD_ABILITY_FUNC:          &str = "UndeadAbilityFunc.txt";
+pub const PROFILE_UNDEAD_UPGRADE_FUNC:          &str = "UndeadUpgradeFunc.txt";
+pub const PROFILE_NIGHT_ELF_UNIT_FUNC:          &str = "NightElfUnitFunc.txt";
+pub const PROFILE_NIGHT_ELF_ABILITY_FUNC:       &str = "NightElfAbilityFunc.txt";
+pub const PROFILE_NIGHT_ELF_UPGRADE_FUNC:       &str = "NightElfUpgradeFunc.txt";
+pub const PROFILE_NEUTRAL_UNIT_FUNC:            &str = "NeutralUnitFunc.txt";
+pub const PROFILE_NEUTRAL_ABILITY_FUNC:         &str = "NeutralAbilityFunc.txt";
+pub const PROFILE_NEUTRAL_UPGRADE_FUNC:         &str = "NeutralUpgradeFunc.txt";
+pub const PROFILE_CAMPAIGN_UNIT_FUNC:           &str = "CampaignUnitFunc.txt";
 pub const PROFILE_CAMPAIGN_ABILITY_FUNC:        &str = "CampaignAbilityFunc.txt";
+pub const PROFILE_CAMPAIGN_UPGRADE_FUNC:        &str = "CampaignUpgradeFunc.txt";
+pub const PROFILE_COMMON_ABILITY_FUNC:          &str = "CommonAbilityFunc.txt";
+pub const PROFILE_ITEM_FUNC:                    &str = "ItemFunc.txt";
+pub const PROFILE_ITEM_ABILITY_FUNC:            &str = "ItemAbilityFunc.txt";
+
+pub const PROFILE_MAC_WORLD_EDIT_STRINGS:       &str = "MacWorldEditStrings.txt";
+pub const PROFILE_WORLD_EDIT_DATA:              &str = "WorldEditData.txt";
+pub const PROFILE_WORLD_EDIT_GAME_STRINGS:      &str = "WorldEditGameStrings.txt";
+pub const PROFILE_WORLD_EDIT_LAYOUT:            &str = "WorldEditLayout.txt";
+pub const PROFILE_WORLD_EDIT_LICENSE:           &str = "WorldEditLicense.txt";
+pub const PROFILE_WORLD_EDIT_STARTUP_STRINGS:   &str = "WorldEditStartupStrings.txt";
+pub const PROFILE_WORLD_EDIT_STRINGS:           &str = "WorldEditStrings.txt";
+pub const PROFILE_UNIT_EDITOR_DATA:             &str = "UnitEditorData.txt";
+pub const PROFILE_AIEDITOR_DATA:                &str = "AIEditorData.txt";
+pub const PROFILE_TRIGGER_DATA:                 &str = "TriggerData.txt";
+pub const PROFILE_WAR3SKINS:                    &str = "war3skins.txt";
 pub const PROFILE_MISC_DATA:                    &str = "MiscData.txt";
 pub const PROFILE_TRIGGER_STRINGS:              &str = "TriggerStrings.txt";
 pub const PROFILE_CAMPAIGN_STRINGS:             &str = "CampaignStrings.txt";
 pub const PROFILE_MISC_UI:                      &str = "MiscUI.txt";
-pub const PROFILE_UNDEAD_ABILITY_FUNC:          &str = "UndeadAbilityFunc.txt";
 pub const PROFILE_CAMPAIGN_STRINGS_EXP:         &str = "CampaignStrings_exp.txt";
-pub const PROFILE_NEUTRAL_ABILITY_FUNC:         &str = "NeutralAbilityFunc.txt";
-pub const PROFILE_UNDEAD_UNIT_FUNC:             &str = "UndeadUnitFunc.txt";
-pub const PROFILE_CAMPAIGN_UNIT_FUNC:           &str = "CampaignUnitFunc.txt";
-pub const PROFILE_NEUTRAL_UNIT_FUNC:            &str = "NeutralUnitFunc.txt";
-pub const PROFILE_UNDEAD_UPGRADE_FUNC:          &str = "UndeadUpgradeFunc.txt";
-pub const PROFILE_CAMPAIGN_UPGRADE_FUNC:        &str = "CampaignUpgradeFunc.txt";
-pub const PROFILE_NEUTRAL_UPGRADE_FUNC:         &str = "NeutralUpgradeFunc.txt";
-pub const PROFILE_UNIT_EDITOR_DATA:             &str = "UnitEditorData.txt";
-pub const PROFILE_COMMON_ABILITY_FUNC:          &str = "CommonAbilityFunc.txt";
-pub const PROFILE_NIGHT_ELF_ABILITY_FUNC:       &str = "NightElfAbilityFunc.txt";
-pub const PROFILE_WAR3SKINS:                    &str = "war3skins.txt";
 pub const PROFILE_HELP_STRINGS:                 &str = "HelpStrings.txt";
-pub const PROFILE_NIGHT_ELF_UNIT_FUNC:          &str = "NightElfUnitFunc.txt";
-pub const PROFILE_WORLD_EDIT_DATA:              &str = "WorldEditData.txt";
-pub const PROFILE_HUMAN_ABILITY_FUNC:           &str = "HumanAbilityFunc.txt";
-pub const PROFILE_NIGHT_ELF_UPGRADE_FUNC:       &str = "NightElfUpgradeFunc.txt";
-pub const PROFILE_WORLD_EDIT_GAME_STRINGS:      &str = "WorldEditGameStrings.txt";
-pub const PROFILE_HUMAN_UNIT_FUNC:              &str = "HumanUnitFunc.txt";
-pub const PROFILE_ORC_ABILITY_FUNC:             &str = "OrcAbilityFunc.txt";
-pub const PROFILE_WORLD_EDIT_LAYOUT:            &str = "WorldEditLayout.txt";
-pub const PROFILE_HUMAN_UPGRADE_FUNC:           &str = "HumanUpgradeFunc.txt";
-pub const PROFILE_ORC_UNIT_FUNC:                &str = "OrcUnitFunc.txt";
-pub const PROFILE_WORLD_EDIT_LICENSE:           &str = "WorldEditLicense.txt";
-pub const PROFILE_ITEM_ABILITY_FUNC:            &str = "ItemAbilityFunc.txt";
-pub const PROFILE_ORC_UPGRADE_FUNC:             &str = "OrcUpgradeFunc.txt";
-pub const PROFILE_WORLD_EDIT_STARTUP_STRINGS:   &str = "WorldEditStartupStrings.txt";
-pub const PROFILE_ITEM_FUNC:                    &str = "ItemFunc.txt";
 pub const PROFILE_STARTUP_STRINGS:              &str = "StartupStrings.txt";
-pub const PROFILE_WORLD_EDIT_STRINGS:           &str = "WorldEditStrings.txt";
 pub const PROFILE_MAC_HELP_STRINGS:             &str = "MacHelpStrings.txt";
 pub const PROFILE_TELEMETRY:                    &str = "Telemetry.txt";
 pub const PROFILE_MAC_STRINGS:                  &str = "MacStrings.txt";

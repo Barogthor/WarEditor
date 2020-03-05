@@ -1,0 +1,15 @@
+ID;PWXL;N;E
+B;Y3;X4;D0 0 2 3
+C;Y1;X1;K"a"
+C;X2;K"b"
+C;X3;K"tot"
+C;X4;K"test"
+C;Y2;X1;K1
+C;X2;K2
+C;X3;K3;ERC[-2]*RC[-2]+RC[-1]
+C;X4;K24;ERC[-1]*R[+1]C[-1]
+C;Y3;X1;K2
+C;X2;K4
+C;X3;K8;ERC[-2]*RC[-2]+RC[-1]
+C;X4;K19;ER[-1]C-RC[-1]+R[-1]C[-1]
+E
