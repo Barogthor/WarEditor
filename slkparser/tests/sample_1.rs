@@ -3,7 +3,7 @@
 mod sample {
     use slkparser::SLKScanner;
     use slkparser::slk_type::{Record};
-    use slkparser::record::cell::{CellValue, Cell};
+    use slkparser::record::cell::{Cell};
     use slkparser::document::Document;
 
     #[test]
@@ -22,7 +22,7 @@ mod sample {
         assert_eq!(fetch, Ok( Record::Info(3, 4) ));
 
         let fetch = slk_reader.parse_record();
-        let cell = Cell::new(1u32, Some(1u32), Some(CellValue::Text(to_s("a"))) );
+        let cell = Cell::new(1u32, Some(1u32), Some(to_s("a")) );
         assert_eq!(fetch, Ok( Record::CellContent(cell) ));
 
         for _ in 0..11 {

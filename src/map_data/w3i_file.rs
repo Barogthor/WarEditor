@@ -4,7 +4,7 @@ use std::fmt::{Debug, Error, Formatter};
 use mpq::Archive;
 
 use crate::globals::MAP_INFOS;
-use crate::map_data::{is_RoC, is_TFT};
+use crate::map_data::{is_roc, is_tft};
 use crate::map_data::binary_reader::BinaryReader;
 use crate::map_data::w3i_subs::force_data::ForceData;
 use crate::map_data::w3i_subs::player_data::PlayerData;
@@ -135,7 +135,7 @@ impl W3iFile{
         w3i.unkwown_5 = w3i.flags & 0x8000 == 1;
         w3i.ground_type = reader.read_char();
 
-        if is_RoC(w3i.version) {
+        if is_roc(w3i.version) {
             w3i.campaign_background = reader.read_i32();
             w3i.loading_screen_text = reader.read_c_string();
             w3i.loading_screen_title = reader.read_c_string();
@@ -145,7 +145,7 @@ impl W3iFile{
             w3i.prologue_screen_title = reader.read_c_string();
             w3i.prologue_screen_subtitle = reader.read_c_string();
         }
-        else if is_TFT(w3i.version) {
+        else if is_tft(w3i.version) {
             w3i.loading_screen_index = reader.read_i32();
             w3i.custom_loading_screen_model_path = reader.read_c_string();
             w3i.loading_screen_text = reader.read_c_string();

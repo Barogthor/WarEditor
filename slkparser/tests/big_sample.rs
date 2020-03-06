@@ -14,7 +14,7 @@ mod big_sample {
         let mut document = Document::default();
         document.load(slk_reader);
         elapsed_time(&now);
-        for _ in document.get_contents(){}
+//        for _ in document.get_contents(){}
         elapsed_time(&now);
 
     }

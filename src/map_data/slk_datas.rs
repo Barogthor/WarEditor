@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::map_data::slk_datas::adapter::{ScannerAdapter, DocumentAdapter};
-use slkparser::record::cell::Cell;
+use slkparser::record::cell::{Cell};
 
 type MetaID = String;
 type FieldColumn = u32;
@@ -64,6 +64,9 @@ fn process_cells(cells: &Vec<Cell>) -> (HashMap<FieldColumn, String>, HashMap<Me
     let mut row = 0;
     let mut meta_id_holder = String::default();
     for cell in cells{
+        if cell.get_value().is_none(){
+            println!("Value is none: {:?}, row: {}",cell, row);
+        }
         if cell.get_row().is_some(){
             row = cell.get_row().unwrap();
         }
@@ -73,7 +76,7 @@ fn process_cells(cells: &Vec<Cell>) -> (HashMap<FieldColumn, String>, HashMap<Me
             headers.insert(header_pos, header_label);
         } else {
             let column_header = cell.get_column();
-            let field_value = cell.get_value().unwrap().to_string();
+            let field_value = cell.get_value().unwrap_or(Default::default()).to_string();
             if cell.get_row().is_some(){
                 meta_id_holder = field_value;
                 lines.insert(meta_id_holder.clone(), HashMap::new());
@@ -94,6 +97,7 @@ impl SLKData {
         }
     }
     pub fn load(path: &str) -> Self{
+        println!("========== Parse file: {}",path);
         let scanner = ScannerAdapter::open(path);
         let document = DocumentAdapter::load(scanner);
         let cells = document.get_contents();
@@ -107,6 +111,7 @@ impl SLKData {
     }
 
     pub fn merge(&mut self, path: &str){
+        println!("========== Merge file: {}",path);
         let scanner = ScannerAdapter::open(path);
         let document = DocumentAdapter::load(scanner);
         let cells = document.get_contents();

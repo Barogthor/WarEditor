@@ -1,37 +1,37 @@
-const TRUE: &str = "TRUE";
-const FALSE: &str = "FALSE";
+//const TRUE: &str = "TRUE";
+//const FALSE: &str = "FALSE";
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
-pub enum CellValue {
-    Text(String),
-    Integer(i64),
-    Float(f64),
-    Bool(bool),
-}
+//#[derive(Debug, PartialOrd, PartialEq, Clone)]
+//pub enum CellValue {
+//    Text(String),
+//    Integer(i64),
+//    Float(f64),
+//    Bool(bool),
+//}
 
-impl ToString for CellValue {
-    fn to_string(&self) -> String {
-        match self.clone(){
-            CellValue::Text(text) => text,
-            CellValue::Integer(value) => value.to_string(),
-            CellValue::Float(value) => value.to_string(),
-            CellValue::Bool(value) => {
-                if value{
-                    "true".to_string()
-                } else {
-                    "false".to_string()
-                }
-            }
-        }
-    }
-}
+//impl ToString for CellValue {
+//    fn to_string(&self) -> String {
+//        match self.clone(){
+//            CellValue::Text(text) => text,
+//            CellValue::Integer(value) => value.to_string(),
+//            CellValue::Float(value) => value.to_string(),
+//            CellValue::Bool(value) => {
+//                if value{
+//                    "true".to_string()
+//                } else {
+//                    "false".to_string()
+//                }
+//            }
+//        }
+//    }
+//}
 
 #[derive(Default, Debug, PartialEq, PartialOrd, Clone)]
 pub struct Cell {
     column: u32,
     row: Option<u32>,
 //    expression: Option<String>,
-    value: Option<CellValue>,
+    value: Option<String>,
 //    column_ref: Option<String>,
 //    row_ref: Option<String>,
 //    shared_value_definition: Option<String>,
@@ -44,7 +44,7 @@ pub struct Cell {
 }
 
 impl Cell{
-    pub fn get_value(&self) -> Option<CellValue>{
+    pub fn get_value(&self) -> Option<String>{
         self.value.clone()
     }
 
@@ -57,7 +57,7 @@ impl Cell{
 }
 
 impl Cell {
-    pub fn new(column: u32, row: Option<u32>, value: Option<CellValue>) -> Self{
+    pub fn new(column: u32, row: Option<u32>, value: Option<String>) -> Self{
         Cell{
             column,
             row,
@@ -70,25 +70,17 @@ impl Cell {
         for field in fields.iter(){
             let field_id = &field[0..1];
             let field_content = &field[1..];
-            println!("{:?}",field_content);
+//            println!("{:?}",field_content);
             match field_id{
                 "Y" => cell.row = Some(field_content.parse::<u32>().unwrap()),
                 "X" => cell.column = field_content.parse::<u32>().unwrap(),
                 "K" => {
-                    if field_content.starts_with("\"") && field_content.ends_with("\""){
+                    if field_content.starts_with("\""){
                         let slice = &field_content[1..field_content.len()-1];
-                        cell.value = Some(CellValue::Text(String::from(slice)));
+                        cell.value = Some(String::from(slice));
                     }
-                    else if field_content == TRUE || field_content == FALSE{
-                        cell.value = Some(CellValue::Bool(field_content == "true"));
-                    }
-                    else if field_content.contains(",") || field_content.contains("."){
-                        let v = field_content.parse::<f64>().unwrap();
-                        cell.value = Some(CellValue::Float(v));
-                    }
-                    else {
-                        let v= field_content.parse::<i64>();
-                        cell.value = Some(CellValue::Integer(v.unwrap()));
+                    else{
+                        cell.value = Some(String::from(field_content));
                     }
                 }
                 _ => ()
@@ -98,3 +90,7 @@ impl Cell {
     }
 }
 
+fn is_numeric(string: &str) -> bool{
+    let try_parse = string.parse::<f64>();
+    try_parse.is_ok()
+}

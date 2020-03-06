@@ -5,6 +5,9 @@ use crate::slk_type::{RecordType, Record};
 pub mod slk_type;
 pub mod record;
 pub mod document;
+#[cfg(target_os = "macos")]
+pub const END_RECORD: &str = "\n";
+#[cfg(target_os = "windows")]
 pub const END_RECORD: &str = "\r\n";
 pub const FIELD_SEPARATOR: &str = ";";
 
@@ -46,17 +49,22 @@ impl SLKScanner {
             return Err(String::from("EOF"));
         }
         let record_type = self.get_record_type();
+        if record_type == Ok(RecordType::EOF){
+            self.pos=self.buffer.len();
+            return Ok(Record::EOF);
+        }
         let mut fields: Vec<String> = vec![];
         let mut field_start_pos = self.pos;
-        while self.pos < self.buffer.len() && &self.buffer[self.pos..self.pos+2] != END_RECORD{
+        while self.pos < self.buffer.len()- END_RECORD.len() && &self.buffer[self.pos..self.pos+END_RECORD.len()] != END_RECORD{
             if &self.buffer[self.pos..self.pos+1] == FIELD_SEPARATOR{
                 fields.push(String::from(&self.buffer[field_start_pos..self.pos]));
                 field_start_pos=self.pos+1;
             }
             self.pos+=1;
         };
-        fields.push(String::from(&self.buffer[field_start_pos..self.pos]));
-        self.pos+=2;
+        let field = String::from(&self.buffer[field_start_pos..self.pos]);
+        fields.push(field.replace("\r", ""));
+        self.pos+=END_RECORD.len();
         Record::from(record_type, &fields)
     }
 }
