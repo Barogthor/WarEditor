@@ -5,3 +5,4 @@ pub mod globals;
 //pub mod slk;
 pub mod helpers;
 pub mod map_data;
+pub mod blp;

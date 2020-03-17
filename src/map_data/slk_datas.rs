@@ -1,9 +1,10 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use crate::map_data::slk_datas::adapter::{ScannerAdapter, DocumentAdapter};
 use slkparser::record::cell::{Cell};
 
 type MetaID = String;
 type FieldColumn = u32;
+const HEADER_ROW: u32 = 1;
 
 mod adapter{
     use slkparser::document::Document;
@@ -53,13 +54,13 @@ mod adapter{
 
 #[derive(Debug)]
 pub struct SLKData {
-    headers: HashMap<FieldColumn, String>,
+    headers: BTreeMap<FieldColumn, String>,
 //    map: HashMap<FieldID, VecMap<CellValue>>
-    lines: HashMap<MetaID, HashMap<FieldColumn,String>>
+    lines: HashMap<MetaID, BTreeMap<FieldColumn,String>>
 }
 
-fn process_cells(cells: &Vec<Cell>) -> (HashMap<FieldColumn, String>, HashMap<MetaID, HashMap<FieldColumn,String>>){
-    let mut headers = HashMap::new();
+fn process_cells(cells: &Vec<Cell>) -> (BTreeMap<FieldColumn, String>, HashMap<MetaID, BTreeMap<FieldColumn,String>>){
+    let mut headers = BTreeMap::new();
     let mut lines = HashMap::new();
     let mut row = 0;
     let mut meta_id_holder = String::default();
@@ -70,16 +71,23 @@ fn process_cells(cells: &Vec<Cell>) -> (HashMap<FieldColumn, String>, HashMap<Me
         if cell.get_row().is_some(){
             row = cell.get_row().unwrap();
         }
-        if row == 1{
+        if row == HEADER_ROW{
             let header_pos = cell.get_column();
             let header_label = cell.get_value().unwrap().to_string();
+            let header_label =
+                if header_label.is_empty() {
+                    String::from("Unknown")
+                } else {
+                    header_label
+                };
+
             headers.insert(header_pos, header_label);
         } else {
             let column_header = cell.get_column();
             let field_value = cell.get_value().unwrap_or(Default::default()).to_string();
             if cell.get_row().is_some(){
                 meta_id_holder = field_value;
-                lines.insert(meta_id_holder.clone(), HashMap::new());
+                lines.insert(meta_id_holder.clone(), BTreeMap::new());
             } else {
                 let parameters = lines.get_mut(&meta_id_holder).unwrap();
                 parameters.insert(column_header, field_value);
@@ -117,33 +125,57 @@ impl SLKData {
         let cells = document.get_contents();
         let (headers, lines) = process_cells(cells);
         let headers_count = self.headers.len() as u32;
+
         for (meta_id, parameters) in lines{
             if !self.lines.contains_key(&meta_id){
-                self.lines.insert(meta_id.clone(), HashMap::new());
+                self.lines.insert(meta_id.clone(), BTreeMap::new());
             }
             let self_parameters = self.lines.get_mut(&meta_id).unwrap();
             for (column, parameter) in parameters{
                 self_parameters.insert(headers_count + column, parameter);
             }
         }
+        for (column, label) in headers {
+            self.headers.insert(headers_count+column, label);
+        }
+
 
     }
 
-//
 //    pub fn debug(&self){
 //        println!("[Header]: {:?}",self.header);
 //        for (id, value) in self.map.iter() {
 //            println!("[{:?}] : {:?}",*id,*value);
 //        }
 //    }
-//    pub fn sizeof(&self) -> u32{
-//        let mut size = 0;
-//        size
-//    }
 
-//    pub fn get(&self, id: &str) -> Option<&HashMap<FieldName,CellValue>>{
-//        self.map.get(id)
-//    }
+    pub fn get(&self, id: &MetaID) -> Option<&BTreeMap<FieldColumn,String>>{
+        self.lines.get(id)
+    }
+
+    pub fn headers(&self) -> &BTreeMap<FieldColumn, String>{
+        &self.headers
+    }
+
+    pub fn get_formatted(&self, id: &MetaID) -> Option<BTreeMap<String,String>>{
+        let v = self.get(id);
+        let mut counter = 1;
+        if v.is_none() {
+            return None;
+        }
+        let meta = v.unwrap();
+        let mut res = BTreeMap::new();
+        for (column, value) in meta {
+            let key = self.headers.get(column);
+            let key = if key.is_none() {
+                    format!("Unknown{}", counter)
+                } else {
+                    key.unwrap().to_string()
+                };
+            res.insert(key.clone(), value.clone());
+        }
+        Some(res)
+    }
 //    pub fn get_mut(&mut self, id: &str) -> Option<&mut HashMap<FieldName,CellValue>>{
 //        self.map.get_mut(id)
 //    }

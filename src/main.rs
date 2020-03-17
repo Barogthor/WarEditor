@@ -40,9 +40,9 @@ fn format_slk(path: &str) -> String{
 }
 
 fn main() {
-    for (key, value) in std::env::vars() {
+//    for (key, value) in std::env::vars() {
 //        println!("{}: {}", key, value);
-    }
+//    }
     let now = Instant::now();
     let mut ini = DataIni::new();
     ini.merge(&format_data(PROFILE_ITEM_FUNC));
@@ -76,7 +76,7 @@ fn main() {
     ini.merge(&format_data(PROFILE_MISC_DATA));
     ini.merge(&format_data(PROFILE_AIEDITOR_DATA));
     ini.fit();
-    ini.debug();
+//    ini.debug();
     let unit_meta = SLKData::load(&format_slk(SLK_UNIT_META_DATA));
     let doodad_meta = SLKData::load(&format_slk(SLK_DOODAD_META_DATA));
     let destructable_meta = SLKData::load(&format_slk(SLK_DESTRUCTABLE_META_DATA));
@@ -97,6 +97,9 @@ fn main() {
     let doodad_effect_data = SLKData::load(&format_slk(SLK_DOODADS));
     let destructable_effect_data = SLKData::load(&format_slk(SLK_DESTRUCTABLE_DATA));
 
+    let hfoo = &String::from("hfoo");
+    println!("{:#?}", unit_data.headers());
+    println!("{:#?}", unit_data.get_formatted(hfoo));
 //    unit_data.debug();
 //    unit_meta.debug();
 
