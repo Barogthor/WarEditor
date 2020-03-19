@@ -4,6 +4,7 @@ use std::io::{BufRead, Cursor, Seek, SeekFrom};
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 
 use crate::map_data::binary_writer::BinaryWriter;
+use std::fs::File;
 
 pub struct BinaryReader{
     buffer: Cursor<Vec<u8>>,
