@@ -108,10 +108,10 @@ fn main() {
 //    let mut mpq = Archive::open("resources/sample_1/Test.w3x").unwrap();
     let  sample_1 = "resources/sample_1/Test.w3x".to_string();
     let  sample_2 = "resources/sample_2/Remake1 - Copie.w3x".to_string();
-    let the_death_sheep = "resources/Scenario/(1)the_death_sheep.w3m".to_string();
-    let harrow = "resources/Scenario/(2)harrow.w3m".to_string();
-    let circumvention = "resources/Scenario/(2)circumvention.w3x".to_string();
-    let azure_tower_defense = "resources/Scenario/(8)azure_tower_defense.w3x".to_string();
+    let the_death_sheep = "resources/Scenario/(1)TheDeathSheep.w3m".to_string();
+    let harrow = "resources/Scenario/(2)Harrow.w3m".to_string();
+    let circumvention = "resources/Scenario/(2)Circumvention.w3x".to_string();
+    let azure_tower_defense = "resources/Scenario/(8)AzureTowerDefense.w3x".to_string();
     let map = Map::open(circumvention);
 //    println!("size rgba: {}",size_of_val(&vec![0u8,0u8,0u8,0u8][0..]));
 //    println!("{:X}, {:X}", true as u8, false as u8);
