@@ -52,3 +52,4 @@ pub mod triggers_names_file;
 pub mod map;
 pub mod slk_datas;
 pub mod data_ini;
+pub mod doodad_map;

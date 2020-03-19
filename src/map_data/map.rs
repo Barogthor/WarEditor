@@ -13,6 +13,7 @@ use crate::map_data::sound_file::SoundFile;
 use crate::map_data::trigger_string_file::TriggerStringFile;
 use crate::map_data::triggers_names_file::TriggersNameFile;
 use crate::map_data::w3i_file::W3iFile;
+use crate::map_data::doodad_map::EnvironnementObjectMap;
 
 pub struct Map{
     path: String,
@@ -26,6 +27,7 @@ pub struct Map{
     sounds: SoundFile,
     strings: TriggerStringFile,
     custom_scripts: CustomTextTriggerFile,
+    destructable_map: EnvironnementObjectMap,
 //    triggers: TriggersNameFile,
 //    import_listing: ImportFile,
 }
@@ -56,6 +58,8 @@ impl Map {
 //        trigstrs.debug();
         let triggers_ct = CustomTextTriggerFile::read_file(&mut map);
 //        triggers_ct.debug();
+        let destructable_map = EnvironnementObjectMap::open_file(&mut map);
+//        triggers_ct.debug();
 
         Self{
             path,
@@ -69,6 +73,7 @@ impl Map {
             sounds,
             strings: trigstrs,
             custom_scripts: triggers_ct,
+            destructable_map
 //            import_listing: ()
         }
     }

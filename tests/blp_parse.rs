@@ -14,7 +14,7 @@ mod blp_parse {
         file.read_to_end(&mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer.to_owned());
         let blp = reader.read::<BLP>();
-        println!("{:?}", s);
+//        println!("{:?}", s);
 
     }
 
