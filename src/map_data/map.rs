@@ -19,14 +19,14 @@ pub struct Map{
     path: String,
     infos: W3iFile,
     terrain: EnvironmentFile,
-    cameras: CameraFile,
-    regions: RegionFile,
+    cameras: Option<CameraFile>,
+    regions: Option<RegionFile>,
     minimap: MinimapFile,
     menu_minimap: MMPFile,
     shaders: ShadowMapFile,
-    sounds: SoundFile,
+    sounds: Option<SoundFile>,
     strings: TriggerStringFile,
-    custom_scripts: CustomTextTriggerFile,
+//    custom_scripts: CustomTextTriggerFile,
     destructable_map: EnvironnementObjectMap,
 //    triggers: TriggersNameFile,
 //    import_listing: ImportFile,
@@ -56,7 +56,7 @@ impl Map {
 //        mmap.debug();
         let trigstrs = TriggerStringFile::read_file(&mut map);
 //        trigstrs.debug();
-        let triggers_ct = CustomTextTriggerFile::read_file(&mut map);
+//        let triggers_ct = CustomTextTriggerFile::read_file(&mut map);
 //        triggers_ct.debug();
         let destructable_map = EnvironnementObjectMap::open_file(&mut map);
 //        triggers_ct.debug();
@@ -72,7 +72,7 @@ impl Map {
             shaders,
             sounds,
             strings: trigstrs,
-            custom_scripts: triggers_ct,
+//            custom_scripts: triggers_ct,
             destructable_map
 //            import_listing: ()
         }

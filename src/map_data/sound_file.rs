@@ -106,14 +106,20 @@ pub struct SoundFile {
 }
 
 impl SoundFile {
-    pub fn read_file(mpq: &mut Archive) -> Self{
-        let file = mpq.open_file(MAP_SOUNDS).unwrap();
+    pub fn read_file(mpq: &mut Archive) -> Option<Self>{
+        let file = mpq.open_file(MAP_SOUNDS);
 
-        let mut buffer: Vec<u8> = vec![0; file.size() as usize];
+        match file{
+            Ok(file) => {
+                let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-        file.read(mpq, &mut buffer).unwrap();
-        let mut reader = BinaryReader::new(buffer);
-        reader.read::<SoundFile>()
+                file.read(mpq, &mut buffer).unwrap();
+                let mut reader = BinaryReader::new(buffer);
+                Some(reader.read::<SoundFile>())
+            }
+            _ => None
+        }
+
     }
     pub fn debug(&self){
         println!("{:#?}",self);
