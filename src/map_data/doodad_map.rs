@@ -2,16 +2,26 @@ use std::ffi::CString;
 use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
 use crate::map_data::binary_writer::BinaryWriter;
 use mpq::Archive;
-use crate::globals::MAP_TERRAIN_DOODADS;
-use crate::map_data::doodad_map::DestructableFlag::{InvisibleNonSolid, VisibleNonSolid, VisibleSolid};
+use crate::globals::{MAP_TERRAIN_DOODADS, GameVersion};
+use crate::map_data::doodad_map::DestructableFlag::{InvisibleNonSolid, VisibleNonSolid, VisibleSolid, Unnamed};
+use crate::globals::GameVersion::{RoC, TFT};
 
 pub type Radian = f32;
+
+fn to_game_version(value: u32) -> GameVersion{
+    match value{
+        7 => RoC,
+        8 => TFT,
+        _ => panic!("Unknown or unsupported game version '{}'", value)
+    }
+}
 
 #[derive(PartialOrd, PartialEq, Clone)]
 pub enum DestructableFlag {
     InvisibleNonSolid,
     VisibleNonSolid,
     VisibleSolid,
+    Unnamed(u8)
 }
 
 impl DestructableFlag {
@@ -20,7 +30,8 @@ impl DestructableFlag {
             0 => (InvisibleNonSolid),
             1 => (VisibleNonSolid),
             2 => (VisibleSolid),
-            _ => panic!("Unknown Destructable flag")
+            _ => Unnamed(value)
+//            _ => panic!("Unknown destructable flag {}", value)
         }
     }
 }
@@ -28,7 +39,7 @@ impl DestructableFlag {
 struct Item(CString, u32);
 
 struct Destructable {
-    model_id: CString,
+    model_id: String,
     variation: u32,
     coord_x: f32,
     coord_y: f32,
@@ -44,7 +55,7 @@ struct Destructable {
 
 impl BinaryConverter for Destructable{
     fn read(reader: &mut BinaryReader) -> Self {
-        let model_id = reader.read_string_sized(4);
+        let model_id = String::from_utf8(reader.read_bytes(4)).unwrap();
         let variation = reader.read_u32();
         let coord_x = reader.read_f32();
         let coord_y = reader.read_f32();
@@ -56,6 +67,11 @@ impl BinaryConverter for Destructable{
         let flags = reader.read_u8();
         let flags = DestructableFlag::from(flags);
         let life = reader.read_u8();
+        let drop_table_pointer = reader.read_i32();
+        let count_drop_set = reader.read_u32();
+        for i in 0..count_drop_set{
+            reader.skip(8);
+        }
         let in_editor_id = reader.read_u32();
         Destructable{
             model_id,
@@ -105,8 +121,9 @@ impl BinaryConverter for Doodad{
 }
 
 pub struct EnvironnementObjectMap {
+//    id: u32,
     id: CString,
-    version: u32,
+    version: GameVersion,
     subversion: u32,
     destructables: Vec<Destructable>,
     doodad_version: u32,
@@ -118,7 +135,7 @@ impl EnvironnementObjectMap {
     pub fn open_file(mpq: &mut Archive) -> Self{
         let file = mpq.open_file(MAP_TERRAIN_DOODADS).unwrap();
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
-
+        
         file.read(mpq, &mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer);
         reader.read::<EnvironnementObjectMap>()
@@ -128,7 +145,10 @@ impl EnvironnementObjectMap {
 impl BinaryConverter for EnvironnementObjectMap {
     fn read(reader: &mut BinaryReader) -> Self {
         let id = reader.read_string_sized(4);
+//        let id = String::from_utf8(reader.read_bytes(4)).unwrap();
+//        let id = reader.read_u32();
         let version = reader.read_u32();
+        let version = to_game_version(version);
         let subversion = reader.read_u32();
         let count_destructables = reader.read_u32();
         let destructables = reader.read_vec::<Destructable>(count_destructables as usize);
