@@ -1,10 +1,10 @@
 use std::ffi::CString;
-use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
+use crate::map_data::binary_reader::{BinaryConverter, BinaryReader, BinaryConverterVersion};
 use crate::map_data::binary_writer::BinaryWriter;
 use mpq::Archive;
 use crate::globals::{MAP_TERRAIN_DOODADS, GameVersion};
 use crate::map_data::doodad_map::DestructableFlag::{InvisibleNonSolid, VisibleNonSolid, VisibleSolid, Unnamed};
-use crate::globals::GameVersion::{RoC, TFT};
+use crate::globals::GameVersion::{RoC, TFT, TFT131};
 
 pub type Radian = f32;
 
@@ -53,8 +53,8 @@ struct Destructable {
     in_editor_id: u32
 }
 
-impl BinaryConverter for Destructable{
-    fn read(reader: &mut BinaryReader) -> Self {
+impl BinaryConverterVersion for Destructable{
+    fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> Self {
         let model_id = String::from_utf8(reader.read_bytes(4)).unwrap();
         let variation = reader.read_u32();
         let coord_x = reader.read_f32();
@@ -67,11 +67,18 @@ impl BinaryConverter for Destructable{
         let flags = reader.read_u8();
         let flags = DestructableFlag::from(flags);
         let life = reader.read_u8();
-        let drop_table_pointer = reader.read_i32();
-        let count_drop_set = reader.read_u32();
-        for i in 0..count_drop_set{
-            reader.skip(8);
-        }
+        //TODO drop set
+        match *game_version{
+            TFT | TFT131 => {
+                let drop_table_pointer = reader.read_i32();
+                let count_drop_set = reader.read_u32();
+                for i in 0..count_drop_set{
+                    reader.skip(8);
+                }
+            },
+            _ => ()
+        };
+
         let in_editor_id = reader.read_u32();
         Destructable{
             model_id,
@@ -89,7 +96,7 @@ impl BinaryConverter for Destructable{
         }
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write_version(reader: &mut BinaryWriter, game_version: &GameVersion) -> Self {
         unimplemented!()
     }
 }
@@ -151,7 +158,7 @@ impl BinaryConverter for EnvironnementObjectMap {
         let version = to_game_version(version);
         let subversion = reader.read_u32();
         let count_destructables = reader.read_u32();
-        let destructables = reader.read_vec::<Destructable>(count_destructables as usize);
+        let destructables = reader.read_vec_version::<Destructable>(count_destructables as usize, &version);
         let doodad_version = reader.read_u32();
         let count_doodads = reader.read_u32();
         let doodads = reader.read_vec::<Doodad>(count_doodads as usize);
