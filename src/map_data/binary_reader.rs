@@ -5,6 +5,7 @@ use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 
 use crate::map_data::binary_writer::BinaryWriter;
 use std::fs::File;
+use crate::globals::GameVersion;
 
 pub struct BinaryReader{
     buffer: Cursor<Vec<u8>>,
@@ -83,10 +84,22 @@ impl BinaryReader{
         T::read(self)
     }
 
+    pub fn read_version<T: BinaryConverterVersion>(&mut self, game_version: &GameVersion) -> T{
+        T::read_version(self, game_version)
+    }
+
     pub fn read_vec<T: BinaryConverter>(&mut self, size: usize) -> Vec<T>{
         let mut vec: Vec<T> = vec![];
         for _i in 0..size{
             vec.push(T::read(self));
+        }
+        vec
+    }
+
+    pub fn read_vec_version<T: BinaryConverterVersion>(&mut self, size: usize, game_version: &GameVersion) -> Vec<T>{
+        let mut vec: Vec<T> = vec![];
+        for _i in 0..size{
+            vec.push(T::read_version(self, game_version));
         }
         vec
     }
@@ -155,4 +168,9 @@ impl BinaryReader{
 pub trait BinaryConverter{
     fn read(reader: &mut BinaryReader) -> Self;
     fn write(&self, writer: &mut BinaryWriter);
+}
+
+pub trait BinaryConverterVersion{
+    fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> Self;
+    fn write_version(reader: &mut BinaryWriter, game_version: &GameVersion) -> Self;
 }
