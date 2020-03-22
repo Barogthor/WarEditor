@@ -3,3 +3,4 @@
 **/*.rs.bk
 resources/**/*
 specs/*
+*.log

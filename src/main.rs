@@ -32,14 +32,20 @@ fn elapsed_time(instant: &Instant) {
     println!("Elapsed time: {}:{}:{}::{}", hours, mins, seconds, millis);
 }
 
-fn format_data(path: &str) -> String{
+fn _format_data(path: &str) -> String{
     format!("resources/datas/{}",path)
 }
-fn format_slk(path: &str) -> String{
+fn _format_slk(path: &str) -> String{
     format!("resources/slk/{}",path)
 }
 
 fn main() {
+    init_logging();
+    info!("hello world logging");
+    warn!("hello world logging");
+    error!("hello world logging");
+    debug!("hello world logging");
+    trace!("hello world logging");
 //    for (key, value) in std::env::vars() {
 //        println!("{}: {}", key, value);
 //    }
@@ -112,7 +118,7 @@ fn main() {
     let harrow = "resources/Scenario/(2)Harrow.w3m".to_string();
     let circumvention = "resources/Scenario/(2)Circumvention.w3x".to_string();
     let azure_tower_defense = "resources/Scenario/(8)AzureTowerDefense.w3x".to_string();
-    let map = Map::open(circumvention);
+    let _map = Map::open(circumvention);
 //    println!("size rgba: {}",size_of_val(&vec![0u8,0u8,0u8,0u8][0..]));
 //    println!("{:X}, {:X}", true as u8, false as u8);
 //    let rgba = RGBA::by_value(0xFF5C15FF);

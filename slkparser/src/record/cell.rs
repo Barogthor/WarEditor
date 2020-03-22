@@ -89,8 +89,3 @@ impl Cell {
         cell
     }
 }
-
-fn is_numeric(string: &str) -> bool{
-    let try_parse = string.parse::<f64>();
-    try_parse.is_ok()
-}
