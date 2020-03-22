@@ -1,27 +1,17 @@
 use std::collections::HashMap;
-use std::mem::size_of_val;
 use std::thread::sleep;
 use std::time;
 use std::time::Instant;
+
+use log::{debug, info, trace, warn, error};
 
 use mpq::Archive;
 
 use war_editor::map_data::slk_datas::SLKData;
 use war_editor::globals::{PROFILE_AIEDITOR_DATA, PROFILE_CAMPAIGN_ABILITY_FUNC, PROFILE_CAMPAIGN_UNIT_FUNC, PROFILE_CAMPAIGN_UPGRADE_FUNC, PROFILE_COMMON_ABILITY_FUNC, PROFILE_HUMAN_ABILITY_FUNC, PROFILE_HUMAN_UNIT_FUNC, PROFILE_HUMAN_UPGRADE_FUNC, PROFILE_ITEM_ABILITY_FUNC, PROFILE_ITEM_FUNC, PROFILE_MISC_DATA, PROFILE_NEUTRAL_ABILITY_FUNC, PROFILE_NEUTRAL_UNIT_FUNC, PROFILE_NEUTRAL_UPGRADE_FUNC, PROFILE_NIGHT_ELF_ABILITY_FUNC, PROFILE_NIGHT_ELF_UNIT_FUNC, PROFILE_NIGHT_ELF_UPGRADE_FUNC, PROFILE_ORC_ABILITY_FUNC, PROFILE_ORC_UNIT_FUNC, PROFILE_ORC_UPGRADE_FUNC, PROFILE_UNDEAD_ABILITY_FUNC, PROFILE_UNDEAD_UNIT_FUNC, PROFILE_UNDEAD_UPGRADE_FUNC, PROFILE_UNIT_EDITOR_DATA, PROFILE_WAR3SKINS, PROFILE_WORLD_EDIT_DATA, PROFILE_WORLD_EDIT_GAME_STRINGS, PROFILE_WORLD_EDIT_LAYOUT, PROFILE_WORLD_EDIT_STRINGS, SLK_ABILITY_BUFF_META_DATA, SLK_ABILITY_DATA, SLK_ABILITY_META_DATA, SLK_DESTRUCTABLE_DATA, SLK_DESTRUCTABLE_META_DATA, SLK_DOODAD_META_DATA, SLK_DOODADS, SLK_MISC_META_DATA, SLK_SKIN_META_DATA, SLK_UNIT_ABILITIES, SLK_UNIT_BALANCE, SLK_UNIT_COMBAT_SOUNDS, SLK_UNIT_DATA, SLK_UNIT_META_DATA, SLK_UNIT_UI, SLK_UNIT_WEAPONS, SLK_UPGRADE_DATA, SLK_UPGRADE_EFFECT_META_DATA, SLK_UPGRADE_META_DATA};
-use war_editor::map_data::camera_file::CameraFile;
-use war_editor::map_data::concat_path;
-use war_editor::map_data::custom_text_trigger_file::CustomTextTriggerFile;
-use war_editor::map_data::data_ini::DataIni;
-use war_editor::map_data::environment_file::EnvironmentFile;
 use war_editor::map_data::map::Map;
-use war_editor::map_data::minimap_file::MinimapFile;
-use war_editor::map_data::mmp_file::MMPFile;
-use war_editor::map_data::pathmap_file::PathMapFile;
-use war_editor::map_data::region_file::RegionFile;
-use war_editor::map_data::shadowmap_file::ShadowMapFile;
-use war_editor::map_data::sound_file::SoundFile;
-use war_editor::map_data::trigger_string_file::TriggerStringFile;
-use war_editor::map_data::w3i_file::W3iFile;
+use war_editor::init_logging;
+
 
 fn elapsed_time(instant: &Instant) {
     let elasped = instant.elapsed().as_millis();

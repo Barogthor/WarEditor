@@ -8,18 +8,21 @@ pub fn init_logging(){
         // Perform allocation-free log formatting
         .format(|out, message, record| {
             let colors = ColoredLevelConfig::new()
-                // use builder methods
-                .info(Color::Yellow)
-                .error(Color::Red)
-                .warn(Color::Magenta)
-                .trace(Color::White)
-                .debug(Color::Blue);
+                    .info(Color::Yellow)
+                    .error(Color::Red)
+                    .warn(Color::Magenta)
+                    .trace(Color::White)
+                    .debug(Color::Blue);
             out.finish(format_args!(
-                "[{}][{}] {}",
-                record.target(),
+                "{color_line}[{target}][{level}{color_line}]\x1B[0m {message}",
+                color_line = format_args!(
+                    "\x1B[{}m",
+                    colors.get_color(&record.level()).to_fg_str()
+                ),
+                target = record.target(),
                 // record.level(),
-                colors.color(record.level()),
-                message
+                level = colors.color(record.level()),
+                message = message
             ))
         })
         // Add blanket level filter -
