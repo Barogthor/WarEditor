@@ -5,6 +5,7 @@ use mpq::Archive;
 use crate::globals::{MAP_TERRAIN_DOODADS, GameVersion};
 use crate::map_data::doodad_map::DestructableFlag::{InvisibleNonSolid, VisibleNonSolid, VisibleSolid, Unnamed};
 use crate::globals::GameVersion::{RoC, TFT, TFT131};
+use crate::map_data::unit_map::DropItem;
 
 pub type Radian = f32;
 
@@ -28,8 +29,6 @@ impl DestructableFlag {
     }
 }
 
-struct Item(CString, u32);
-
 struct Destructable {
     model_id: String,
     variation: u32,
@@ -40,9 +39,11 @@ struct Destructable {
     scale_x: f32,
     scale_y: f32,
     scale_z: f32,
-    flags: DestructableFlag,
+    flags: u8,
     life: u8,
-    entity_id: u32
+    drop_table_pointer: i32,
+    drop_item_set: Vec<DropItem>,
+    creation_id: u32
 }
 
 impl BinaryConverterVersion for Destructable{
@@ -57,21 +58,18 @@ impl BinaryConverterVersion for Destructable{
         let scale_y = reader.read_f32();
         let scale_z = reader.read_f32();
         let flags = reader.read_u8();
-        let flags = DestructableFlag::from(flags);
         let life = reader.read_u8();
-        //TODO drop set
-        match *game_version{
+        let (drop_table_pointer, drop_item_set) = match *game_version{
             TFT | TFT131 => {
                 let drop_table_pointer = reader.read_i32();
                 let count_drop_set = reader.read_u32();
-                for i in 0..count_drop_set{
-                    reader.skip(8);
-                }
+                let drop_item_set = reader.read_vec_version::<DropItem>(count_drop_set as usize, game_version);
+                (drop_table_pointer, drop_item_set)
             },
-            _ => ()
+            _ => (-1, vec![])
         };
 
-        let in_editor_id = reader.read_u32();
+        let creation_id = reader.read_u32();
         Destructable{
             model_id,
             variation,
@@ -84,7 +82,9 @@ impl BinaryConverterVersion for Destructable{
             scale_z,
             flags,
             life,
-            entity_id: in_editor_id
+            drop_table_pointer,
+            drop_item_set,
+            creation_id
         }
     }
 
@@ -154,6 +154,7 @@ impl BinaryConverter for EnvironnementObjectMap {
         let doodad_version = reader.read_u32();
         let count_doodads = reader.read_u32();
         let doodads = reader.read_vec::<Doodad>(count_doodads as usize);
+        assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_TERRAIN_DOODADS, reader.size() - reader.pos() as usize);
         EnvironnementObjectMap {
             id,
             version,

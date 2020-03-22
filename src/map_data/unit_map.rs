@@ -7,7 +7,10 @@ use crate::map_data::binary_writer::BinaryWriter;
 use crate::globals::GameVersion::{RoC, TFT};
 use crate::map_data::unit_map::RandomUnitItemFlag::{Neutral, RandomFromTableGroup, RandomFromCustomTable};
 
-struct DropItem(String,f32);
+const RANDOM_ITEM_ID: &str = "iDNR";
+const RANDOM_UNIT_ID: &str = "uDNR";
+
+pub struct DropItem(String,f32);
 impl BinaryConverterVersion for DropItem{
     fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> Self {
         let item_id = reader.read_string_utf8(4);
@@ -125,13 +128,12 @@ struct UnitItem{
     random_type: RandomUnitItemFlag,
     color: i32,
     waygate_region_id: i32,
-    entity_id: u32,
+    creation_id: u32,
 }
 
 impl BinaryConverterVersion for UnitItem{
     fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> Self {
         let model_id = reader.read_string_utf8(4);
-        let is_random = model_id.eq(&"iDNR".to_string()) || model_id.eq(&"uDNR".to_string());
         let variation = reader.read_u32();
         let coord_x = reader.read_f32();
         let coord_y = reader.read_f32();
@@ -168,7 +170,7 @@ impl BinaryConverterVersion for UnitItem{
 
         let color = reader.read_i32();
         let waygate_region_id = reader.read_i32();
-        let entity_id = reader.read_u32();
+        let creation_id = reader.read_u32();
         Self{
             model_id,
             variation,
@@ -197,7 +199,7 @@ impl BinaryConverterVersion for UnitItem{
             random_type,
             color,
             waygate_region_id,
-            entity_id
+            creation_id
         }
 
     }
@@ -237,7 +239,7 @@ impl BinaryConverter for UnitItemMap{
         let subversion = reader.read_u32();
         let count_units_items = reader.read_u32();
         let units_items = reader.read_vec_version::<UnitItem>(count_units_items as usize, &version);
-        assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF missing {} bytes", MAP_TERRAIN_UNITS, reader.size() - reader.pos() as usize);
+        assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_TERRAIN_UNITS, reader.size() - reader.pos() as usize);
         Self{
             id,
             version,
