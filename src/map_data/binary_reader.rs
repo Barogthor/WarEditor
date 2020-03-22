@@ -68,6 +68,18 @@ impl BinaryReader{
         result_buf.pop();
         CString::new(result_buf).unwrap()
     }
+    pub fn read_c_string_sized(&mut self, size: usize) -> CString{
+        let v = self.read_bytes(size);
+//        println!("pos: {}",self.pos());
+        CString::new(v).unwrap()
+    }
+
+    pub fn read_string_utf8(&mut self, bytes_to_read: usize) -> String{
+        let v = self.read_bytes(bytes_to_read);
+        String::from_utf8(v).expect(&format!("Error around byte : {}", self.pos()-(bytes_to_read as u64)))
+    }
+
+
     pub fn read_chars(&mut self, size: usize) -> Vec<char>{
         let mut chars = Vec::new();
         for _i in 0..size{
@@ -145,13 +157,6 @@ impl BinaryReader{
         }
         vec
     }
-
-    pub fn read_string_sized(&mut self, size: usize) -> CString{
-        let v = self.read_bytes(size);
-//        println!("pos: {}",self.pos());
-        CString::new(v).unwrap()
-    }
-
     pub fn seek_begin(&mut self){
         &self.buffer.seek(SeekFrom::Start(0));
     }
@@ -172,5 +177,5 @@ pub trait BinaryConverter{
 
 pub trait BinaryConverterVersion{
     fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> Self;
-    fn write_version(reader: &mut BinaryWriter, game_version: &GameVersion) -> Self;
+    fn write_version(writer: &mut BinaryWriter, game_version: &GameVersion) -> Self;
 }

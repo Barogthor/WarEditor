@@ -53,3 +53,4 @@ pub mod map;
 pub mod slk_datas;
 pub mod data_ini;
 pub mod doodad_map;
+pub mod unit_map;

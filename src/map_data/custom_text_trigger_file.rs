@@ -43,7 +43,7 @@ impl BinaryConverter for CustomTextTriggerFile {
                 global_comment = reader.read_c_string();
                 let s = reader.read_u32() as usize;
                 println!("pos: {},  length: {}", reader.pos(), s);
-                global_script = reader.read_string_sized(s-1);
+                global_script = reader.read_c_string_sized(s-1);
                 reader.skip(1);
                 count_triggers = reader.read_u32() as usize;
                 println!("count: {}, bufsize: {}",count_triggers, reader.size());
@@ -51,7 +51,7 @@ impl BinaryConverter for CustomTextTriggerFile {
                     let length = reader.read_u32() as usize;
                     if length == 0 { continue; }
                     println!("i: {} || left: {},  length: {}", i, (reader.size() - reader.pos() as usize), length);
-                    text_triggers.push(reader.read_string_sized(length-1));
+                    text_triggers.push(reader.read_c_string_sized(length-1));
                     reader.skip(1);
                 }
             }
@@ -59,7 +59,7 @@ impl BinaryConverter for CustomTextTriggerFile {
                 count_triggers = reader.read_u32() as usize;
                 for _ in 0..count_triggers{
                     let s = reader.read_u32() as usize;
-                    text_triggers.push(reader.read_string_sized(s));
+                    text_triggers.push(reader.read_c_string_sized(s));
                 }
             },
         }

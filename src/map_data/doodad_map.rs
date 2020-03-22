@@ -8,14 +8,6 @@ use crate::globals::GameVersion::{RoC, TFT, TFT131};
 
 pub type Radian = f32;
 
-fn to_game_version(value: u32) -> GameVersion{
-    match value{
-        7 => RoC,
-        8 => TFT,
-        _ => panic!("Unknown or unsupported game version '{}'", value)
-    }
-}
-
 #[derive(PartialOrd, PartialEq, Clone)]
 pub enum DestructableFlag {
     InvisibleNonSolid,
@@ -50,7 +42,7 @@ struct Destructable {
     scale_z: f32,
     flags: DestructableFlag,
     life: u8,
-    in_editor_id: u32
+    entity_id: u32
 }
 
 impl BinaryConverterVersion for Destructable{
@@ -92,7 +84,7 @@ impl BinaryConverterVersion for Destructable{
             scale_z,
             flags,
             life,
-            in_editor_id
+            entity_id: in_editor_id
         }
     }
 
@@ -110,7 +102,7 @@ struct Doodad{
 
 impl BinaryConverter for Doodad{
     fn read(reader: &mut BinaryReader) -> Self {
-        let model_id = reader.read_string_sized(4);
+        let model_id = reader.read_c_string_sized(4);
         let coord_x = reader.read_f32();
         let coord_y = reader.read_f32();
         let coord_z = reader.read_f32();
@@ -151,7 +143,7 @@ impl EnvironnementObjectMap {
 
 impl BinaryConverter for EnvironnementObjectMap {
     fn read(reader: &mut BinaryReader) -> Self {
-        let id = reader.read_string_sized(4);
+        let id = reader.read_c_string_sized(4);
 //        let id = String::from_utf8(reader.read_bytes(4)).unwrap();
 //        let id = reader.read_u32();
         let version = reader.read_u32();
@@ -174,5 +166,13 @@ impl BinaryConverter for EnvironnementObjectMap {
 
     fn write(&self, writer: &mut BinaryWriter) {
         unimplemented!()
+    }
+}
+
+fn to_game_version(value: u32) -> GameVersion{
+    match value{
+        7 => RoC,
+        8 => TFT,
+        _ => panic!("Unknown or unsupported game version '{}'", value)
     }
 }
