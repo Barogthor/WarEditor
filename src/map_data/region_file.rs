@@ -93,6 +93,7 @@ impl BinaryConverter for RegionFile{
         let version = reader.read_u32();
         let count_region = reader.read_u32() as usize;
         let regions = reader.read_vec::<Region>(count_region);
+        assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_REGIONS, reader.size() - reader.pos() as usize);
         RegionFile{
             version,
             regions

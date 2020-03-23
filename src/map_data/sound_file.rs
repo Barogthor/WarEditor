@@ -131,6 +131,7 @@ impl BinaryConverter for SoundFile {
         let version = reader.read_u32();
         let count_sound = reader.read_u32() as usize;
         let sounds = reader.read_vec::<Sound>(count_sound);
+        assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_SOUNDS, reader.size() - reader.pos() as usize);
         SoundFile {
             version,
             sounds

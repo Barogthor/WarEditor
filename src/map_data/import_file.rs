@@ -39,6 +39,8 @@ impl BinaryConverter for ImportFile {
             let path = reader.read_c_string();
             files.push((path_type,path));
         }
+
+        assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_IMPORT_LIST, reader.size() - reader.pos() as usize);
         ImportFile {
             version,
             files

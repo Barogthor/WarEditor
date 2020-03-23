@@ -76,7 +76,7 @@ impl BinaryConverter for PathMapFile {
 //            println!("{:x}",flags);
             pathing.push(Path{ flags});
         }
-//        println!("pos: {}, buffer: {}", reader.pos(), reader.size());
+        assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_PATH_MAP, reader.size() - reader.pos() as usize);
         PathMapFile {
             id,
             version,
