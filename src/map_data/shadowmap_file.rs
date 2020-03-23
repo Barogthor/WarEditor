@@ -16,24 +16,12 @@ impl ShadowMapFile {
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
         file.read(mpq, &mut buffer).unwrap();
-        let mut reader = BinaryReader::new(buffer);
-        reader.read::<ShadowMapFile>()
+        Self{
+            shaders: buffer
+        }
+
     }
     pub fn debug(&self){
         println!("{:#?}",self);
-    }
-}
-
-impl BinaryConverter for ShadowMapFile {
-    fn read(reader: &mut BinaryReader) -> Self {
-        let count_shader = reader.read_u32() as usize;
-        let shaders = reader.read_bytes(count_shader);
-        ShadowMapFile {
-            shaders
-        }
-    }
-
-    fn write(&self, writer: &mut BinaryWriter) {
-        unimplemented!()
     }
 }
