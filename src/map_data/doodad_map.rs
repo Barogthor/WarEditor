@@ -131,7 +131,7 @@ pub struct EnvironnementObjectMap {
 }
 
 impl EnvironnementObjectMap {
-    pub fn open_file(mpq: &mut Archive) -> Self{
+    pub fn read_file(mpq: &mut Archive) -> Self{
         let file = mpq.open_file(MAP_TERRAIN_DOODADS).unwrap();
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
         

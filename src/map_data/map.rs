@@ -22,7 +22,7 @@ pub struct Map{
     terrain: EnvironmentFile,
     cameras: Option<CameraFile>,
     regions: Option<RegionFile>,
-    minimap: MinimapFile,
+//    minimap: MinimapFile,
     menu_minimap: MMPFile,
     shaders: ShadowMapFile,
     sounds: Option<SoundFile>,
@@ -31,7 +31,7 @@ pub struct Map{
     destructable_map: EnvironnementObjectMap,
     unit_item_map: UnitItemMap,
 //    triggers: TriggersNameFile,
-//    import_listing: ImportFile,
+    import_listing: Option<ImportFile>,
 }
 
 impl Map {
@@ -54,14 +54,16 @@ impl Map {
 //        shaders.debug();
         let environment = EnvironmentFile::read_file(&mut map);
 //        environment.debug();
-        let mmap = MinimapFile::read_file(&mut map);
+//        let mmap = MinimapFile::read_file(&mut map);
 //        mmap.debug();
         let trigstrs = TriggerStringFile::read_file(&mut map);
 //        trigstrs.debug();
         let triggers_ct = CustomTextTriggerFile::read_file(&mut map);
         triggers_ct.debug();
-        let destructable_map = EnvironnementObjectMap::open_file(&mut map);
-        let unit_item_map = UnitItemMap::open_file(&mut map);
+        let destructable_map = EnvironnementObjectMap::read_file(&mut map);
+        let unit_item_map = UnitItemMap::read_file(&mut map);
+        let import_listing = ImportFile::read_file(&mut map);
+
 
         Self{
             path,
@@ -69,15 +71,15 @@ impl Map {
             terrain: environment,
             cameras,
             regions,
-            minimap: mmap,
+//            minimap: mmap,
             menu_minimap: mmp,
             shaders,
             sounds,
             strings: trigstrs,
             custom_scripts: triggers_ct,
             destructable_map,
-            unit_item_map
-//            import_listing: ()
+            unit_item_map,
+            import_listing,
         }
     }
 }
