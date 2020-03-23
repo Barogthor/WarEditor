@@ -10,11 +10,11 @@ use crate::map_data::unit_map::RandomUnitItemFlag::{Neutral, RandomFromTableGrou
 const RANDOM_ITEM_ID: &str = "iDNR";
 const RANDOM_UNIT_ID: &str = "uDNR";
 
-pub struct DropItem(String,f32);
+pub struct DropItem(String,u32);
 impl BinaryConverterVersion for DropItem{
     fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> Self {
         let item_id = reader.read_string_utf8(4);
-        let drop_rate = reader.read_f32();
+        let drop_rate = reader.read_u32();
         Self(item_id, drop_rate)
     }
 
@@ -129,7 +129,7 @@ struct UnitItem{
     unk2: u8,
     hp: i32,
     mana: i32,
-    drop_item_set: Vec<DropItem>,
+    drop_item_sets: Vec<Vec<DropItem>>,
     gold_amount: i32,
     acquisition_range: f32,
     strength: i32,
@@ -164,8 +164,15 @@ impl BinaryConverterVersion for UnitItem{
         let map_drop_table_pointer = if game_version.is_tft() {
             reader.read_i32()
         } else { -1 };
-        let count_random_drop = reader.read_u32();
-        let drop_item_set = reader.read_vec_version(count_random_drop as usize, &game_version);
+        let count_random_drop_sets = reader.read_u32();
+        let mut drop_item_sets = vec![];
+        if count_random_drop_sets > 0{
+            for _ in 0..count_random_drop_sets {
+                let count_item_set = reader.read_u32();
+                let vi =reader.read_vec_version::<DropItem>(count_item_set as usize, &game_version);
+                drop_item_sets.push(vi);
+            }
+        }
         let gold_amount = reader.read_i32();
         let acquisition_range = reader.read_f32();
         let level = reader.read_u32();
@@ -200,7 +207,7 @@ impl BinaryConverterVersion for UnitItem{
             unk2,
             hp,
             mana,
-            drop_item_set,
+            drop_item_sets,
             gold_amount,
             acquisition_range,
             strength,
