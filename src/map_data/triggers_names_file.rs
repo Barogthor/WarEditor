@@ -1,31 +1,35 @@
 use std::ffi::CString;
 
-use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
+use crate::map_data::binary_reader::{BinaryConverter, BinaryConverterVersion, BinaryReader};
 use crate::map_data::binary_writer::BinaryWriter;
 use crate::map_data::triggers_names_file::category::TriggerCategory;
 use std::fs::File;
 use crate::map_data::concat_path;
 use std::io::Read;
+use crate::globals::GameVersion;
+use crate::globals::GameVersion::{RoC, TFT};
 
 mod function{
     use super::*;
 
     #[derive(Debug, Default)]
     pub struct FunctionDefinition {
-        version: Version,
         ftype: FunctionType,
         name: CString,
         enabled: bool,
     }
 
-    impl FunctionDefinition {
-        pub fn read_definition(reader: &mut BinaryReader, version: Version) -> Self{
+    impl BinaryConverterVersion for FunctionDefinition {
+        fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> Self {
             let mut def = Self::default();
-            def.version = version;
-            def.ftype = FunctionType::from(reader.read_u32()).unwrap();
+            def.ftype = FunctionType::from(reader.read_u32());
             def.name = reader.read_c_string();
             def.enabled = reader.read_u32() == 1;
             def
+        }
+
+        fn write_version(writer: &mut BinaryWriter, game_version: &GameVersion) -> Self {
+            unimplemented!()
         }
     }
 
@@ -35,20 +39,18 @@ mod function{
         Condition,
         Action
     }
-
     impl Default for FunctionType{
         fn default() -> Self {
             FunctionType::Action
         }
     }
-
     impl FunctionType{
-        pub fn from(n: u32) -> Option<FunctionType> {
+        pub fn from(n: u32) -> FunctionType {
             match n{
-                0 => Some(FunctionType::Event),
-                1 => Some(FunctionType::Condition),
-                2 => Some(FunctionType::Action),
-                _ => None
+                0 => (FunctionType::Event),
+                1 => (FunctionType::Condition),
+                2 => (FunctionType::Action),
+                _ => panic!("Unknown function type {}",n)
             }
         }
     }
@@ -81,7 +83,6 @@ mod variable {
 
     #[derive(Debug, Default)]
     pub struct VariableDefinition {
-        version: Version,
         name: CString,
         var_type: CString,
         unknown: i32,
@@ -91,19 +92,23 @@ mod variable {
         init_value: CString,
     }
 
-    impl VariableDefinition{
-        pub fn read_definition(reader: &mut BinaryReader, version: Version) -> Self{
+    impl BinaryConverterVersion for VariableDefinition{
+        fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> Self {
             let mut def = Self::default();
-            def.version = version;
             def.name = reader.read_c_string();
             def.var_type = reader.read_c_string();
             def.unknown = reader.read_i32();
             def.is_array = reader.read_u32() == 1;
-            if version == Version::TFT {
+            def.initialized = reader.read_u32() == 1;
+            if game_version.is_tft() {
                 def.array_size = reader.read_u32();
             }
             def.init_value = reader.read_c_string();
             def
+        }
+
+        fn write_version(writer: &mut BinaryWriter, game_version: &GameVersion) -> Self {
+            unimplemented!()
         }
     }
 }
@@ -113,7 +118,6 @@ mod trigger {
 
     #[derive(Debug, Default)]
     pub struct TriggerDefinition {
-        version: Version,
         name: CString,
         description: CString,
         is_comment: bool,
@@ -125,13 +129,12 @@ mod trigger {
         ecas: Vec<FunctionDefinition>,
     }
 
-    impl TriggerDefinition{
-        pub fn read_definition(reader: &mut BinaryReader, version: Version) -> Self{
+    impl BinaryConverterVersion for TriggerDefinition{
+        fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> Self {
             let mut def = Self::default();
-            def.version = version;
             def.name = reader.read_c_string();
             def.description = reader.read_c_string();
-            if version == Version::TFT {
+            if game_version.is_tft() {
                 def.is_comment = reader.read_u32() != 0;
             }
             def.enabled = reader.read_u32() == 1;
@@ -142,14 +145,8 @@ mod trigger {
             let count_ecas = reader.read_u32();
             def
         }
-    }
 
-    impl BinaryConverter for TriggerDefinition{
-        fn read(reader: &mut BinaryReader) -> Self {
-            unimplemented!()
-        }
-
-        fn write(&self, writer: &mut BinaryWriter) {
+        fn write_version(writer: &mut BinaryWriter, game_version: &GameVersion) -> Self {
             unimplemented!()
         }
     }
@@ -160,19 +157,22 @@ mod category {
 
     #[derive(Debug, Default)]
     pub struct TriggerCategory {
-        version: Version,
         id: u32,
         name: CString,
         is_comment: bool,
     }
-    impl TriggerCategory{
-        pub fn read_definition(reader: &mut BinaryReader, version: Version) -> Self{
+    impl BinaryConverterVersion for TriggerCategory{
+        fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> Self {
             let mut def = Self::default();
-            def.version = version;
+
             def.id = reader.read_u32();
             def.name = reader.read_c_string();
-            if version == Version::TFT{ def.is_comment = reader.read_u32() == 1; }
+            if game_version.is_tft() { def.is_comment = reader.read_u32() == 1; }
             def
+        }
+
+        fn write_version(writer: &mut BinaryWriter, game_version: &GameVersion) -> Self {
+            unimplemented!()
         }
     }
 
@@ -181,7 +181,7 @@ mod category {
 #[derive(Debug, Default)]
 pub struct TriggersNameFile {
     id: String,
-    version: Version,
+    version: GameVersion,
     categories: Vec<TriggerCategory>,
     unknown: i32,
 }
@@ -204,7 +204,8 @@ impl BinaryConverter for TriggersNameFile {
     fn read(reader: &mut BinaryReader) -> Self {
         let mut def = Self::default();
         let id = String::from_utf8(reader.read_bytes(4)).unwrap();
-        let version = Version::from(reader.read_u32()).unwrap();
+        let version = reader.read_u32();
+        let version = to_game_version(version);
         let count_categories = reader.read_u32();
         let unknown = reader.read_i32();
         let count_vars = reader.read_u32();
@@ -225,23 +226,11 @@ impl BinaryConverter for TriggersNameFile {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Version{
-    RoC,
-    TFT
-}
 
-impl Default for Version{
-    fn default() -> Self {
-        Version::TFT
-    }
-}
-impl Version{
-    pub fn from(n: u32) -> Option<Version> {
-        match n{
-            4 => Some(Version::RoC),
-            7 => Some(Version::TFT),
-            _ => None
-        }
+fn to_game_version(value: u32) -> GameVersion{
+    match value{
+        4 => RoC,
+        7 => TFT,
+        _ => panic!("Unknown or unsupported game version '{}'", value)
     }
 }
