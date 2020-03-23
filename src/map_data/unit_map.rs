@@ -5,7 +5,7 @@ use mpq::Archive;
 use crate::map_data::binary_reader::{BinaryReader, BinaryConverter, BinaryConverterVersion};
 use crate::map_data::binary_writer::BinaryWriter;
 use crate::globals::GameVersion::{RoC, TFT};
-use crate::map_data::unit_map::RandomUnitItemFlag::{Neutral, RandomFromTableGroup, RandomFromCustomTable};
+use crate::map_data::unit_map::RandomUnitItemFlag::{Neutral, RandomFromTableGroup, RandomFromCustomTable, NotRandom};
 
 const RANDOM_ITEM_ID: &str = "iDNR";
 const RANDOM_UNIT_ID: &str = "uDNR";
@@ -70,10 +70,21 @@ enum RandomUnitItemFlag {
     Neutral(u32, u8),
     RandomFromTableGroup(i32, u32),
     RandomFromCustomTable(Vec<RandomUnit>),
+    NotRandom
 }
+
+impl RandomUnitItemFlag {
+    fn is_none(&self) -> bool {
+        match self{
+            NotRandom => true,
+            _ => false
+        }
+    }
+}
+
 impl BinaryConverterVersion for RandomUnitItemFlag {
     fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> Self {
-        let kind = reader.read_u32();
+        let kind = reader.read_i32();
         match kind{
             0 => {
                 let value = reader.read_u32();
@@ -91,7 +102,9 @@ impl BinaryConverterVersion for RandomUnitItemFlag {
                 let custom_group = reader.read_vec_version::<RandomUnit>(size_custom_group as usize, game_version);
                 RandomFromCustomTable(custom_group)
             },
-            _ => panic!("Unknown RandomUnitFlag type {}", kind)
+            _ => {
+                NotRandom
+            }
         }
     }
 
@@ -148,7 +161,7 @@ impl BinaryConverterVersion for UnitItem{
         let unk2 =  reader.read_u8();
         let hp =  reader.read_i32();
         let mana =  reader.read_i32();
-        let map_drop_table_pointer = if *game_version == TFT {
+        let map_drop_table_pointer = if game_version.is_tft() {
             reader.read_i32()
         } else { -1 };
         let count_random_drop = reader.read_u32();
@@ -156,7 +169,7 @@ impl BinaryConverterVersion for UnitItem{
         let gold_amount = reader.read_i32();
         let acquisition_range = reader.read_f32();
         let level = reader.read_u32();
-        let (strength, agility, intelligence) = if *game_version == TFT{
+        let (strength, agility, intelligence) = if game_version.is_tft(){
             let strength = reader.read_i32();
             let agility = reader.read_i32();
             let intelligence = reader.read_i32();
