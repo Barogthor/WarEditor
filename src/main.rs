@@ -108,8 +108,10 @@ fn main() {
     let harrow = "resources/Scenario/(2)Harrow.w3m".to_string();
     let circumvention = "resources/Scenario/(2)Circumvention.w3x".to_string();
     let azure_tower_defense = "resources/Scenario/(8)AzureTowerDefense.w3x".to_string();
-    // let _map = Map::open(circumvention);
-    let _map = Map::open(harrow);
+     let _map = Map::open(the_death_sheep);
+//     let _map = Map::open(azure_tower_defense);
+//     let _map = Map::open(circumvention);
+//    let _map = Map::open(harrow);
 //    println!("size rgba: {}",size_of_val(&vec![0u8,0u8,0u8,0u8][0..]));
 //    println!("{:X}, {:X}", true as u8, false as u8);
 //    let rgba = RGBA::by_value(0xFF5C15FF);

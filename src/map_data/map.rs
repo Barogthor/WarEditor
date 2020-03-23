@@ -27,7 +27,7 @@ pub struct Map{
     shaders: ShadowMapFile,
     sounds: Option<SoundFile>,
     strings: TriggerStringFile,
-//    custom_scripts: CustomTextTriggerFile,
+    custom_scripts: CustomTextTriggerFile,
     destructable_map: EnvironnementObjectMap,
     unit_item_map: UnitItemMap,
 //    triggers: TriggersNameFile,
@@ -58,8 +58,8 @@ impl Map {
 //        mmap.debug();
         let trigstrs = TriggerStringFile::read_file(&mut map);
 //        trigstrs.debug();
-//        let triggers_ct = CustomTextTriggerFile::read_file(&mut map);
-//        triggers_ct.debug();
+        let triggers_ct = CustomTextTriggerFile::read_file(&mut map);
+        triggers_ct.debug();
         let destructable_map = EnvironnementObjectMap::open_file(&mut map);
         let unit_item_map = UnitItemMap::open_file(&mut map);
 
@@ -74,7 +74,7 @@ impl Map {
             shaders,
             sounds,
             strings: trigstrs,
-//            custom_scripts: triggers_ct,
+            custom_scripts: triggers_ct,
             destructable_map,
             unit_item_map
 //            import_listing: ()

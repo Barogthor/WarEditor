@@ -20,17 +20,11 @@ pub struct TriggerStringFile {
 impl TriggerStringFile {
     pub fn read_file(mpq: &mut Archive) -> Self{
         let file = mpq.open_file(MAP_STRINGS).unwrap();
-
         let mut buf: Vec<u8> = vec![0; file.size() as usize];
-
         file.read(mpq, &mut buf).unwrap();
         let buffer = String::from_utf8(buf).unwrap();
-//        let mut f = File::open(concat_path("war3map.wts")).unwrap();
-//        let mut buffer= String::new();
-//        f.read_to_string(&mut buffer).unwrap();
-//        let buffer_size = buffer.len();
         let REG: Regex = Regex::new(EXTRACT_DATA).unwrap();
-//        let str_buf = buffer.as_str();
+
         let mut trigger_strings: Vec<TRIGSTR> = vec![];
         for caps in REG.captures_iter(buffer.as_str()){
             let id = caps.get(1).unwrap().as_str().parse::<u32>().unwrap();
@@ -43,16 +37,6 @@ impl TriggerStringFile {
     }
     pub fn debug(&self){
         println!("{:#?}",self);
-    }
-}
-
-impl BinaryConverter for TriggerStringFile {
-    fn read(reader: &mut BinaryReader) -> Self {
-        unimplemented!()
-    }
-
-    fn write(&self, writer: &mut BinaryWriter) {
-        unimplemented!()
     }
 }
 
