@@ -197,8 +197,10 @@ impl BinaryConverter for W3iFile{
         w3i.techs = reader.read_vec::<TechAvailability>(tech_count);
         let random_unit_table_count = reader.read_u32() as usize;
         w3i.random_unit_tables = reader.read_vec::<RandomUnitTable>(random_unit_table_count);
-        let random_item_table_count = reader.read_u32() as usize;
-        w3i.random_item_tables = reader.read_vec::<RandomItemTable>(random_item_table_count);
+        if w3i.version.is_tft(){
+            let random_item_table_count = reader.read_u32() as usize;
+            w3i.random_item_tables = reader.read_vec::<RandomItemTable>(random_item_table_count);
+        }
 
         assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_INFOS, reader.size() - reader.pos() as usize);
         w3i
