@@ -3,15 +3,17 @@ use std::fmt::{Debug, Error, Formatter};
 
 use mpq::Archive;
 
-use crate::globals::MAP_INFOS;
+use crate::globals::{MAP_INFOS, GameVersion};
 use crate::map_data::{is_roc, is_tft};
-use crate::map_data::binary_reader::BinaryReader;
+use crate::map_data::binary_reader::{BinaryReader, BinaryConverter};
 use crate::map_data::w3i_subs::force_data::ForceData;
 use crate::map_data::w3i_subs::player_data::PlayerData;
 use crate::map_data::w3i_subs::random_item_table::RandomItemTable;
 use crate::map_data::w3i_subs::random_unit_table::RandomUnitTable;
 use crate::map_data::w3i_subs::tech_availability::TechAvailability;
 use crate::map_data::w3i_subs::upgrade_availability::UpgradeAvailability;
+use crate::map_data::binary_writer::BinaryWriter;
+use crate::globals::GameVersion::{RoC, TFT, TFT131};
 
 //pub union GlobalWeather{
 //    value: i32,
@@ -27,7 +29,7 @@ use crate::map_data::w3i_subs::upgrade_availability::UpgradeAvailability;
 #[derive(Debug, Default)]
 pub struct W3iFile{
 
-    version: i32,
+    version: GameVersion,
     count_saves: i32,
     editor_version: i32,
     map_name: CString,
@@ -103,9 +105,20 @@ impl W3iFile{
 
         file.read(mpq, &mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer);
+        reader.read::<W3iFile>()
+    }
+
+    pub fn debug(&self){
+        println!("{:#?}",self);
+    }
+}
+
+impl BinaryConverter for W3iFile{
+    fn read(reader: &mut BinaryReader) -> Self {
         let mut w3i = W3iFile::default();
 
-        w3i.version = reader.read_i32();
+        let version = reader.read_u32();
+        w3i.version = to_game_version(version);
         w3i.count_saves = reader.read_i32();
         w3i.editor_version = reader.read_i32();
         w3i.map_name = reader.read_c_string();
@@ -135,44 +148,44 @@ impl W3iFile{
         w3i.unkwown_5 = w3i.flags & 0x8000 == 1;
         w3i.ground_type = reader.read_char();
 
-        if is_roc(w3i.version) {
-            w3i.campaign_background = reader.read_i32();
-            w3i.loading_screen_text = reader.read_c_string();
-            w3i.loading_screen_title = reader.read_c_string();
-            w3i.loading_screen_subtitle = reader.read_c_string();
-            w3i.loading_screen_index = reader.read_i32();
-            w3i.prologue_screen_text = reader.read_c_string();
-            w3i.prologue_screen_title = reader.read_c_string();
-            w3i.prologue_screen_subtitle = reader.read_c_string();
-        }
-        else if is_tft(w3i.version) {
-            w3i.loading_screen_index = reader.read_i32();
-            w3i.custom_loading_screen_model_path = reader.read_c_string();
-            w3i.loading_screen_text = reader.read_c_string();
-            w3i.loading_screen_title = reader.read_c_string();
-            w3i.loading_screen_subtitle = reader.read_c_string();
-            w3i.user_game_dataset = reader.read_i32();
-            w3i.prologue_screen_path = reader.read_c_string();
-            w3i.prologue_screen_text = reader.read_c_string();
-            w3i.prologue_screen_title = reader.read_c_string();
-            w3i.prologue_screen_subtitle = reader.read_c_string();
-            w3i.fog_style = reader.read_i32();
-            w3i.fog_z_height_start = reader.read_f32();
-            w3i.fog_z_height_end = reader.read_f32();
-            w3i.fog_density = reader.read_f32();
-            w3i.fog_red_tint = reader.read_u8();
-            w3i.fog_green_tint = reader.read_u8();
-            w3i.fog_blue_tint = reader.read_u8();
-            w3i.fog_alpha_value = reader.read_u8();
-//        let mut gw = GlobalWeather{value: reader.read_i32(;
-            w3i.global_weather = reader.read_i32();
-            w3i.custom_sound_environment= reader.read_c_string();
-            w3i.custom_light_environment_id = reader.read_char();
-            w3i.custom_water_red_tint = reader.read_u8();
-            w3i.custom_water_green_tint = reader.read_u8();
-            w3i.custom_water_blue_tint = reader.read_u8();
-            w3i.custom_water_alpha_tint = reader.read_u8();
-
+        match w3i.version{
+            RoC => {
+                w3i.campaign_background = reader.read_i32();
+                w3i.loading_screen_text = reader.read_c_string();
+                w3i.loading_screen_title = reader.read_c_string();
+                w3i.loading_screen_subtitle = reader.read_c_string();
+                w3i.loading_screen_index = reader.read_i32();
+                w3i.prologue_screen_text = reader.read_c_string();
+                w3i.prologue_screen_title = reader.read_c_string();
+                w3i.prologue_screen_subtitle = reader.read_c_string();
+            },
+            TFT | TFT131 => {
+                w3i.loading_screen_index = reader.read_i32();
+                w3i.custom_loading_screen_model_path = reader.read_c_string();
+                w3i.loading_screen_text = reader.read_c_string();
+                w3i.loading_screen_title = reader.read_c_string();
+                w3i.loading_screen_subtitle = reader.read_c_string();
+                w3i.user_game_dataset = reader.read_i32();
+                w3i.prologue_screen_path = reader.read_c_string();
+                w3i.prologue_screen_text = reader.read_c_string();
+                w3i.prologue_screen_title = reader.read_c_string();
+                w3i.prologue_screen_subtitle = reader.read_c_string();
+                w3i.fog_style = reader.read_i32();
+                w3i.fog_z_height_start = reader.read_f32();
+                w3i.fog_z_height_end = reader.read_f32();
+                w3i.fog_density = reader.read_f32();
+                w3i.fog_red_tint = reader.read_u8();
+                w3i.fog_green_tint = reader.read_u8();
+                w3i.fog_blue_tint = reader.read_u8();
+                w3i.fog_alpha_value = reader.read_u8();
+                w3i.global_weather = reader.read_i32();
+                w3i.custom_sound_environment= reader.read_c_string();
+                w3i.custom_light_environment_id = reader.read_char();
+                w3i.custom_water_red_tint = reader.read_u8();
+                w3i.custom_water_green_tint = reader.read_u8();
+                w3i.custom_water_blue_tint = reader.read_u8();
+                w3i.custom_water_alpha_tint = reader.read_u8();
+            }
         }
         let max_players = reader.read_u32() as usize;
         w3i.players = reader.read_vec::<PlayerData>(max_players);
@@ -187,11 +200,21 @@ impl W3iFile{
         let random_item_table_count = reader.read_u32() as usize;
         w3i.random_item_tables = reader.read_vec::<RandomItemTable>(random_item_table_count);
 
+        assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_INFOS, reader.size() - reader.pos() as usize);
         w3i
     }
 
-    pub fn debug(&self){
-        println!("{:#?}",self);
+    fn write(&self, writer: &mut BinaryWriter) {
+        unimplemented!()
     }
 }
 
+
+fn to_game_version(value: u32) -> GameVersion{
+    match value{
+        18 => RoC,
+        25 => TFT,
+        28 => TFT131,
+        _ => panic!("Unknown or unsupported game version '{}'", value)
+    }
+}
