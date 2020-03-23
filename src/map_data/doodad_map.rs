@@ -94,7 +94,7 @@ impl BinaryConverterVersion for Destructable{
 }
 
 struct Doodad{
-    model_id: CString,
+    model_id: String,
     coord_x: f32,
     coord_y: f32,
     coord_z: f32
@@ -102,7 +102,7 @@ struct Doodad{
 
 impl BinaryConverter for Doodad{
     fn read(reader: &mut BinaryReader) -> Self {
-        let model_id = reader.read_c_string_sized(4);
+        let model_id = reader.read_string_utf8(4);
         let coord_x = reader.read_f32();
         let coord_y = reader.read_f32();
         let coord_z = reader.read_f32();
@@ -119,9 +119,9 @@ impl BinaryConverter for Doodad{
     }
 }
 
-pub struct EnvironnementObjectMap {
+pub struct DoodadMap {
 //    id: u32,
-    id: CString,
+    id: String,
     version: GameVersion,
     subversion: u32,
     destructables: Vec<Destructable>,
@@ -130,20 +130,20 @@ pub struct EnvironnementObjectMap {
 
 }
 
-impl EnvironnementObjectMap {
+impl DoodadMap {
     pub fn read_file(mpq: &mut Archive) -> Self{
         let file = mpq.open_file(MAP_TERRAIN_DOODADS).unwrap();
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
         
         file.read(mpq, &mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer);
-        reader.read::<EnvironnementObjectMap>()
+        reader.read::<DoodadMap>()
     }
 }
 
-impl BinaryConverter for EnvironnementObjectMap {
+impl BinaryConverter for DoodadMap {
     fn read(reader: &mut BinaryReader) -> Self {
-        let id = reader.read_c_string_sized(4);
+        let id = reader.read_string_utf8(4);
 //        let id = String::from_utf8(reader.read_bytes(4)).unwrap();
 //        let id = reader.read_u32();
         let version = reader.read_u32();
@@ -155,7 +155,7 @@ impl BinaryConverter for EnvironnementObjectMap {
         let count_doodads = reader.read_u32();
         let doodads = reader.read_vec::<Doodad>(count_doodads as usize);
         assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_TERRAIN_DOODADS, reader.size() - reader.pos() as usize);
-        EnvironnementObjectMap {
+        DoodadMap {
             id,
             version,
             subversion,

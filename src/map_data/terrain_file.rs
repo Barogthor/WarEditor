@@ -80,7 +80,7 @@ impl BinaryConverter for TilePoint{
 }
 
 #[derive(Debug)]
-pub struct EnvironmentFile {
+pub struct TerrainFile {
     id: String,
     version: u32,
     main_tileset: u8,
@@ -97,7 +97,7 @@ pub struct EnvironmentFile {
     tilepoints: Vec<TilePoint>, // [Mx*My]
 }
 
-impl EnvironmentFile{
+impl TerrainFile {
     pub fn read_file(mpq: &mut Archive) -> Self{
         let file = mpq.open_file(MAP_TERRAIN).unwrap();
 
@@ -109,7 +109,7 @@ impl EnvironmentFile{
 //        f.read_to_end(&mut buffer).unwrap();
 //        let buffer_size = buffer.len();
         let mut reader = BinaryReader::new(buffer);
-        reader.read::<EnvironmentFile>()
+        reader.read::<TerrainFile>()
     }
 
     pub fn debug(&self){
@@ -117,7 +117,7 @@ impl EnvironmentFile{
     }
 }
 
-impl BinaryConverter for EnvironmentFile{
+impl BinaryConverter for TerrainFile {
     fn read(reader: &mut BinaryReader) -> Self {
         let id = String::from_utf8(reader.read_bytes(4)).unwrap();
         let version = reader.read_u32();
@@ -143,7 +143,7 @@ impl BinaryConverter for EnvironmentFile{
         let tilepoints = reader.read_vec::<TilePoint>(count_tilepoints);
 
         assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_TERRAIN, reader.size() - reader.pos() as usize);
-        EnvironmentFile{
+        TerrainFile {
             id,
             version,
             main_tileset,

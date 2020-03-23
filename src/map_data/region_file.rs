@@ -45,8 +45,9 @@ impl BinaryConverter for Region{
         region.top = reader.read_f32();
         region.name = reader.read_c_string();
         region.index = reader.read_u32();
-        let effect_id = reader.read_bytes(4);
-        region.weather_effect = String::from_utf8(effect_id).unwrap();
+//        let effect_id = reader.read_bytes(4);
+//        region.weather_effect = String::from_utf8(effect_id).unwrap();
+        region.weather_effect = reader.read_string_utf8(4);
         if region.weather_effect.as_bytes() == [0u8;4] {
             region.weather_enabled = false;
         }

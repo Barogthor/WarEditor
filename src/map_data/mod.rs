@@ -43,7 +43,7 @@ pub mod camera_file;
 pub mod sound_file;
 pub mod pathmap_file;
 pub mod shadowmap_file;
-pub mod environment_file;
+pub mod terrain_file;
 pub mod minimap_file;
 pub mod import_file;
 pub mod trigger_string_file;
