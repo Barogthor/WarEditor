@@ -16,6 +16,7 @@ pub struct Camera {
     rotation: Degree,
     aoa: Degree,
     dist: f32,
+    roll: f32,
     fov: Degree,
     far_clip: f32,
     unknown: f32,
@@ -30,9 +31,10 @@ impl Default for Camera {
             rotation: 0.0,
             aoa: 0.0,
             dist: 0.0,
+            roll: 0.0,
             fov: 0.0,
             far_clip: 0.0,
-            unknown: 0.0,
+            unknown: 100.0,
             name: Default::default()
         }
     }
@@ -46,6 +48,7 @@ impl BinaryConverter for Camera {
         camera.rotation = reader.read_f32();
         camera.aoa = reader.read_f32();
         camera.dist = reader.read_f32();
+        camera.roll = reader.read_f32();
         camera.fov = reader.read_f32();
         camera.far_clip = reader.read_f32();
         camera.unknown = reader.read_f32();
