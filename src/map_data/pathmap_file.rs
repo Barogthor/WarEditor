@@ -7,10 +7,10 @@ use crate::map_data::binary_writer::BinaryWriter;
 
 type Flag = u8;
 #[derive(Debug)]
-pub struct Path {
+pub struct PathCell {
     flags: Flag,
 }
-impl Path{
+impl PathCell {
     pub fn walkable(&self) -> bool{
         self.flags & 0x02 == 0
     }
@@ -41,7 +41,7 @@ pub struct PathMapFile {
     version: u32,
     pathmap_width: u32,
     pathmap_height: u32,
-    pathing: Vec<Path>,
+    pathing: Vec<PathCell>,
 }
 
 impl PathMapFile {
@@ -69,12 +69,12 @@ impl BinaryConverter for PathMapFile {
         let version = reader.read_u32();
         let pathmap_width = reader.read_u32();
         let pathmap_height = reader.read_u32();
-        let mut pathing: Vec<Path> = Vec::new();
+        let mut pathing: Vec<PathCell> = Vec::new();
         for _i in 0..pathmap_width*pathmap_height{
             let flags= reader.read_u8();
 
 //            println!("{:x}",flags);
-            pathing.push(Path{ flags});
+            pathing.push(PathCell { flags});
         }
         assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_PATH_MAP, reader.size() - reader.pos() as usize);
         PathMapFile {

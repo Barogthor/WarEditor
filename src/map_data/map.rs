@@ -11,7 +11,7 @@ use crate::map_data::region_file::RegionFile;
 use crate::map_data::shadowmap_file::ShadowMapFile;
 use crate::map_data::sound_file::SoundFile;
 use crate::map_data::trigger_string_file::TriggerStringFile;
-use crate::map_data::triggers_names_file::TriggersNameFile;
+use crate::map_data::trigger_file::TriggerFile;
 use crate::map_data::w3i_file::W3iFile;
 use crate::map_data::doodad_map::DoodadMap;
 use crate::map_data::unit_map::UnitItemMap;
