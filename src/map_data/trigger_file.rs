@@ -2,12 +2,11 @@ use std::ffi::CString;
 
 use crate::map_data::binary_reader::{BinaryConverter, BinaryConverterVersion, BinaryReader};
 use crate::map_data::binary_writer::BinaryWriter;
-use crate::map_data::trigger_file::category::TriggerCategory;
 use std::fs::File;
 use crate::map_data::concat_path;
 use std::io::Read;
 use crate::globals::GameVersion::{self, RoC, TFT};
-use crate::map_data::trigger_file::config::{FunctionType, TriggerCategory};
+use crate::map_data::trigger_file::config::TriggerCategory;
 
 mod config{
     use std::ffi::CString;
@@ -67,8 +66,6 @@ mod config{
 
 mod trigger {
     use super::*;
-    use super::function::FunctionDefinition;
-    use crate::map_data::trigger_file::FunctionDefinition;
 
     #[derive(Debug, Default)]
     pub struct TriggerDefinition {
