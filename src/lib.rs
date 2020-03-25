@@ -3,6 +3,13 @@
 use fern::colors::{Color, ColoredLevelConfig};
 use log::{debug, info, trace, warn, error};
 
+pub fn format_data(path: &str) -> String{
+    format!("resources/datas/{}",path)
+}
+pub fn format_slk(path: &str) -> String{
+    format!("resources/slk/{}",path)
+}
+
 pub fn init_logging(){
     fern::Dispatch::new()
         // Perform allocation-free log formatting
