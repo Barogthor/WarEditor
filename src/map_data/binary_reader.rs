@@ -3,9 +3,8 @@ use std::io::{BufRead, Cursor, Seek, SeekFrom};
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 
-use crate::map_data::binary_writer::BinaryWriter;
-use std::fs::File;
 use crate::globals::GameVersion;
+use crate::map_data::binary_writer::BinaryWriter;
 
 pub struct BinaryReader{
     buffer: Cursor<Vec<u8>>,
@@ -177,5 +176,5 @@ pub trait BinaryConverter{
 
 pub trait BinaryConverterVersion{
     fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> Self;
-    fn write_version(writer: &mut BinaryWriter, game_version: &GameVersion) -> Self;
+    fn write_version(&self, writer: &mut BinaryWriter, game_version: &GameVersion) -> Self;
 }

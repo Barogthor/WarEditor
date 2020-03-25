@@ -1,3 +1,4 @@
+// #[warn(unused_variables)]
 use std::io::{Read};
 use std::fs::File;
 use crate::slk_type::{RecordType, Record};
@@ -80,9 +81,4 @@ impl Iterator for SLKScanner{
             Err(msg) => panic!(msg)
         }
     }
-}
-
-fn is_end_of_record(buffer: &str) -> bool{
-    let eor_buffer= &buffer[buffer.len()-2..];
-    eor_buffer.eq(END_RECORD)
 }

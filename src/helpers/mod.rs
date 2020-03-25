@@ -80,7 +80,7 @@ pub mod colors {
             RGBA {value}
         }
 
-        fn write(&self, writer: &mut BinaryWriter) {
+        fn write(&self, _writer: &mut BinaryWriter) {
             unimplemented!()
         }
     }
@@ -154,7 +154,7 @@ pub mod colors {
             RGB {value}
         }
 
-        fn write(&self, writer: &mut BinaryWriter) {
+        fn write(&self, _writer: &mut BinaryWriter) {
             unimplemented!()
         }
     }

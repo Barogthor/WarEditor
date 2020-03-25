@@ -93,7 +93,7 @@ impl BinaryConverter for Sound {
         sound
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }
@@ -138,7 +138,7 @@ impl BinaryConverter for SoundFile {
         }
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }

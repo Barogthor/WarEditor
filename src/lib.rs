@@ -1,7 +1,6 @@
 #[macro_use] extern crate lazy_static;
 
 use fern::colors::{Color, ColoredLevelConfig};
-use log::{debug, info, trace, warn, error};
 
 pub fn format_data(path: &str) -> String{
     format!("resources/datas/{}",path)

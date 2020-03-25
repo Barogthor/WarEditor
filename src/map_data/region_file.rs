@@ -57,7 +57,7 @@ impl BinaryConverter for Region{
         region
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }
@@ -101,7 +101,7 @@ impl BinaryConverter for RegionFile{
         }
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }

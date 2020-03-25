@@ -1,19 +1,18 @@
 use std::ffi::CString;
-use std::fmt::{Debug, Error, Formatter};
+use std::fmt::Debug;
 
 use mpq::Archive;
 
-use crate::globals::{MAP_INFOS, GameVersion};
-use crate::map_data::{is_roc, is_tft};
-use crate::map_data::binary_reader::{BinaryReader, BinaryConverter};
+use crate::globals::{GameVersion, MAP_INFOS};
+use crate::globals::GameVersion::{RoC, TFT, TFT131};
+use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
+use crate::map_data::binary_writer::BinaryWriter;
 use crate::map_data::w3i_subs::force_data::ForceData;
 use crate::map_data::w3i_subs::player_data::PlayerData;
 use crate::map_data::w3i_subs::random_item_table::RandomItemTable;
 use crate::map_data::w3i_subs::random_unit_table::RandomUnitTable;
 use crate::map_data::w3i_subs::tech_availability::TechAvailability;
 use crate::map_data::w3i_subs::upgrade_availability::UpgradeAvailability;
-use crate::map_data::binary_writer::BinaryWriter;
-use crate::globals::GameVersion::{RoC, TFT, TFT131};
 
 //pub union GlobalWeather{
 //    value: i32,
@@ -205,7 +204,7 @@ impl BinaryConverter for W3iFile{
         w3i
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }

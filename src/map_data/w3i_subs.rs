@@ -51,7 +51,7 @@ pub mod player_data {
             player
         }
 
-        fn write(&self, writer: &mut BinaryWriter) {
+        fn write(&self, _writer: &mut BinaryWriter) {
             unimplemented!()
         }
     }
@@ -100,7 +100,7 @@ pub mod force_data{
             force
         }
 
-        fn write(&self, writer: &mut BinaryWriter) {
+        fn write(&self, _writer: &mut BinaryWriter) {
             unimplemented!()
         }
     }
@@ -137,7 +137,7 @@ pub mod upgrade_availability{
             upg
         }
 
-        fn write(&self, writer: &mut BinaryWriter) {
+        fn write(&self, _writer: &mut BinaryWriter) {
             unimplemented!()
         }
     }
@@ -168,7 +168,7 @@ pub mod tech_availability{
             tech
         }
 
-        fn write(&self, writer: &mut BinaryWriter) {
+        fn write(&self, _writer: &mut BinaryWriter) {
             unimplemented!()
         }
     }
@@ -227,7 +227,7 @@ pub mod random_unit_table {
             table
         }
 
-        fn write(&self, writer: &mut BinaryWriter) {
+        fn write(&self, _writer: &mut BinaryWriter) {
             unimplemented!()
         }
     }
@@ -259,7 +259,7 @@ pub mod random_item_table{
             set
         }
 
-        fn write(&self, writer: &mut BinaryWriter) {
+        fn write(&self, _writer: &mut BinaryWriter) {
             unimplemented!()
         }
     }
@@ -291,7 +291,7 @@ pub mod random_item_table{
             table
         }
 
-        fn write(&self, writer: &mut BinaryWriter) {
+        fn write(&self, _writer: &mut BinaryWriter) {
             unimplemented!()
         }
     }

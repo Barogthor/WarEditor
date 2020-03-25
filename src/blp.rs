@@ -1,9 +1,5 @@
 use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
 use crate::map_data::binary_writer::BinaryWriter;
-use image::{RgbImage, ImageBuffer, ImageDecoder};
-use std::io::Cursor;
-use jpeg_decoder::Decoder;
-use image::jpeg::JPEGDecoder;
 
 type RGBA = u32;
 type Mipmaps = Vec<Vec<u8>>;
@@ -153,7 +149,7 @@ impl BinaryConverter for BLP{
         blp
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }

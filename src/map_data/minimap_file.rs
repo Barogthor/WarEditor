@@ -1,11 +1,9 @@
-
 use mpq::Archive;
 
 use crate::globals::MAP_MINIMAP;
 use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
 use crate::map_data::binary_writer::BinaryWriter;
 
-type RGBA = Vec<u8>;
 pub const JPG_BLP: bool = false;
 pub const PALETTED_BLP: bool = true;
 pub const MAX_MIPMAP: usize = 16;
@@ -32,7 +30,7 @@ pub struct JpgBlpData {
 }
 
 impl BinaryConverter for JpgBlpData{
-    fn read(reader: &mut BinaryReader) -> Self {
+    fn read(_reader: &mut BinaryReader) -> Self {
 
         JpgBlpData{
             header_size: 0,
@@ -41,7 +39,7 @@ impl BinaryConverter for JpgBlpData{
         }
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }
@@ -51,14 +49,14 @@ pub struct PalettedBlpData {
 
 }
 impl BinaryConverter for PalettedBlpData{
-    fn read(reader: &mut BinaryReader) -> Self {
+    fn read(_reader: &mut BinaryReader) -> Self {
 
         PalettedBlpData{
 
         }
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }
@@ -155,7 +153,7 @@ impl BinaryConverter for MinimapFile {
         mmap
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }

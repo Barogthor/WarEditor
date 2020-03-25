@@ -1,17 +1,18 @@
 use std::ffi::CString;
-
-use crate::map_data::binary_reader::{BinaryConverter, BinaryConverterVersion, BinaryReader};
-use crate::map_data::binary_writer::BinaryWriter;
 use std::fs::File;
-use crate::map_data::concat_path;
 use std::io::Read;
+
 use crate::globals::GameVersion::{self, RoC, TFT};
-use crate::map_data::trigger_file::config::TriggerCategory;
+use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
+use crate::map_data::binary_writer::BinaryWriter;
+use crate::map_data::concat_path;
+use crate::map_data::trigger_file::config::{TriggerCategory, VariableDefinition};
 
 mod config{
     use std::ffi::CString;
-    use crate::map_data::binary_reader::BinaryReader;
+
     use crate::globals::GameVersion;
+    use crate::map_data::binary_reader::BinaryReader;
 
     #[derive(Debug, Default)]
     pub struct VariableDefinition {
@@ -164,36 +165,43 @@ mod trigger {
 }
 
 #[derive(Debug, Default)]
-pub struct TriggerFile {
+pub struct TriggersFile {
     id: String,
     version: GameVersion,
     categories: Vec<TriggerCategory>,
     unknown: i32,
 }
 
-impl TriggerFile {
+impl TriggersFile {
     pub fn read_file() -> Self{
         let mut f = File::open(concat_path("war3map.wtg")).unwrap();
         let mut buffer: Vec<u8> = Vec::new();
         f.read_to_end(&mut buffer).unwrap();
-        let buffer_size = buffer.len();
         let mut reader = BinaryReader::new(buffer);
-        reader.read::<TriggerFile>()
+        reader.read::<TriggersFile>()
     }
     pub fn debug(&self){
         println!("{:#?}",self);
     }
 }
 
-impl BinaryConverter for TriggerFile {
+impl BinaryConverter for TriggersFile {
     fn read(reader: &mut BinaryReader) -> Self {
         let mut def = Self::default();
         let id = String::from_utf8(reader.read_bytes(4)).unwrap();
         let version = reader.read_u32();
         let version = to_game_version(version);
         let count_categories = reader.read_u32();
+        let mut categories = vec![];
+        for _ in 0..count_categories {
+            categories.push(TriggerCategory::from(reader, &version));
+        }
         let unknown = reader.read_i32();
         let count_vars = reader.read_u32();
+        let mut vars = vec![];
+        for _ in 0..count_vars {
+            vars.push(VariableDefinition::from(reader, &version));
+        }
         let count_triggers = reader.read_u32();
         match version {
             RoC => {
@@ -206,7 +214,7 @@ impl BinaryConverter for TriggerFile {
         def
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }

@@ -56,7 +56,7 @@ impl BinaryConverter for Camera {
         camera
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }
@@ -100,7 +100,7 @@ impl BinaryConverter for CameraFile {
         }
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }

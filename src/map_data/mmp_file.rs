@@ -1,4 +1,3 @@
-
 use mpq::Archive;
 
 use crate::globals::MAP_MENU_MINIMAP;
@@ -28,7 +27,7 @@ impl BinaryConverter for MMPDataset{
         }
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }
@@ -47,7 +46,7 @@ impl BinaryConverter for MMPFile{
         MMPFile{unknown, datasets}
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }

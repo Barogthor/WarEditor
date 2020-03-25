@@ -1,9 +1,6 @@
-
 use mpq::Archive;
 
 use crate::globals::MAP_SHADERS;
-use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
-use crate::map_data::binary_writer::BinaryWriter;
 
 #[derive(Debug)]
 pub struct ShadowMapFile {

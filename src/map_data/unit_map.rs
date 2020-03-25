@@ -1,11 +1,11 @@
-use std::ffi::CString;
-use crate::globals::{GameVersion, MAP_TERRAIN_UNITS};
-use crate::map_data::doodad_map::Radian;
 use mpq::Archive;
-use crate::map_data::binary_reader::{BinaryReader, BinaryConverter, BinaryConverterVersion};
-use crate::map_data::binary_writer::BinaryWriter;
+
+use crate::globals::{GameVersion, MAP_TERRAIN_UNITS};
 use crate::globals::GameVersion::{RoC, TFT};
-use crate::map_data::unit_map::RandomUnitItemFlag::{Neutral, RandomFromTableGroup, RandomFromCustomTable, NotRandom};
+use crate::map_data::binary_reader::{BinaryConverter, BinaryConverterVersion, BinaryReader};
+use crate::map_data::binary_writer::BinaryWriter;
+use crate::map_data::doodad_map::Radian;
+use crate::map_data::unit_map::RandomUnitItemFlag::{Neutral, NotRandom, RandomFromCustomTable, RandomFromTableGroup};
 
 const RANDOM_ITEM_ID: &str = "iDNR";
 const RANDOM_UNIT_ID: &str = "uDNR";
@@ -18,7 +18,7 @@ impl BinaryConverterVersion for DropItem{
         Self(item_id, drop_rate)
     }
 
-    fn write_version(writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
+    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
         unimplemented!()
     }
 }
@@ -31,7 +31,7 @@ impl BinaryConverterVersion for InventoryItem{
         Self(inventory_slot, item_id)
     }
 
-    fn write_version(writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
+    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
         unimplemented!()
     }
 }
@@ -49,7 +49,7 @@ impl BinaryConverterVersion for AbilityModification{
         Self{ability_id, autocast, level}
     }
 
-    fn write_version(writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
+    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
         unimplemented!()
     }
 }
@@ -61,7 +61,7 @@ impl BinaryConverterVersion for RandomUnit {
         Self(unit_id, rate)
     }
 
-    fn write_version(writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
+    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
         unimplemented!()
     }
 }
@@ -108,7 +108,7 @@ impl BinaryConverterVersion for RandomUnitItemFlag {
         }
     }
 
-    fn write_version(writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
+    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
         unimplemented!()
     }
 }
@@ -224,7 +224,7 @@ impl BinaryConverterVersion for UnitItem{
 
     }
 
-    fn write_version(reader: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
+    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
         unimplemented!()
     }
 }
@@ -268,7 +268,7 @@ impl BinaryConverter for UnitItemMap{
         }
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }

@@ -1,11 +1,12 @@
 #[cfg(test)]
 mod blp_parse {
     use std::fs::File;
-    use war_editor::map_data::binary_reader::BinaryReader;
-    use war_editor::blp::BLP;
-    use std::io::{Read, Write, Cursor, BufReader};
+    use std::io::{BufReader, Read, Write};
+
     use jpeg_decoder::Decoder;
-    use std::ffi::CString;
+
+    use war_editor::blp::BLP;
+    use war_editor::map_data::binary_reader::BinaryReader;
 
     #[test]
     fn open_local_blp_palette() {

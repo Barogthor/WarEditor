@@ -1,4 +1,3 @@
-
 use mpq::Archive;
 
 use crate::globals::MAP_PATH_MAP;
@@ -86,7 +85,7 @@ impl BinaryConverter for PathMapFile {
         }
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }

@@ -1,4 +1,3 @@
-
 use std::ffi::CString;
 
 use mpq::Archive;
@@ -53,7 +52,7 @@ impl BinaryConverter for ImportFile {
         }
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }

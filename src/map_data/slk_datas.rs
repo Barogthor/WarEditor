@@ -1,6 +1,8 @@
-use std::collections::{HashMap, BTreeMap};
-use crate::map_data::slk_datas::adapter::{ScannerAdapter, DocumentAdapter};
-use slkparser::record::cell::{Cell};
+use std::collections::{BTreeMap, HashMap};
+
+use slkparser::record::cell::Cell;
+
+use crate::map_data::slk_datas::adapter::{DocumentAdapter, ScannerAdapter};
 
 type MetaID = String;
 type FieldColumn = u32;
@@ -8,9 +10,9 @@ const HEADER_ROW: u32 = 1;
 
 mod adapter{
     use slkparser::document::Document;
-    use slkparser::SLKScanner;
-    use slkparser::slk_type::Record;
     use slkparser::record::cell::Cell;
+    use slkparser::slk_type::Record;
+    use slkparser::SLKScanner;
 
     pub struct ScannerAdapter {
         scanner: SLKScanner
@@ -142,12 +144,12 @@ impl SLKData {
 
     }
 
-//    pub fn debug(&self){
-//        println!("[Header]: {:?}",self.header);
-//        for (id, value) in self.map.iter() {
-//            println!("[{:?}] : {:?}",*id,*value);
-//        }
-//    }
+   // pub fn debug(&self){
+   //     println!("[Header]: {:?}",self.headers);
+   //     for (id, value) in self.lines.iter() {
+   //         println!("[{:?}] : {:?}",*id,*value);
+   //     }
+   // }
 
     pub fn get(&self, id: &MetaID) -> Option<&BTreeMap<FieldColumn,String>>{
         self.lines.get(id)
@@ -159,7 +161,7 @@ impl SLKData {
 
     pub fn get_formatted(&self, id: &MetaID) -> Option<BTreeMap<String,String>>{
         let v = self.get(id);
-        let mut counter = 1;
+        let counter = 1;
         if v.is_none() {
             return None;
         }

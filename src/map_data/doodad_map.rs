@@ -1,10 +1,12 @@
 use std::ffi::CString;
-use crate::map_data::binary_reader::{BinaryConverter, BinaryReader, BinaryConverterVersion};
-use crate::map_data::binary_writer::BinaryWriter;
+
 use mpq::Archive;
-use crate::globals::{MAP_TERRAIN_DOODADS, GameVersion};
-use crate::map_data::doodad_map::DestructableFlag::{InvisibleNonSolid, VisibleNonSolid, VisibleSolid, Unnamed};
+
+use crate::globals::{GameVersion, MAP_TERRAIN_DOODADS};
 use crate::globals::GameVersion::{RoC, TFT, TFT131};
+use crate::map_data::binary_reader::{BinaryConverter, BinaryConverterVersion, BinaryReader};
+use crate::map_data::binary_writer::BinaryWriter;
+use crate::map_data::doodad_map::DestructableFlag::{InvisibleNonSolid, Unnamed, VisibleNonSolid, VisibleSolid};
 use crate::map_data::unit_map::DropItem;
 
 pub type Radian = f32;
@@ -88,7 +90,7 @@ impl BinaryConverterVersion for Destructable{
         }
     }
 
-    fn write_version(reader: &mut BinaryWriter, game_version: &GameVersion) -> Self {
+    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
         unimplemented!()
     }
 }
@@ -114,7 +116,7 @@ impl BinaryConverter for Doodad{
         }
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }
@@ -165,7 +167,7 @@ impl BinaryConverter for DoodadMap {
         }
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }

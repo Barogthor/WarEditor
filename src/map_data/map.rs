@@ -1,20 +1,22 @@
 use mpq::Archive;
 
+use crate::format_data;
+use crate::globals::PROFILE_TRIGGER_DATA;
 use crate::map_data::camera_file::CameraFile;
 use crate::map_data::custom_text_trigger_file::CustomTextTriggerFile;
-use crate::map_data::terrain_file::TerrainFile;
+use crate::map_data::data_ini::DataIni;
+use crate::map_data::doodad_map::DoodadMap;
 use crate::map_data::import_file::ImportFile;
-use crate::map_data::minimap_file::MinimapFile;
 use crate::map_data::mmp_file::MMPFile;
 use crate::map_data::pathmap_file::PathMapFile;
 use crate::map_data::region_file::RegionFile;
 use crate::map_data::shadowmap_file::ShadowMapFile;
 use crate::map_data::sound_file::SoundFile;
+use crate::map_data::terrain_file::TerrainFile;
+use crate::map_data::trigger_file::TriggersFile;
 use crate::map_data::trigger_string_file::TriggerStringFile;
-use crate::map_data::trigger_file::TriggerFile;
-use crate::map_data::w3i_file::W3iFile;
-use crate::map_data::doodad_map::DoodadMap;
 use crate::map_data::unit_map::UnitItemMap;
+use crate::map_data::w3i_file::W3iFile;
 
 pub struct Map{
     path: String,
@@ -30,7 +32,7 @@ pub struct Map{
     custom_scripts: CustomTextTriggerFile,
     doodad_map: DoodadMap,
     unit_item_map: UnitItemMap,
-//    triggers: TriggersNameFile,
+//    triggers: TriggersFile,
     import_listing: Option<ImportFile>,
 }
 

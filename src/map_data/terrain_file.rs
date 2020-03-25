@@ -1,4 +1,3 @@
-
 use mpq::Archive;
 
 use crate::globals::MAP_TERRAIN;
@@ -74,7 +73,7 @@ impl BinaryConverter for TilePoint{
         }
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }
@@ -158,7 +157,7 @@ impl BinaryConverter for TerrainFile {
         }
     }
 
-    fn write(&self, writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }
