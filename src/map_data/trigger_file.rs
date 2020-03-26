@@ -2,6 +2,7 @@ use std::ffi::CString;
 use std::fs::File;
 use std::io::Read;
 
+use log::{debug, error, info, trace, warn};
 use mpq::Archive;
 
 use crate::GameData;
@@ -72,7 +73,7 @@ mod config{
 
 
 mod trigger {
-    use crate::map_data::trigger_file::trigger::FunctionType::{Action, Condition, Event};
+    use crate::map_data::trigger_file::trigger::ECAType::{Action, Condition, Event};
 
     use super::*;
 
@@ -86,7 +87,7 @@ mod trigger {
         init_on: bool,
         run_init: bool,
         index_category: u32,
-        ecas: Vec<FunctionDefinition>,
+        ecas: Vec<ECADefinition>,
     }
 
     impl TriggerDefinition {
@@ -103,46 +104,59 @@ mod trigger {
             def.run_init = reader.read_i32() == 1;
             def.index_category = reader.read_u32();
             let count_ecas = reader.read_u32();
+            let mut ecas = vec![];
+            for _ in 0..count_ecas{
+                ecas.push(ECADefinition::from(reader, game_version, trigger_data, false));
+            }
             def
         }
     }
 
 
     #[derive(Debug, Default)]
-    struct FunctionDefinition {
-        ftype: FunctionType,
+    struct ECADefinition {
+        ftype: ECAType,
         condition_group: Option<ConditionType>,
-        name: CString,
+        name: String,
         enabled: bool,
     }
 
-    impl FunctionDefinition {
+    impl ECADefinition {
         pub fn from(reader: &mut BinaryReader, game_version: &GameVersion, trigger_data: &DataIni, is_child_eca: bool) -> Self{
-            let mut def = Self::default();
-            def.ftype = FunctionType::from(reader.read_u32());
-            def.condition_group = if is_child_eca{
+            let ftype = reader.read_u32();
+            let ftype = ECAType::from(ftype);
+            let condition_group = if game_version.is_tft() && is_child_eca{
                 let condition = ConditionType::from(reader.read_u32());
                 Some(condition)
             } else {None};
-            def.name = reader.read_c_string();
-            def.enabled = reader.read_u32() == 1;
-            def
+            let name = reader.read_c_string().into_string().unwrap();
+            let tmp = trigger_data.get_prop(ftype.get_sector(), &name);
+            if tmp.is_none(){
+                error!("{} doesn't seem to exist", ftype.get_sector());
+            }else {
+                let count_parameters = tmp.unwrap().split(",").collect::<Vec<&str>>().len() - 1;
+                let enabled = reader.read_u32() == 1;
+                return Self{
+                    ftype, condition_group, name,enabled
+                };
+            }
+            panic!("couldn't finish ECA definition");
         }
     }
 
     #[derive(Clone, Copy, Debug, PartialEq)]
-    pub enum FunctionType{
+    pub enum ECAType {
         Event,
         Condition,
         Action
     }
-    impl Default for FunctionType{
+    impl Default for ECAType {
         fn default() -> Self {
             Action
         }
     }
-    impl FunctionType{
-        pub fn from(n: u32) -> FunctionType {
+    impl ECAType {
+        pub fn from(n: u32) -> ECAType {
             match n{
                 0 => (Event),
                 1 => (Condition),
