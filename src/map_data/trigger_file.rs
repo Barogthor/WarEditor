@@ -2,15 +2,16 @@ use std::ffi::CString;
 use std::fs::File;
 use std::io::Read;
 
+use mpq::Archive;
+
+use crate::GameData;
 use crate::globals::GameVersion::{self, RoC, TFT};
+use crate::globals::MAP_TRIGGERS;
 use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
 use crate::map_data::binary_writer::BinaryWriter;
 use crate::map_data::concat_path;
-use crate::map_data::trigger_file::config::{TriggerCategory, VariableDefinition};
-use crate::GameData;
 use crate::map_data::data_ini::DataIni;
-use mpq::Archive;
-use crate::globals::MAP_TRIGGERS;
+use crate::map_data::trigger_file::config::{TriggerCategory, VariableDefinition};
 use crate::map_data::trigger_file::trigger::TriggerDefinition;
 
 mod config{
@@ -71,8 +72,9 @@ mod config{
 
 
 mod trigger {
+    use crate::map_data::trigger_file::trigger::FunctionType::{Action, Condition, Event};
+
     use super::*;
-    use crate::map_data::trigger_file::trigger::FunctionType::Condition;
 
     #[derive(Debug, Default)]
     pub struct TriggerDefinition {
@@ -120,7 +122,7 @@ mod trigger {
             def.ftype = FunctionType::from(reader.read_u32());
             def.condition_group = if is_child_eca{
                 let condition = ConditionType::from(reader.read_u32());
-                some(condition)
+                Some(condition)
             } else {None};
             def.name = reader.read_c_string();
             def.enabled = reader.read_u32() == 1;
@@ -136,23 +138,23 @@ mod trigger {
     }
     impl Default for FunctionType{
         fn default() -> Self {
-            FunctionType::Action
+            Action
         }
     }
     impl FunctionType{
         pub fn from(n: u32) -> FunctionType {
             match n{
-                0 => (FunctionType::Event),
-                1 => (FunctionType::Condition),
-                2 => (FunctionType::Action),
+                0 => (Event),
+                1 => (Condition),
+                2 => (Action),
                 _ => panic!("Unknown function type {}",n)
             }
         }
         pub fn get_sector(&self) -> &str {
-            match n{
-                FunctionType::Event => "TriggerEvents",
-                FunctionType::Condition => "TriggerConditions",
-                FunctionType::Action => "TriggerActions",
+            match self{
+                Event => "TriggerEvents",
+                Condition => "TriggerConditions",
+                Action => "TriggerActions",
             }
         }
     }
