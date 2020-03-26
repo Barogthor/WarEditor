@@ -1,6 +1,6 @@
 use mpq::Archive;
 
-use crate::format_data;
+use crate::{format_data, GameData};
 use crate::globals::PROFILE_TRIGGER_DATA;
 use crate::map_data::camera_file::CameraFile;
 use crate::map_data::custom_text_trigger_file::CustomTextTriggerFile;
@@ -18,7 +18,8 @@ use crate::map_data::trigger_string_file::TriggerStringFile;
 use crate::map_data::unit_map::UnitItemMap;
 use crate::map_data::w3i_file::W3iFile;
 
-pub struct Map{
+pub struct Map<'a>{
+    game_data: &'a GameData,
     path: String,
     infos: W3iFile,
     terrain: TerrainFile,
@@ -32,12 +33,12 @@ pub struct Map{
     custom_scripts: CustomTextTriggerFile,
     doodad_map: DoodadMap,
     unit_item_map: UnitItemMap,
-//    triggers: TriggersFile,
+    triggers: TriggersFile,
     import_listing: Option<ImportFile>,
 }
 
-impl Map {
-    pub fn open(path: String) -> Self{
+impl<'a> Map<'a> {
+    pub fn open(path: String, game_data: &'a GameData) -> Self{
         let mut map = Archive::open(path.to_owned()).unwrap();
 
         let w3i = W3iFile::read_file(&mut map);
@@ -62,12 +63,13 @@ impl Map {
 //        trigstrs.debug();
         let triggers_ct = CustomTextTriggerFile::read_file(&mut map);
 //        triggers_ct.debug();
+        let triggers = TriggersFile::read_file(&mut map, game_data.get_trigger_data());
         let doodad_map = DoodadMap::read_file(&mut map);
         let unit_item_map = UnitItemMap::read_file(&mut map);
         let import_listing = ImportFile::read_file(&mut map);
 
-
         Self{
+            game_data,
             path,
             infos: w3i,
             terrain: environment,
@@ -79,6 +81,7 @@ impl Map {
             sounds,
             strings: trigstrs,
             custom_scripts: triggers_ct,
+            triggers,
             doodad_map,
             unit_item_map,
             import_listing,

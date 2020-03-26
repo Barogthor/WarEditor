@@ -7,6 +7,11 @@ use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
 use crate::map_data::binary_writer::BinaryWriter;
 use crate::map_data::concat_path;
 use crate::map_data::trigger_file::config::{TriggerCategory, VariableDefinition};
+use crate::GameData;
+use crate::map_data::data_ini::DataIni;
+use mpq::Archive;
+use crate::globals::MAP_TRIGGERS;
+use crate::map_data::trigger_file::trigger::TriggerDefinition;
 
 mod config{
     use std::ffi::CString;
@@ -67,6 +72,7 @@ mod config{
 
 mod trigger {
     use super::*;
+    use crate::map_data::trigger_file::trigger::FunctionType::Condition;
 
     #[derive(Debug, Default)]
     pub struct TriggerDefinition {
@@ -82,7 +88,7 @@ mod trigger {
     }
 
     impl TriggerDefinition {
-        pub fn from(reader: &mut BinaryReader, game_version: &GameVersion) -> Self {
+        pub fn from(reader: &mut BinaryReader, game_version: &GameVersion, trigger_data: &DataIni) -> Self {
             let mut def = Self::default();
             def.name = reader.read_c_string();
             def.description = reader.read_c_string();
@@ -103,21 +109,24 @@ mod trigger {
     #[derive(Debug, Default)]
     struct FunctionDefinition {
         ftype: FunctionType,
+        condition_group: Option<ConditionType>,
         name: CString,
         enabled: bool,
     }
 
     impl FunctionDefinition {
-        pub fn from(reader: &mut BinaryReader, game_version: &GameVersion) -> Self{
+        pub fn from(reader: &mut BinaryReader, game_version: &GameVersion, trigger_data: &DataIni, is_child_eca: bool) -> Self{
             let mut def = Self::default();
             def.ftype = FunctionType::from(reader.read_u32());
+            def.condition_group = if is_child_eca{
+                let condition = ConditionType::from(reader.read_u32());
+                some(condition)
+            } else {None};
             def.name = reader.read_c_string();
             def.enabled = reader.read_u32() == 1;
             def
         }
     }
-
-
 
     #[derive(Clone, Copy, Debug, PartialEq)]
     pub enum FunctionType{
@@ -139,6 +148,13 @@ mod trigger {
                 _ => panic!("Unknown function type {}",n)
             }
         }
+        pub fn get_sector(&self) -> &str {
+            match n{
+                FunctionType::Event => "TriggerEvents",
+                FunctionType::Condition => "TriggerConditions",
+                FunctionType::Action => "TriggerActions",
+            }
+        }
     }
 
     #[derive(Clone, Copy, Debug, PartialEq)]
@@ -153,12 +169,12 @@ mod trigger {
         }
     }
     impl ConditionType{
-        pub fn from(n: u32) -> Option<ConditionType> {
+        pub fn from(n: u32) -> ConditionType {
             match n{
-                0 => Some(ConditionType::Condition),
-                1 => Some(ConditionType::Then),
-                2 => Some(ConditionType::Else),
-                _ => None
+                0 => ConditionType::Condition,
+                1 => ConditionType::Then,
+                2 => ConditionType::Else,
+                _ => panic!("Unknown condition type {}",n)
             }
         }
     }
@@ -173,20 +189,15 @@ pub struct TriggersFile {
 }
 
 impl TriggersFile {
-    pub fn read_file() -> Self{
-        let mut f = File::open(concat_path("war3map.wtg")).unwrap();
-        let mut buffer: Vec<u8> = Vec::new();
-        f.read_to_end(&mut buffer).unwrap();
+    pub fn read_file(mpq: &mut Archive, trigger_data: &DataIni) -> Self{
+        let file = mpq.open_file(MAP_TRIGGERS).unwrap();
+        let mut buffer: Vec<u8> = vec![0; file.size() as usize];
+        file.read(mpq, &mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer);
-        reader.read::<TriggersFile>()
+        Self::from(&mut reader, trigger_data)
     }
-    pub fn debug(&self){
-        println!("{:#?}",self);
-    }
-}
 
-impl BinaryConverter for TriggersFile {
-    fn read(reader: &mut BinaryReader) -> Self {
+    fn from(reader: &mut BinaryReader, trigger_data: &DataIni) -> Self{
         let mut def = Self::default();
         let id = String::from_utf8(reader.read_bytes(4)).unwrap();
         let version = reader.read_u32();
@@ -203,6 +214,10 @@ impl BinaryConverter for TriggersFile {
             vars.push(VariableDefinition::from(reader, &version));
         }
         let count_triggers = reader.read_u32();
+        let mut triggers = vec![];
+        for _ in 0..count_triggers{
+            triggers.push(TriggerDefinition::from(reader, &version, trigger_data))
+        }
         match version {
             RoC => {
 
@@ -214,11 +229,10 @@ impl BinaryConverter for TriggersFile {
         def
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
-        unimplemented!()
+    pub fn debug(&self){
+        println!("{:#?}",self);
     }
 }
-
 
 fn to_game_version(value: u32) -> GameVersion{
     match value{

@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use log::{debug, error, info, trace, warn};
 
-use war_editor::{format_data, format_slk, init_logging};
+use war_editor::{format_data, format_slk, init_logging, GameData};
 use war_editor::globals::{PROFILE_AIEDITOR_DATA, PROFILE_CAMPAIGN_ABILITY_FUNC, PROFILE_CAMPAIGN_UNIT_FUNC, PROFILE_CAMPAIGN_UPGRADE_FUNC, PROFILE_COMMON_ABILITY_FUNC, PROFILE_HUMAN_ABILITY_FUNC, PROFILE_HUMAN_UNIT_FUNC, PROFILE_HUMAN_UPGRADE_FUNC, PROFILE_ITEM_ABILITY_FUNC, PROFILE_ITEM_FUNC, PROFILE_MISC_DATA, PROFILE_NEUTRAL_ABILITY_FUNC, PROFILE_NEUTRAL_UNIT_FUNC, PROFILE_NEUTRAL_UPGRADE_FUNC, PROFILE_NIGHT_ELF_ABILITY_FUNC, PROFILE_NIGHT_ELF_UNIT_FUNC, PROFILE_NIGHT_ELF_UPGRADE_FUNC, PROFILE_ORC_ABILITY_FUNC, PROFILE_ORC_UNIT_FUNC, PROFILE_ORC_UPGRADE_FUNC, PROFILE_TRIGGER_DATA, PROFILE_TRIGGER_STRINGS, PROFILE_UNDEAD_ABILITY_FUNC, PROFILE_UNDEAD_UNIT_FUNC, PROFILE_UNDEAD_UPGRADE_FUNC, PROFILE_UNIT_EDITOR_DATA, PROFILE_WAR3SKINS, PROFILE_WORLD_EDIT_DATA, PROFILE_WORLD_EDIT_GAME_STRINGS, PROFILE_WORLD_EDIT_LAYOUT, PROFILE_WORLD_EDIT_STRINGS, SLK_ABILITY_BUFF_META_DATA, SLK_ABILITY_DATA, SLK_ABILITY_META_DATA, SLK_DESTRUCTABLE_DATA, SLK_DESTRUCTABLE_META_DATA, SLK_DOODAD_META_DATA, SLK_DOODADS, SLK_MISC_META_DATA, SLK_SKIN_META_DATA, SLK_UNIT_ABILITIES, SLK_UNIT_BALANCE, SLK_UNIT_COMBAT_SOUNDS, SLK_UNIT_DATA, SLK_UNIT_META_DATA, SLK_UNIT_UI, SLK_UNIT_WEAPONS, SLK_UPGRADE_DATA, SLK_UPGRADE_EFFECT_META_DATA, SLK_UPGRADE_META_DATA};
 use war_editor::map_data::data_ini::DataIni;
 use war_editor::map_data::map::Map;
@@ -29,6 +29,9 @@ fn main() {
 //    }
     let now = Instant::now();
 
+    let game_data = &GameData::new();
+    // let mut trigger_data = DataIni::new();
+    // trigger_data.merge(PROFILE_TRIGGER_DATA);
     // trigger_datas.debug();
 
 //    let mut ini = DataIni::new();
@@ -99,7 +102,7 @@ fn main() {
     let harrow = "resources/Scenario/(2)Harrow.w3m".to_string();
     let circumvention = "resources/Scenario/(2)Circumvention.w3x".to_string();
     let azure_tower_defense = "resources/Scenario/(8)AzureTowerDefense.w3x".to_string();
-     let _map = Map::open(the_death_sheep);
+     let _map = Map::open(the_death_sheep, game_data);
 //     let _map = Map::open(azure_tower_defense);
 //     let _map = Map::open(circumvention);
 //    let _map = Map::open(harrow);
