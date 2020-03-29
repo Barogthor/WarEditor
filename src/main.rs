@@ -102,7 +102,9 @@ fn main() {
     let harrow = "resources/Scenario/(2)Harrow.w3m".to_string();
     let circumvention = "resources/Scenario/(2)Circumvention.w3x".to_string();
     let azure_tower_defense = "resources/Scenario/(8)AzureTowerDefense.w3x".to_string();
-     let _map = Map::open(the_death_sheep, game_data);
+    let sandbox_roc = "resources/Scenario/Sandbox_1.w3m".to_string();
+    let sandbox_tft = "resources/Scenario/Sandbox_1.w3x".to_string();
+     let _map = Map::open(sandbox_roc, game_data);
 //     let _map = Map::open(azure_tower_defense);
 //     let _map = Map::open(circumvention);
 //    let _map = Map::open(harrow);
