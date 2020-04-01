@@ -48,7 +48,7 @@ pub mod minimap_file;
 pub mod import_file;
 pub mod trigger_string_file;
 pub mod custom_text_trigger_file;
-pub mod trigger_file;
+pub mod triggers;
 pub mod map;
 pub mod slk_datas;
 pub mod data_ini;
