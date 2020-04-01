@@ -5,7 +5,7 @@ use crate::globals::{GameVersion, MAP_TRIGGERS};
 use crate::globals::GameVersion::{RoC, TFT};
 use crate::map_data::binary_reader::BinaryReader;
 use crate::map_data::data_ini::DataIni;
-use crate::map_data::triggers::enums::WtgError::{self};
+use crate::map_data::triggers::enums::WtgError::{self, UnknownGameVersion};
 use crate::map_data::triggers::misc::{TriggerCategory, VariableDefinition};
 use crate::map_data::triggers::trigger_data::ECADefinition;
 
@@ -13,7 +13,6 @@ mod enums;
 mod misc;
 mod trigger_data;
 mod wtg_tests;
-
 
 #[derive(Debug)]
 pub struct TriggerDefinition {
@@ -64,7 +63,7 @@ pub struct TriggersFile {
 }
 
 impl TriggersFile {
-    pub fn read_file(mpq: &mut Archive, trigger_data: &DataIni) -> Self{
+    pub fn read_file(mpq: &mut Archive, trigger_data: &DataIni) -> Result<Self, WtgError>{
         let file = mpq.open_file(MAP_TRIGGERS).unwrap();
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
         file.read(mpq, &mut buffer).unwrap();
@@ -72,10 +71,10 @@ impl TriggersFile {
         Self::from(&mut reader, trigger_data)
     }
 
-    fn from(reader: &mut BinaryReader, trigger_data: &DataIni) -> Self{
+    fn from(reader: &mut BinaryReader, trigger_data: &DataIni) -> Result<Self, WtgError>{
         let id = String::from_utf8(reader.read_bytes(4)).unwrap();
         let version = reader.read_u32();
-        let version = to_game_version(version);
+        let version = to_game_version(version).unwrap();
         let count_categories = reader.read_u32();
         let mut categories = vec![];
         for _ in 0..count_categories {
@@ -94,9 +93,9 @@ impl TriggersFile {
             triggers.push(TriggerDefinition::from(reader, &version, trigger_data).unwrap())
         }
         assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_TRIGGERS, reader.size() - reader.pos() as usize);
-        Self{
+        Ok(Self{
             id, version, categories, unknown, vars, triggers
-        }
+        })
     }
 
     pub fn debug(&self){
@@ -105,10 +104,10 @@ impl TriggersFile {
 }
 
 
-fn to_game_version(value: u32) -> GameVersion{
+fn to_game_version(value: u32) -> Result<GameVersion, WtgError>{
     match value{
-        4 => RoC,
-        7 => TFT,
-        _ => panic!("Unknown or unsupported game version '{}'", value)
+        4 => Ok(RoC),
+        7 => Ok(TFT),
+        _ => Err(UnknownGameVersion(format!("Unknown or unsupported game version '{}'", value)))
     }
 }

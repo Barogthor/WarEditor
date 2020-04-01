@@ -10,6 +10,7 @@ pub enum WtgError {
     ConditionConversionError(String),
     WtgParsingIsntCompleteError(String),
     UnknownProp(String),
+    UnknownGameVersion(String)
 }
 
 #[derive(PartialOrd, PartialEq, Copy, Clone, Debug)]

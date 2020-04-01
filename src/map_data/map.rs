@@ -63,7 +63,7 @@ impl<'a> Map<'a> {
 //        trigstrs.debug();
         let triggers_ct = CustomTextTriggerFile::read_file(&mut map);
 //        triggers_ct.debug();
-        let triggers = TriggersFile::read_file(&mut map, game_data.get_trigger_data());
+        let triggers = TriggersFile::read_file(&mut map, game_data.get_trigger_data()).unwrap();
         let doodad_map = DoodadMap::read_file(&mut map);
         let unit_item_map = UnitItemMap::read_file(&mut map);
         let import_listing = ImportFile::read_file(&mut map);
