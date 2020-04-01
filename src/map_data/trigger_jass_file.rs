@@ -7,70 +7,55 @@ use crate::globals::GameVersion::{RoC, TFT};
 use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
 use crate::map_data::binary_writer::BinaryWriter;
 
-type TextScript = CString;
+type TextScript = String;
 
 #[derive(Debug)]
-pub struct CustomTextTriggerFile {
+pub struct TriggerJassFile {
     version: GameVersion,
-    global_comment: CString,
+    global_comment: String,
     global_script: TextScript,
     triggers_script: Vec<TextScript>,
 }
 
-impl CustomTextTriggerFile {
+impl TriggerJassFile {
     pub fn read_file(mpq: &mut Archive) -> Self{
         let file = mpq.open_file(MAP_TRIGGERS_SCRIPT).unwrap();
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
         file.read(mpq, &mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer);
-        reader.read::<CustomTextTriggerFile>()
+        reader.read::<TriggerJassFile>()
     }
     pub fn debug(&self){
         println!("{:#?}",self);
     }
 }
 
-impl BinaryConverter for CustomTextTriggerFile {
+impl BinaryConverter for TriggerJassFile {
     fn read(reader: &mut BinaryReader) -> Self {
-
         let version = reader.read_u32();
         let version = to_game_version(version);
         let count_triggers: usize;
-        let mut global_comment: CString = Default::default();
-        let mut global_script: CString = Default::default();
+        let mut global_comment: String = Default::default();
+        let mut global_script: String = Default::default();
         let mut text_triggers: Vec<TextScript> = Vec::new();
         match version {
-            RoC => {
-                count_triggers = reader.read_u32() as usize;
-                for _ in 0..count_triggers{
-                    let s = reader.read_u32() as usize;
-                    text_triggers.push(reader.read_c_string_sized(s));
-                }
-            },
+            RoC => (),
             _  => {
-                global_comment = reader.read_c_string();
+                global_comment = reader.read_c_string().into_string().unwrap();
                 let s = reader.read_u32() as usize;
-                println!("pos: {},  length: {}", reader.pos(), s);
-                global_script = if s > 0 {
-                    let scr = reader.read_c_string_sized(s-1);
-                    reader.skip(1);
-                    scr
-                } else { Default::default() };
-                count_triggers = reader.read_u32() as usize;
-                println!("count: {}, bufsize: {}",count_triggers, reader.size());
-                for i in 0..count_triggers{
-                    let length = reader.read_u32() as usize;
-                    if length == 0 { continue; }
-                    println!("i: {} || left: {},  length: {}", i, (reader.size() - reader.pos() as usize), length);
-                    text_triggers.push(reader.read_c_string_sized(length - 1));
-                    reader.skip(1);
-                }
+                global_script =  reader.read_string_utf8(s);
             }
+        }
+        count_triggers = reader.read_u32() as usize;
+        for i in 0..count_triggers{
+            let length = reader.read_u32() as usize;
+            if length == 0 { continue; }
+            text_triggers.push(reader.read_string_utf8(length));
         }
         assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_TRIGGERS_SCRIPT, reader.size() - reader.pos() as usize);
 
-        CustomTextTriggerFile {
+        TriggerJassFile {
             version,
             global_comment,
             global_script,
