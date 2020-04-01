@@ -1,5 +1,6 @@
 use std::ffi::CString;
-use std::io::{BufRead, Cursor, Seek, SeekFrom};
+use std::fs::File;
+use std::io::{BufRead, Cursor, Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 
@@ -14,6 +15,14 @@ pub struct BinaryReader{
 impl BinaryReader{
     pub fn new(buffer: Vec<u8>) -> BinaryReader{
         BinaryReader{size:buffer.len(), buffer: Cursor::new(buffer)}
+    }
+
+    pub fn from(file: &mut File) -> BinaryReader{
+        let mut buffer: Vec<u8> = vec![];
+        file.read_to_end(&mut buffer);
+        BinaryReader{
+            size: buffer.len(), buffer: Cursor::new(buffer)
+        }
     }
 
     pub fn read_char(&mut self) -> char{
