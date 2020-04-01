@@ -5,73 +5,15 @@ use crate::globals::{GameVersion, MAP_TRIGGERS};
 use crate::globals::GameVersion::{RoC, TFT};
 use crate::map_data::binary_reader::BinaryReader;
 use crate::map_data::data_ini::DataIni;
-use crate::map_data::triggers::config::{TriggerCategory, VariableDefinition};
+use crate::map_data::triggers::enums::WtgError::{self};
+use crate::map_data::triggers::misc::{TriggerCategory, VariableDefinition};
 use crate::map_data::triggers::trigger_data::ECADefinition;
 
 mod enums;
+mod misc;
 mod trigger_data;
 mod wtg_tests;
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
-pub enum WtgError {
-    ParameterConversionError(String),
-    SubParameterConversionError(String),
-    ECAConversionError(String),
-    ConditionConversionError(String),
-    WtgParsingIsntCompleteError(String),
-    UnknownProp(String),
-}
-
-
-mod config{
-    use crate::globals::GameVersion;
-    use crate::map_data::binary_reader::BinaryReader;
-
-    #[derive(Debug, Default)]
-    pub struct VariableDefinition {
-        name: String,
-        var_type: String,
-        unknown: i32,
-        is_array: bool,
-        array_size: u32,
-        initialized: bool,
-        init_value: String,
-    }
-
-    impl VariableDefinition {
-        pub fn from(reader: &mut BinaryReader, game_version: &GameVersion) -> Self {
-            let mut def = Self::default();
-            def.name = reader.read_c_string().into_string().unwrap();
-            def.var_type = reader.read_c_string().into_string().unwrap();
-            def.unknown = reader.read_i32();
-            def.is_array = reader.read_u32() == 1;
-            if game_version.is_tft() {
-                def.array_size = reader.read_u32();
-            }
-            def.initialized = reader.read_u32() == 1;
-            def.init_value = reader.read_c_string().into_string().unwrap();
-            def
-        }
-    }
-
-    #[derive(Debug, Default)]
-    pub struct TriggerCategory {
-        id: u32,
-        name: String,
-        is_comment: bool,
-    }
-
-    impl TriggerCategory {
-        pub fn from(reader: &mut BinaryReader, game_version: &GameVersion) -> Self{
-            let mut def = Self::default();
-
-            def.id = reader.read_u32();
-            def.name = reader.read_c_string().into_string().unwrap();
-            if game_version.is_tft() { def.is_comment = reader.read_u32() == 1; }
-            def
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct TriggerDefinition {
@@ -79,27 +21,25 @@ pub struct TriggerDefinition {
     description: String,
     is_comment: Option<bool>,
     enabled: bool,
-    is_script: bool,
+    is_gui: bool,
     is_on: bool,
-    run_init: bool,
+    run_on_init: bool,
     index_category: u32,
     ecas: Vec<ECADefinition>,
 }
 
 impl TriggerDefinition {
     pub fn from(reader: &mut BinaryReader, game_version: &GameVersion, trigger_data: &DataIni) -> Result<Self, WtgError> {
-        debug!("======= Trigger Definition =======");
         let name = reader.read_c_string().into_string().unwrap();
-        debug!("======= [TRIGGER] name: {}", name);
         let description = reader.read_c_string().into_string().unwrap();
         let is_comment = match game_version {
             RoC => None,
             _ => Some(reader.read_u32() != 0)
         };
         let enabled = reader.read_u32() == 1;
-        let is_script = reader.read_u32() == 1;
+        let is_gui = reader.read_u32() == 0;
         let is_on = reader.read_u32() == 0;
-        let run_init = reader.read_i32() == 0;
+        let run_on_init = reader.read_i32() == 0;
         let index_category = reader.read_u32();
         let count_ecas = reader.read_u32();
         let mut ecas = vec![];
@@ -107,12 +47,11 @@ impl TriggerDefinition {
             ecas.push(ECADefinition::from(reader, game_version, trigger_data, false)?);
         }
         Ok(Self{
-            name, description, is_comment, enabled, is_script, is_on, run_init, index_category, ecas
+            name, description, is_comment, enabled, is_gui, is_on,
+            run_on_init, index_category, ecas
         })
     }
 }
-
-
 
 #[derive(Debug, Default)]
 pub struct TriggersFile {

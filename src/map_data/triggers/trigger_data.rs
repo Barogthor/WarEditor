@@ -9,7 +9,7 @@ use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
 use crate::map_data::binary_writer::BinaryWriter;
 use crate::map_data::data_ini::DataIni;
 use crate::map_data::triggers::enums::{ConditionType, ECAType, ParameterType, SubParameterType};
-use crate::map_data::triggers::WtgError::{self, UnknownProp};
+use crate::map_data::triggers::enums::WtgError::{self, UnknownProp};
 
 #[derive(Debug)]
 pub struct ECADefinition {

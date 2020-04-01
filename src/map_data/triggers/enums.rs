@@ -1,6 +1,16 @@
 use log::{debug, error, info, trace, warn};
 
-use crate::map_data::triggers::WtgError::{self, ConditionConversionError, ECAConversionError, ParameterConversionError, SubParameterConversionError, UnknownProp};
+use crate::map_data::triggers::enums::WtgError::{ConditionConversionError, ECAConversionError, ParameterConversionError, SubParameterConversionError, UnknownProp};
+
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
+pub enum WtgError {
+    ParameterConversionError(String),
+    SubParameterConversionError(String),
+    ECAConversionError(String),
+    ConditionConversionError(String),
+    WtgParsingIsntCompleteError(String),
+    UnknownProp(String),
+}
 
 #[derive(PartialOrd, PartialEq, Copy, Clone, Debug)]
 pub enum ParameterType {
