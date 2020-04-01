@@ -13,7 +13,19 @@ use crate::map_data::data_ini::DataIni;
 use crate::map_data::trigger_file::config::{TriggerCategory, VariableDefinition};
 use crate::map_data::trigger_file::trigger::TriggerDefinition;
 
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
+pub enum WtgError {
+    ParameterConversionError(String),
+    SubParameterConversionError(String),
+    ECAConversionError(String),
+    ConditionConversionError(String),
+    WtgParsingIsntCompleteError(String),
+    UnknownProp(String),
+}
+
 mod config{
+    use std::fmt::Error;
+
     use crate::globals::GameVersion;
     use crate::map_data::binary_reader::BinaryReader;
 
@@ -44,7 +56,6 @@ mod config{
         }
     }
 
-
     #[derive(Debug, Default)]
     pub struct TriggerCategory {
         id: u32,
@@ -62,8 +73,6 @@ mod config{
             def
         }
     }
-
-
 }
 
 
@@ -72,6 +81,7 @@ mod trigger {
     use std::fmt::{Debug, Error, Formatter};
 
     use crate::map_data::trigger_file::trigger::ParameterType::{FUNCTION, INVALID, PRESET, STRING, VARIABLE};
+    use crate::map_data::trigger_file::WtgError::{ConditionConversionError, ECAConversionError, ParameterConversionError, SubParameterConversionError, UnknownProp};
 
     use super::*;
 
@@ -89,7 +99,7 @@ mod trigger {
     }
 
     impl TriggerDefinition {
-        pub fn from(reader: &mut BinaryReader, game_version: &GameVersion, trigger_data: &DataIni) -> Self {
+        pub fn from(reader: &mut BinaryReader, game_version: &GameVersion, trigger_data: &DataIni) -> Result<Self, WtgError> {
             debug!("======= Trigger Definition =======");
             let name = reader.read_c_string().into_string().unwrap();
             debug!("======= [TRIGGER] name: {}", name);
@@ -106,11 +116,11 @@ mod trigger {
             let count_ecas = reader.read_u32();
             let mut ecas = vec![];
             for _ in 0..count_ecas{
-                ecas.push(ECADefinition::from(reader, game_version, trigger_data, false));
+                ecas.push(ECADefinition::from(reader, game_version, trigger_data, false)?);
             }
-            Self{
+            Ok(Self{
                 name, description, is_comment, enabled, is_script, is_on, run_init, index_category, ecas
-            }
+            })
         }
     }
 
@@ -126,50 +136,46 @@ mod trigger {
     }
 
     impl ECADefinition {
-        pub fn from(reader: &mut BinaryReader, game_version: &GameVersion, trigger_data: &DataIni, is_child_eca: bool) -> Self{
+        pub fn from(reader: &mut BinaryReader, game_version: &GameVersion, trigger_data: &DataIni, is_child_eca: bool) -> Result<Self, WtgError>{
             let ftype = reader.read_u32();
-            let ftype = ECAType::from(ftype);
+            let ftype = ECAType::from(ftype)?;
             let condition_group = match (game_version, is_child_eca){
                 (RoC, _) | (_, false)  => None,
                 (_, true) => {
-                    let condition = ConditionType::from(reader.read_u32());
+                    let condition = ConditionType::from(reader.read_u32())?;
                     Some(condition)
                 }
             };
             let name = reader.read_c_string().into_string().unwrap();
-            let eca_info = trigger_data.get_prop(ftype.get_sector(), &name);
-            match eca_info{
-                Some(info) => {
-                    let info_split = info.split(",").collect::<Vec<&str>>();
-                    let count_parameters = match info_split[1]{
-                        "nothing" => 0,
-                        _ => info_split.len() - 1
-                    };
-                    let mut parameters = vec![];
-                    let enabled = reader.read_u32() == 1;
-                    for _ in 0..count_parameters{
-                        parameters.push(Parameter::from(reader, game_version, trigger_data));
-                    }
-                    let childs_eca = match game_version {
-                        (RoC) => None,
-                        (_) => {
-                            let count_childs = reader.read_u32();
-                            let mut v = vec![];
-                            for _ in 0..count_childs{
-                                v.push(ECADefinition::from(reader, game_version, trigger_data, true));
-                            };
-                            Some(v)
-                        }
-                    };
-                    return Self{
-                        ftype, condition_group, name, enabled, parameters, childs_eca
-                    };
-                },
-                None => {
-                    error!("sector {} or function {} doesn't seem to exist", ftype.get_sector(), name);
-                }
+            let eca_info = trigger_data.get_prop(ftype.get_sector(), &name)
+                .ok_or_else(|| UnknownProp(format!("ECA Prop isnt known: [{}]", name)))?;
+
+            let info_split = eca_info.split(",").collect::<Vec<&str>>();
+            let count_parameters = match info_split[1]{
+                "nothing" => 0,
+                _ => info_split.len() - 1
+            };
+            let mut parameters = vec![];
+            let enabled = reader.read_u32() == 1;
+            for _ in 0..count_parameters{
+                parameters.push(Parameter::from(reader, game_version, trigger_data)?);
             }
-            panic!("couldn't finish ECA definition");
+            let childs_eca = match game_version {
+                (RoC) => None,
+                (_) => {
+                    let count_childs = reader.read_u32();
+                    let mut v = vec![];
+                    for _ in 0..count_childs{
+                        v.push(ECADefinition::from(reader, game_version, trigger_data, true)?);
+                    };
+                    Some(v)
+                }
+            };
+            Ok(Self{
+                ftype, condition_group, name, enabled, parameters, childs_eca
+            })
+
+
         }
     }
 
@@ -183,58 +189,39 @@ mod trigger {
     }
 
     impl Parameter {
-        fn for_roc(reader: &mut BinaryReader, game_version: &GameVersion, trigger_data: &DataIni, ptype: &ParameterType) -> (Option<i32>, Option<Box<Parameter>>){
-            let unknown = match ptype{
-                ParameterType::FUNCTION => Some(reader.read_i32()),
-                _ => None
-            };
-            let array_parameter = match ptype{
-                ParameterType::FUNCTION => None,
-                _ => {
-                    let is_array = reader.read_u32() == 1;
-                    if is_array {
-                        let p = Parameter::from(reader, game_version, trigger_data);
-                        Some(Box::new(p))
-                    } else { None }
-                }
-            };
-            (unknown, array_parameter)
-        }
-
-        fn for_tft(reader: &mut BinaryReader, game_version: &GameVersion, trigger_data: &DataIni, ptype: &ParameterType, has_sub_parameter: bool) -> (Option<i32>, Option<Box<Parameter>>) {
-            let unknown = match has_sub_parameter{
-                false => None,
-                true => Some(reader.read_i32())
-            };
-            let is_array = reader.read_u32() == 1;
-            let array_parameter = match is_array {
-                false => None,
-                true => {
-                    let p = Parameter::from(reader, game_version, trigger_data);
-                    Some(Box::new(p))
-                }
-            };
-            (unknown, array_parameter)
-        }
-
-        pub fn from(reader: &mut BinaryReader, game_version: &GameVersion, trigger_data: &DataIni) -> Self{
+        pub fn from(reader: &mut BinaryReader, game_version: &GameVersion, trigger_data: &DataIni) -> Result<Self, WtgError>{
             let ptype = reader.read_i32();
-            let ptype = ParameterType::from(ptype);
+            let ptype = ParameterType::from(ptype)?;
             let value = reader.read_c_string().into_string().unwrap();
             let has_sub_parameters = reader.read_u32() == 1;
             let sub_parameters = match has_sub_parameters {
                 false => None,
-                true => Some(SubParameters::from(reader, game_version, trigger_data))
+                true => Some(SubParameters::from(reader, game_version, trigger_data)?)
             };
 
-            let (unknown, array_parameter) = match game_version{
-                RoC => Self::for_roc(reader, game_version, trigger_data, &ptype),
-                _ => Self::for_tft(reader, game_version, trigger_data, &ptype, has_sub_parameters),
+            let unknown = match (game_version, ptype, has_sub_parameters) {
+                (RoC, ParameterType::FUNCTION, _) => Some(reader.read_i32()),
+                (RoC, _, _) | (_, _, false) => None,
+                (_, _, true) => Some(reader.read_i32())
             };
 
-            Self{
+            let array_parameter = match (game_version, ptype){
+                (RoC, FUNCTION) => None,
+                (RoC, _) | (_, _) => {
+                    let is_array = reader.read_u32() == 1;
+                    match is_array{
+                        true => {
+                            let p = Parameter::from(reader, game_version, trigger_data).unwrap();
+                            Some(Box::new(p))
+                        },
+                        _ => None,
+                    }
+                }
+            };
+
+            Ok(Self{
                 ptype, value, sub_parameters, unknown, array_parameter
-            }
+            })
         }
     }
 
@@ -246,41 +233,38 @@ mod trigger {
     }
 
     impl SubParameters {
-        pub fn from(reader: &mut BinaryReader, game_version: &GameVersion, trigger_data: &DataIni) -> Self{
+        pub fn from(reader: &mut BinaryReader, game_version: &GameVersion, trigger_data: &DataIni) -> Result<Self, WtgError>{
             let ptype = reader.read_u32();
-            let ptype = SubParameterType::from(ptype);
+            let ptype = SubParameterType::from(ptype)?;
             let name = reader.read_c_string().into_string().unwrap();
-            let info_parameters = trigger_data.get_prop(ptype.get_sector(), &name);
-            match info_parameters{
-                Some(info) => {
-                    let substract = match ptype{
-                        SubParameterType::Call => 3,
-                        _ => 1
-                    };
-                    let info_split = info.split(",").collect::<Vec<&str>>();
-                    let count_parameters = if info_split.len() <=substract || info_split[substract] == "nothing"{
-                         0
-                    } else {
-                        info_split.len() - substract
-                    };
-                    let mut parameters = vec![];
-                    // if count_parameters > 0 {
-                        let begin_parameters = reader.read_u32() != 0;
-                        if begin_parameters {
-                            for _ in 0..count_parameters {
-                                parameters.push(Parameter::from(reader, game_version, trigger_data));
-                            }
-                        }
-                    // }
-                    return Self{
-                        ptype, name, parameters
+            let info_parameters = trigger_data.get_prop(ptype.get_sector(), &name)
+                .ok_or_else(|| UnknownProp(format!("Sub parameter prop isnt known: [{}]", name)))?;
+
+            let substract = match ptype{
+                SubParameterType::Call => 3,
+                _ => 1
+            };
+            let info_split = info_parameters.split(",").collect::<Vec<&str>>();
+            let count_parameters = if info_split.len() <=substract || info_split[substract] == "nothing"{
+                 0
+            } else {
+                info_split.len() - substract
+            };
+            let mut parameters = vec![];
+            // if count_parameters > 0 {
+                let begin_parameters = reader.read_u32() != 0;
+                if begin_parameters {
+                    for _ in 0..count_parameters {
+                        parameters.push(Parameter::from(reader, game_version, trigger_data)?);
                     }
-                },
-                None => {
-                    error!("sector {} or function {} doesn't seem to exist", ptype.get_sector(), name);
                 }
-            }
-            panic!("couldn't finish Sub parameter definition");
+            // }
+            Ok(Self{
+                ptype, name, parameters
+            })
+
+
+
         }
     }
 
@@ -295,17 +279,18 @@ mod trigger {
     }
 
     impl ParameterType {
-        pub fn from(n: i32) -> Self {
+        pub fn from(n: i32) -> Result<ParameterType, WtgError> {
             match n{
-                0 => PRESET,
-                1 => VARIABLE,
-                2 => FUNCTION,
-                3 => STRING,
-                -1 => INVALID,
-                _ => {
-                    info!("Unknown Parameter type {} was found", n);
-                    INVALID
-                }
+                0 => Ok(PRESET),
+                1 => Ok(VARIABLE),
+                2 => Ok(FUNCTION),
+                3 => Ok(STRING),
+                -1 => {
+                    info!("Parameter type invalid was found");
+                    Ok(INVALID)
+                },
+                _ => Err(ParameterConversionError(format!("Unknown Parameter type {} was found", n)))
+
             }
         }
     }
@@ -317,12 +302,12 @@ mod trigger {
         Action
     }
     impl ECAType {
-        pub fn from(n: u32) -> ECAType {
+        pub fn from(n: u32) -> Result<ECAType, WtgError> {
             match n{
-                0 => (ECAType::Event),
-                1 => (ECAType::Condition),
-                2 => (ECAType::Action),
-                _ => panic!("Unknown function type {}",n)
+                0 => Ok(ECAType::Event),
+                1 => Ok(ECAType::Condition),
+                2 => Ok(ECAType::Action),
+                _ => Err(ECAConversionError(format!("Unknown function type {}",n)))
             }
         }
         pub fn get_sector(&self) -> &str {
@@ -341,13 +326,13 @@ mod trigger {
         Call
     }
     impl SubParameterType {
-        pub fn from(n: u32) -> Self {
+        pub fn from(n: u32) -> Result<SubParameterType, WtgError> {
             match n{
-                0 => (SubParameterType::Event),
-                1 => (SubParameterType::Condition),
-                2 => (SubParameterType::Action),
-                3 => (SubParameterType::Call),
-                _ => panic!("Unknown sub parameter type {}",n)
+                0 => Ok(SubParameterType::Event),
+                1 => Ok(SubParameterType::Condition),
+                2 => Ok(SubParameterType::Action),
+                3 => Ok(SubParameterType::Call),
+                _ => Err(SubParameterConversionError(format!("Unknown sub parameter type {}",n)))
             }
         }
         pub fn get_sector(&self) -> &str {
@@ -367,12 +352,12 @@ mod trigger {
         Else
     }
     impl ConditionType{
-        pub fn from(n: u32) -> ConditionType {
+        pub fn from(n: u32) -> Result<Self, WtgError> {
             match n{
-                0 => ConditionType::Condition,
-                1 => ConditionType::Then,
-                2 => ConditionType::Else,
-                _ => panic!("Unknown condition type {}",n)
+                0 => Ok(ConditionType::Condition),
+                1 => Ok(ConditionType::Then),
+                2 => Ok(ConditionType::Else),
+                _ => Err(ConditionConversionError(format!("Unknown Condition type {}", n)))
             }
         }
     }
@@ -416,7 +401,7 @@ impl TriggersFile {
         let mut triggers = vec![];
         for _ in 0..count_triggers{
         // for _ in 0..3{
-            triggers.push(TriggerDefinition::from(reader, &version, trigger_data))
+            triggers.push(TriggerDefinition::from(reader, &version, trigger_data).unwrap())
         }
         assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_TRIGGERS, reader.size() - reader.pos() as usize);
         Self{
