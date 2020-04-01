@@ -13,12 +13,12 @@ use crate::map_data::triggers::enums::WtgError::{self, UnknownProp};
 
 #[derive(Debug)]
 pub struct ECADefinition {
-    ftype: ECAType,
-    condition_group: Option<ConditionType>,
-    name: String,
-    enabled: bool,
-    parameters: Vec<Parameter>,
-    childs_eca: Option<Vec<ECADefinition>>
+    pub(super) ftype: ECAType,
+    pub(super) condition_group: Option<ConditionType>,
+    pub(super) name: String,
+    pub(super) enabled: bool,
+    pub(super) parameters: Vec<Parameter>,
+    pub(super) childs_eca: Option<Vec<ECADefinition>>
 }
 
 impl ECADefinition {
@@ -67,11 +67,11 @@ impl ECADefinition {
 
 #[derive(Debug)]
 pub struct Parameter {
-    ptype: ParameterType,
-    value: String,
-    sub_parameters: Option<SubParameters>,
-    unknown: Option<i32>,
-    array_parameter: Option<Box<Self>>,
+    pub(super) ptype: ParameterType,
+    pub(super) value: String,
+    pub(super) sub_parameters: Option<SubParameters>,
+    pub(super) unknown: Option<i32>,
+    pub(super) array_parameter: Option<Box<Self>>,
 }
 
 impl Parameter {
@@ -113,9 +113,9 @@ impl Parameter {
 
 #[derive(Debug)]
 pub struct SubParameters {
-    ptype: SubParameterType,
-    name: String,
-    parameters: Vec<Parameter>,
+    pub(super) ptype: SubParameterType,
+    pub(super) name: String,
+    pub(super) parameters: Vec<Parameter>,
 }
 
 impl SubParameters {

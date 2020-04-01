@@ -3,13 +3,13 @@ use crate::map_data::binary_reader::BinaryReader;
 
 #[derive(Debug, Default)]
 pub struct VariableDefinition {
-    name: String,
-    var_type: String,
-    unknown: i32,
-    is_array: bool,
-    array_size: u32,
-    initialized: bool,
-    init_value: String,
+    pub(super) name: String,
+    pub(super) var_type: String,
+    pub(super) unknown: i32,
+    pub(super) is_array: bool,
+    pub(super) array_size: u32,
+    pub(super) initialized: bool,
+    pub(super) init_value: String,
 }
 
 impl VariableDefinition {
@@ -30,9 +30,9 @@ impl VariableDefinition {
 
 #[derive(Debug, Default)]
 pub struct TriggerCategory {
-    id: u32,
-    name: String,
-    is_comment: bool,
+    pub(super) id: u32,
+    pub(super) name: String,
+    pub(super) is_comment: bool,
 }
 
 impl TriggerCategory {

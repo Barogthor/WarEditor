@@ -33,6 +33,7 @@ mod trigger_file_tests{
         let buffer = TFT_TRIGGER_CONDITION.to_vec();
         let mut reader = BinaryReader::new(buffer);
         let trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
+
         assert_eq!(reader.pos()as usize, TFT_TRIGGER_CONDITION.len());
     }
 
