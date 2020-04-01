@@ -31,10 +31,10 @@ pub struct W3iFile{
     version: GameVersion,
     count_saves: i32,
     editor_version: i32,
-    map_name: CString,
-    map_author: CString,
-    map_description: CString,
-    recommended_players: CString,
+    map_name: String,
+    map_author: String,
+    map_description: String,
+    recommended_players: String,
     camera_bounds : Vec<f32>, // 8
     camera_bounds_complements: Vec<i32>, // 4
     map_playable_width: i32,
@@ -60,16 +60,16 @@ pub struct W3iFile{
 
     ground_type: char,
     campaign_background: i32, // RoC
-    custom_loading_screen_model_path: CString, // TFT
+    custom_loading_screen_model_path: String, // TFT
     loading_screen_index: i32,
-    loading_screen_text: CString,
-    loading_screen_title: CString,
-    loading_screen_subtitle: CString,
+    loading_screen_text: String,
+    loading_screen_title: String,
+    loading_screen_subtitle: String,
     user_game_dataset: i32, // TFT
-    prologue_screen_path: CString, // TFT
-    prologue_screen_text: CString,
-    prologue_screen_title: CString,
-    prologue_screen_subtitle: CString,
+    prologue_screen_path: String, // TFT
+    prologue_screen_text: String,
+    prologue_screen_title: String,
+    prologue_screen_subtitle: String,
     // TFT
     fog_style: i32,
     fog_z_height_start: f32,
@@ -80,7 +80,7 @@ pub struct W3iFile{
     fog_blue_tint: u8,
     fog_alpha_value: u8,
     global_weather: i32,
-    custom_sound_environment: CString,
+    custom_sound_environment: String,
     custom_light_environment_id: char,
     custom_water_red_tint: u8,
     custom_water_green_tint: u8,
@@ -120,10 +120,10 @@ impl BinaryConverter for W3iFile{
         w3i.version = to_game_version(version);
         w3i.count_saves = reader.read_i32();
         w3i.editor_version = reader.read_i32();
-        w3i.map_name = reader.read_c_string();
-        w3i.map_author = reader.read_c_string();
-        w3i.map_description = reader.read_c_string();
-        w3i.recommended_players = reader.read_c_string();
+        w3i.map_name = reader.read_c_string().into_string().unwrap();
+        w3i.map_author = reader.read_c_string().into_string().unwrap();
+        w3i.map_description = reader.read_c_string().into_string().unwrap();
+        w3i.recommended_players = reader.read_c_string().into_string().unwrap();
         w3i.camera_bounds = reader.read_vec_f32(8);
         w3i.camera_bounds_complements = reader.read_vec_i32(4);
         w3i.map_playable_width = reader.read_i32();
@@ -150,25 +150,25 @@ impl BinaryConverter for W3iFile{
         match w3i.version{
             RoC => {
                 w3i.campaign_background = reader.read_i32();
-                w3i.loading_screen_text = reader.read_c_string();
-                w3i.loading_screen_title = reader.read_c_string();
-                w3i.loading_screen_subtitle = reader.read_c_string();
+                w3i.loading_screen_text = reader.read_c_string().into_string().unwrap();
+                w3i.loading_screen_title = reader.read_c_string().into_string().unwrap();
+                w3i.loading_screen_subtitle = reader.read_c_string().into_string().unwrap();
                 w3i.loading_screen_index = reader.read_i32();
-                w3i.prologue_screen_text = reader.read_c_string();
-                w3i.prologue_screen_title = reader.read_c_string();
-                w3i.prologue_screen_subtitle = reader.read_c_string();
+                w3i.prologue_screen_text = reader.read_c_string().into_string().unwrap();
+                w3i.prologue_screen_title = reader.read_c_string().into_string().unwrap();
+                w3i.prologue_screen_subtitle = reader.read_c_string().into_string().unwrap();
             },
-            TFT | TFT131 => {
+            _ => {
                 w3i.loading_screen_index = reader.read_i32();
-                w3i.custom_loading_screen_model_path = reader.read_c_string();
-                w3i.loading_screen_text = reader.read_c_string();
-                w3i.loading_screen_title = reader.read_c_string();
-                w3i.loading_screen_subtitle = reader.read_c_string();
+                w3i.custom_loading_screen_model_path = reader.read_c_string().into_string().unwrap();
+                w3i.loading_screen_text = reader.read_c_string().into_string().unwrap();
+                w3i.loading_screen_title = reader.read_c_string().into_string().unwrap();
+                w3i.loading_screen_subtitle = reader.read_c_string().into_string().unwrap();
                 w3i.user_game_dataset = reader.read_i32();
-                w3i.prologue_screen_path = reader.read_c_string();
-                w3i.prologue_screen_text = reader.read_c_string();
-                w3i.prologue_screen_title = reader.read_c_string();
-                w3i.prologue_screen_subtitle = reader.read_c_string();
+                w3i.prologue_screen_path = reader.read_c_string().into_string().unwrap();
+                w3i.prologue_screen_text = reader.read_c_string().into_string().unwrap();
+                w3i.prologue_screen_title = reader.read_c_string().into_string().unwrap();
+                w3i.prologue_screen_subtitle = reader.read_c_string().into_string().unwrap();
                 w3i.fog_style = reader.read_i32();
                 w3i.fog_z_height_start = reader.read_f32();
                 w3i.fog_z_height_end = reader.read_f32();
@@ -178,7 +178,7 @@ impl BinaryConverter for W3iFile{
                 w3i.fog_blue_tint = reader.read_u8();
                 w3i.fog_alpha_value = reader.read_u8();
                 w3i.global_weather = reader.read_i32();
-                w3i.custom_sound_environment= reader.read_c_string();
+                w3i.custom_sound_environment= reader.read_c_string().into_string().unwrap();
                 w3i.custom_light_environment_id = reader.read_char();
                 w3i.custom_water_red_tint = reader.read_u8();
                 w3i.custom_water_green_tint = reader.read_u8();
