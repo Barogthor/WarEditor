@@ -218,3 +218,86 @@ fn to_game_version(value: u32) -> GameVersion{
         _ => panic!("Unknown or unsupported game version '{}'", value)
     }
 }
+
+#[cfg(test)]
+mod w3i_tests{
+    use std::fs::File;
+
+    use crate::globals::GameVersion::RoC;
+    use crate::map_data::binary_reader::BinaryReader;
+    use crate::map_data::w3i_file::W3iFile;
+
+    fn get_rock_mock() -> W3iFile{
+        W3iFile{
+            version: RoC,
+            count_saves: 0,
+            editor_version: 0,
+            map_name: format!("Sandbox Roc"),
+            map_author: format!("Inconnu"),
+            map_description: format!("Map pour mocker"),
+            recommended_players: format!("Solo"),
+            camera_bounds: vec![],
+            camera_bounds_complements: vec![],
+            map_playable_width: 0,
+            map_playable_height: 0,
+            flags: 0,
+            hide_minimap_preview: false,
+            modifiy_ally_priorities: false,
+            is_melee: false,
+            unknown: false,
+            mask_partial_vision: false,
+            fixed_custom_player_force: false,
+            use_custom_force: false,
+            use_custom_tree: false,
+            use_custom_abilities: false,
+            use_custom_upgrades: false,
+            unkwown_2: false,
+            show_waves_cliff_shores: false,
+            show_waves_rolling_shores: false,
+            unkwown_3: false,
+            unkwown_4: false,
+            unkwown_5: false,
+            ground_type: '0',
+            campaign_background: 0,
+            custom_loading_screen_model_path: Default::default(),
+            loading_screen_index: 0,
+            loading_screen_text: Default::default(),
+            loading_screen_title: Default::default(),
+            loading_screen_subtitle: Default::default(),
+            user_game_dataset: 0,
+            prologue_screen_path: Default::default(),
+            prologue_screen_text: Default::default(),
+            prologue_screen_title: Default::default(),
+            prologue_screen_subtitle: Default::default(),
+            fog_style: 0,
+            fog_z_height_start: 0.0,
+            fog_z_height_end: 0.0,
+            fog_density: 0.0,
+            fog_red_tint: 0,
+            fog_green_tint: 0,
+            fog_blue_tint: 0,
+            fog_alpha_value: 0,
+            global_weather: 0,
+            custom_sound_environment: Default::default(),
+            custom_light_environment_id: '0',
+            custom_water_red_tint: 0,
+            custom_water_green_tint: 0,
+            custom_water_blue_tint: 0,
+            custom_water_alpha_tint: 0,
+            players: vec![],
+            forces: vec![],
+            upgrades: vec![],
+            techs: vec![],
+            random_unit_tables: vec![],
+            random_item_tables: vec![]
+        }
+    }
+
+    #[test]
+    fn w3i_roc_test(){
+        let mut w3i = File::open("resources/Scenario/Sandbox_roc/war3map.w3i").unwrap();
+        let mut reader = BinaryReader::from(&mut w3i);
+        let w3i = reader.read::<W3iFile>();
+        let w3i_mock = get_rock_mock();
+    }
+}
