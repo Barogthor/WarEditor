@@ -1,4 +1,3 @@
-use std::ffi::CString;
 use std::fmt::Debug;
 
 use mpq::Archive;
@@ -7,23 +6,228 @@ use crate::globals::{GameVersion, MAP_INFOS};
 use crate::globals::GameVersion::{RoC, TFT, TFT131};
 use crate::binary_reader::{BinaryConverter, BinaryReader};
 use crate::binary_writer::BinaryWriter;
-use crate::w3i_subs::force_data::ForceData;
-use crate::w3i_subs::player_data::PlayerData;
-use crate::w3i_subs::random_item_table::RandomItemTable;
-use crate::w3i_subs::random_unit_table::RandomUnitTable;
-use crate::w3i_subs::tech_availability::TechAvailability;
-use crate::w3i_subs::upgrade_availability::UpgradeAvailability;
 
-//pub union GlobalWeather{
-//    value: i32,
-//    id: [char;4]
-//}
-//
-//impl Debug for GlobalWeather{
-//    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-//        write!(f,"")
-//    }
-//}
+#[derive(Debug)]
+struct PlayerData{
+    player_id: i32,
+    player_type: i32,
+    player_race: i32,
+    fixed_position: i32,
+    player_name: String,
+    starting_pos_x: f32,
+    starting_pos_y: f32,
+    ally_low_priorities: i32,
+    ally_high_priorities: i32,
+}
+
+impl BinaryConverter for PlayerData{
+    fn read(reader: &mut BinaryReader) -> Self{
+        let player_id = reader.read_i32();
+        let player_type = reader.read_i32();
+        let player_race = reader.read_i32();
+        let fixed_position = reader.read_i32();
+        let player_name = reader.read_c_string().into_string().unwrap();
+        let starting_pos_x = reader.read_f32();
+        let starting_pos_y = reader.read_f32();
+        let ally_low_priorities = reader.read_i32();
+        let ally_high_priorities = reader.read_i32();
+        PlayerData{
+            player_id,
+            player_type,
+            player_race,
+            fixed_position,
+            player_name,
+            starting_pos_x,
+            starting_pos_y,
+            ally_low_priorities,
+            ally_high_priorities
+        }
+    }
+
+    fn write(&self, _writer: &mut BinaryWriter) {
+        unimplemented!()
+    }
+}
+
+#[derive(Debug)]
+struct ForceData{
+    flags: i32,
+    allied: bool,
+    shared_victory: bool,
+    shared_vision: bool,
+    shared_unit_control: bool,
+    shared_advanced_unit_control: bool,
+    player_mask: i32,
+    name: String,
+}
+
+impl BinaryConverter for ForceData{
+    fn read(reader: &mut BinaryReader) -> Self{
+        let flags = reader.read_i32();
+        let allied = flags & 0x0001 == 1;
+        let shared_victory = flags & 0x0002 == 1;
+        let shared_vision = flags & 0x0004 == 1;
+        let shared_unit_control = flags & 0x0010 == 1;
+        let shared_advanced_unit_control = flags & 0x0020 == 1;
+        let player_mask = reader.read_i32();
+        let name = reader.read_c_string().into_string().unwrap();
+        ForceData{
+            flags,
+            allied,
+            shared_victory,
+            shared_vision,
+            shared_unit_control,
+            shared_advanced_unit_control,
+            player_mask,
+            name
+        }
+    }
+
+    fn write(&self, _writer: &mut BinaryWriter) {
+        unimplemented!()
+    }
+}
+
+#[derive(Debug)]
+struct UpgradeAvailability{
+    player_availability: i32,
+    upgrade_id: String,
+    upgrade_level: i32,
+    availability: i32
+}
+
+impl BinaryConverter for UpgradeAvailability{
+    fn read(reader: &mut BinaryReader) -> Self{
+        let player_availability = reader.read_i32();
+        let upgrade_id = String::from_utf8(reader.read_bytes(4)).unwrap();
+        let upgrade_level = reader.read_i32();
+        let availability =  reader.read_i32();
+        UpgradeAvailability{
+            player_availability,
+            upgrade_id,
+            upgrade_level,
+            availability
+        }
+    }
+
+    fn write(&self, _writer: &mut BinaryWriter) {
+        unimplemented!()
+    }
+}
+
+#[derive(Debug)]
+struct TechAvailability{
+    player_availability: i32,
+    tech_id: String,
+}
+
+impl BinaryConverter for TechAvailability{
+    fn read(reader: &mut BinaryReader) -> Self{
+        let player_availability = reader.read_i32();
+        let tech_id = String::from_utf8(reader.read_bytes(4)).unwrap();
+        TechAvailability{
+            player_availability,
+            tech_id
+        }
+    }
+
+    fn write(&self, _writer: &mut BinaryWriter) {
+        unimplemented!()
+    }
+}
+
+#[derive(Debug)]
+struct RandomUnitSet{
+    chance: i32,
+    ids: Vec<u8>,
+}
+
+#[derive(Debug)]
+struct RandomUnitTable{
+    id: i32,
+    name: String,
+    position_types: Vec<i32>,
+    sets: Vec<RandomUnitSet>,
+}
+
+impl BinaryConverter for RandomUnitTable{
+    fn read(reader: &mut BinaryReader) -> Self {
+        let id = reader.read_i32();
+        let name = reader.read_c_string().into_string().unwrap();
+        let count_pos = reader.read_i32() as usize;
+        let position_types = reader.read_vec_i32(count_pos);
+        let mut sets = vec![];
+        for _ in 0..count_pos{
+            let chance = reader.read_i32();
+            let ids = reader.read_bytes( count_pos*4);
+            sets.push(RandomUnitSet{
+                chance,
+                ids
+            });
+        }
+        RandomUnitTable{
+            id,
+            name,
+            position_types,
+            sets
+        }
+    }
+
+    fn write(&self, _writer: &mut BinaryWriter) {
+        unimplemented!()
+    }
+}
+
+#[derive(Debug)]
+struct RandomItemSet{
+    items: Vec<(i32,String)>
+}
+
+
+impl BinaryConverter for RandomItemSet{
+    fn read(reader: &mut BinaryReader) -> Self {
+        let count_items = reader.read_i32();
+        let mut items = vec![];
+        for _ in 0..count_items{
+            let chance = reader.read_i32();
+            let id = String::from_utf8(reader.read_bytes(4)).unwrap();
+            items.push((chance, id));
+        }
+        RandomItemSet{
+            items
+        }
+    }
+
+    fn write(&self, _writer: &mut BinaryWriter) {
+        unimplemented!()
+    }
+}
+
+#[derive(Debug)]
+pub struct RandomItemTable{
+    id: i32,
+    name: String,
+    sets: Vec<RandomItemSet>,
+}
+
+impl BinaryConverter for RandomItemTable{
+    fn read(reader: &mut BinaryReader) -> Self {
+        let id = reader.read_i32();
+        let name = reader.read_c_string().into_string().unwrap();
+        let count_sets = reader.read_i32() as usize;
+        let sets = reader.read_vec::<RandomItemSet>(count_sets);
+        RandomItemTable{
+            id,
+            name,
+            sets
+        }
+    }
+
+    fn write(&self, _writer: &mut BinaryWriter) {
+        unimplemented!()
+    }
+}
+
 
 #[derive(Debug, Default)]
 pub struct W3iFile{
@@ -209,7 +413,6 @@ impl BinaryConverter for W3iFile{
     }
 }
 
-
 fn to_game_version(value: u32) -> GameVersion{
     match value{
         18 => RoC,
@@ -226,90 +429,12 @@ mod w3i_tests{
     use crate::globals::GameVersion::RoC;
     use crate::binary_reader::BinaryReader;
     use crate::w3i_file::W3iFile;
-    use crate::w3i_subs::player_data::PlayerData;
-
-    fn get_rock_mock() -> W3iFile{
-        // let p1 = PlayerData{
-        //     player_id: 0,
-        //     player_type: 1,
-        //     player_race: 1,
-        //     fixed_position: 0,
-        //     player_name: format!("TRIGSTR_005"),
-        //     starting_pos_x: 0.0,
-        //     starting_pos_y: 0.0,
-        //     ally_low_priorities: 0,
-        //     ally_high_priorities: 0
-        // };
-        W3iFile{
-            version: RoC,
-            count_saves: 0,
-            editor_version: 0,
-            map_name: format!("Sandbox Roc"),
-            map_author: format!("Inconnu"),
-            map_description: format!("Map pour mocker"),
-            recommended_players: format!("Solo"),
-            camera_bounds: vec![-1152.0, -1408.0, 1152.0, 1408.0, -1152.0, 1408.0, 1152.0, -1408.0],
-            camera_bounds_complements: vec![3,3,3,3],
-            map_playable_width: 26,
-            map_playable_height: 26,
-            flags: 39952,
-            hide_minimap_preview: false,
-            modifiy_ally_priorities: false,
-            is_melee: false,
-            unknown: false,
-            mask_partial_vision: false,
-            fixed_custom_player_force: false,
-            use_custom_force: false,
-            use_custom_tree: false,
-            use_custom_abilities: false,
-            use_custom_upgrades: false,
-            unkwown_2: false,
-            show_waves_cliff_shores: false,
-            show_waves_rolling_shores: false,
-            unkwown_3: false,
-            unkwown_4: false,
-            unkwown_5: false,
-            ground_type: 'L',
-            campaign_background: -1,
-            custom_loading_screen_model_path: format!(""),
-            loading_screen_index: 0,
-            loading_screen_text: format!(""),
-            loading_screen_title: format!(""),
-            loading_screen_subtitle: format!(""),
-            user_game_dataset: 0,
-            prologue_screen_path: format!(""),
-            prologue_screen_text: format!(""),
-            prologue_screen_title: format!(""),
-            prologue_screen_subtitle: format!(""),
-            fog_style: 0,
-            fog_z_height_start: 0.0,
-            fog_z_height_end: 0.0,
-            fog_density: 0.0,
-            fog_red_tint: 0,
-            fog_green_tint: 0,
-            fog_blue_tint: 0,
-            fog_alpha_value: 0,
-            global_weather: 0,
-            custom_sound_environment: Default::default(),
-            custom_light_environment_id: '\0',
-            custom_water_red_tint: 0,
-            custom_water_green_tint: 0,
-            custom_water_blue_tint: 0,
-            custom_water_alpha_tint: 0,
-            players: vec![],
-            forces: vec![],
-            upgrades: vec![],
-            techs: vec![],
-            random_unit_tables: vec![],
-            random_item_tables: vec![]
-        }
-    }
 
     #[test]
     fn w3i_roc_test(){
-        let mut w3i = File::open("resources/Scenario/Sandbox_roc/war3map.w3i").unwrap();
+        let mut w3i = File::open("../resources/Scenario/Sandbox_roc/war3map.w3i").unwrap();
         let mut reader = BinaryReader::from(&mut w3i);
         let w3i = reader.read::<W3iFile>();
-        let w3i_mock = get_rock_mock();
+        assert_eq!(w3i.camera_bounds, vec![ -1152.0, -1408.0, 1152.0, 1408.0, -1152.0, 1408.0, 1152.0, -1408.0])
     }
 }
