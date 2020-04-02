@@ -1,5 +1,5 @@
-use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
-use crate::map_data::binary_writer::BinaryWriter;
+use wce_map::binary_reader::{BinaryConverter, BinaryReader};
+use wce_map::binary_writer::BinaryWriter;
 
 type RGBA = u32;
 type Mipmaps = Vec<Vec<u8>>;

@@ -1,8 +1,8 @@
 use std::ffi::CString;
 
-use crate::map_data::binary_reader::BinaryConverter;
-use crate::map_data::binary_reader::BinaryReader;
-use crate::map_data::binary_writer::BinaryWriter;
+use crate::binary_reader::BinaryConverter;
+use crate::binary_reader::BinaryReader;
+use crate::binary_writer::BinaryWriter;
 
 pub mod player_data {
     use super::*;
@@ -174,8 +174,6 @@ pub mod tech_availability{
     }
 }
 pub mod random_unit_table {
-    use crate::map_data::binary_reader::BinaryConverter;
-
     use super::*;
 
     #[derive(Debug)]

@@ -2,21 +2,21 @@ use mpq::Archive;
 
 use crate::{format_data, GameData};
 use crate::globals::PROFILE_TRIGGER_DATA;
-use crate::map_data::camera_file::CameraFile;
-use crate::map_data::data_ini::DataIni;
-use crate::map_data::doodad_map::DoodadMap;
-use crate::map_data::import_file::ImportFile;
-use crate::map_data::mmp_file::MMPFile;
-use crate::map_data::pathmap_file::PathMapFile;
-use crate::map_data::region_file::RegionFile;
-use crate::map_data::shadowmap_file::ShadowMapFile;
-use crate::map_data::sound_file::SoundFile;
-use crate::map_data::terrain_file::TerrainFile;
-use crate::map_data::trigger_jass_file::TriggerJassFile;
-use crate::map_data::trigger_string_file::TriggerStringFile;
-use crate::map_data::triggers::TriggersFile;
-use crate::map_data::unit_map::UnitItemMap;
-use crate::map_data::w3i_file::W3iFile;
+use crate::camera_file::CameraFile;
+use crate::data_ini::DataIni;
+use crate::doodad_map::DoodadMap;
+use crate::import_file::ImportFile;
+use crate::mmp_file::MMPFile;
+use crate::pathmap_file::PathMapFile;
+use crate::region_file::RegionFile;
+use crate::shadowmap_file::ShadowMapFile;
+use crate::sound_file::SoundFile;
+use crate::terrain_file::TerrainFile;
+use crate::trigger_jass_file::TriggerJassFile;
+use crate::trigger_string_file::TriggerStringFile;
+use crate::triggers::TriggersFile;
+use crate::unit_map::UnitItemMap;
+use crate::w3i_file::W3iFile;
 
 pub struct Map<'a>{
     game_data: &'a GameData,

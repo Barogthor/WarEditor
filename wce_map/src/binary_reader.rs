@@ -5,7 +5,7 @@ use std::io::{BufRead, Cursor, Read, Seek, SeekFrom};
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 
 use crate::globals::GameVersion;
-use crate::map_data::binary_writer::BinaryWriter;
+use crate::binary_writer::BinaryWriter;
 
 pub struct BinaryReader{
     buffer: Cursor<Vec<u8>>,

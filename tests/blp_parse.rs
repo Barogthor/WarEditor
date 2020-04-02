@@ -6,7 +6,7 @@ mod blp_parse {
     use jpeg_decoder::Decoder;
 
     use war_editor::blp::BLP;
-    use war_editor::map_data::binary_reader::BinaryReader;
+    use wce_map::binary_reader::BinaryReader;
 
     #[test]
     fn open_local_blp_palette() {

@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use slkparser::record::cell::Cell;
 
-use crate::map_data::slk_datas::adapter::{DocumentAdapter, ScannerAdapter};
+use crate::slk_datas::adapter::{DocumentAdapter, ScannerAdapter};
 
 type MetaID = String;
 type FieldColumn = u32;

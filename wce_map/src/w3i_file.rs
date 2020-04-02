@@ -5,14 +5,14 @@ use mpq::Archive;
 
 use crate::globals::{GameVersion, MAP_INFOS};
 use crate::globals::GameVersion::{RoC, TFT, TFT131};
-use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
-use crate::map_data::binary_writer::BinaryWriter;
-use crate::map_data::w3i_subs::force_data::ForceData;
-use crate::map_data::w3i_subs::player_data::PlayerData;
-use crate::map_data::w3i_subs::random_item_table::RandomItemTable;
-use crate::map_data::w3i_subs::random_unit_table::RandomUnitTable;
-use crate::map_data::w3i_subs::tech_availability::TechAvailability;
-use crate::map_data::w3i_subs::upgrade_availability::UpgradeAvailability;
+use crate::binary_reader::{BinaryConverter, BinaryReader};
+use crate::binary_writer::BinaryWriter;
+use crate::w3i_subs::force_data::ForceData;
+use crate::w3i_subs::player_data::PlayerData;
+use crate::w3i_subs::random_item_table::RandomItemTable;
+use crate::w3i_subs::random_unit_table::RandomUnitTable;
+use crate::w3i_subs::tech_availability::TechAvailability;
+use crate::w3i_subs::upgrade_availability::UpgradeAvailability;
 
 //pub union GlobalWeather{
 //    value: i32,
@@ -224,9 +224,9 @@ mod w3i_tests{
     use std::fs::File;
 
     use crate::globals::GameVersion::RoC;
-    use crate::map_data::binary_reader::BinaryReader;
-    use crate::map_data::w3i_file::W3iFile;
-    use crate::map_data::w3i_subs::player_data::PlayerData;
+    use crate::binary_reader::BinaryReader;
+    use crate::w3i_file::W3iFile;
+    use crate::w3i_subs::player_data::PlayerData;
 
     fn get_rock_mock() -> W3iFile{
         // let p1 = PlayerData{

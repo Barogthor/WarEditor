@@ -2,10 +2,10 @@ use mpq::Archive;
 
 use crate::globals::{GameVersion, MAP_TERRAIN_UNITS};
 use crate::globals::GameVersion::{RoC, TFT};
-use crate::map_data::binary_reader::{BinaryConverter, BinaryConverterVersion, BinaryReader};
-use crate::map_data::binary_writer::BinaryWriter;
-use crate::map_data::doodad_map::Radian;
-use crate::map_data::unit_map::RandomUnitItemFlag::{Neutral, NotRandom, RandomFromCustomTable, RandomFromTableGroup};
+use crate::binary_reader::{BinaryConverter, BinaryConverterVersion, BinaryReader};
+use crate::binary_writer::BinaryWriter;
+use crate::doodad_map::Radian;
+use crate::unit_map::RandomUnitItemFlag::{Neutral, NotRandom, RandomFromCustomTable, RandomFromTableGroup};
 
 const RANDOM_ITEM_ID: &str = "iDNR";
 const RANDOM_UNIT_ID: &str = "uDNR";

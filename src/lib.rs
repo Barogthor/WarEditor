@@ -1,31 +1,4 @@
-#[macro_use] extern crate lazy_static;
-
 use fern::colors::{Color, ColoredLevelConfig};
-use crate::map_data::data_ini::DataIni;
-use crate::globals::PROFILE_TRIGGER_DATA;
-
-pub fn format_data(path: &str) -> String{
-    format!("resources/datas/{}",path)
-}
-pub fn format_slk(path: &str) -> String{
-    format!("resources/slk/{}",path)
-}
-
-pub struct GameData{
-    trigger_data: DataIni
-}
-
-impl GameData {
-    pub fn new() -> Self{
-        let mut trigger_data = DataIni::new();
-        trigger_data.merge(&format_data(PROFILE_TRIGGER_DATA));
-        Self{
-            trigger_data
-        }
-    }
-
-    pub fn get_trigger_data(&self) -> &DataIni{ &self.trigger_data }
-}
 
 pub fn init_logging(){
     fern::Dispatch::new()
@@ -61,7 +34,4 @@ pub fn init_logging(){
 
 }
 
-pub mod globals;
-pub mod helpers;
-pub mod map_data;
 pub mod blp;
