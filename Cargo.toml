@@ -18,4 +18,5 @@ rust-ini = "0.15.2"
 #num = "0.2.0"
 fern = { version = "0.6.0", features = ["colored"] }
 log = "0.4.8"
-
+wce_map = { path = "wce_map" }
+#strum = "0.18.0"
