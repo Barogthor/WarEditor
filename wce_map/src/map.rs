@@ -1,9 +1,7 @@
 use mpq::Archive;
 
-use crate::{format_data, GameData};
-use crate::globals::PROFILE_TRIGGER_DATA;
+use crate::{GameData};
 use crate::camera_file::CameraFile;
-use crate::data_ini::DataIni;
 use crate::doodad_map::DoodadMap;
 use crate::import_file::ImportFile;
 use crate::mmp_file::MMPFile;
@@ -51,7 +49,7 @@ impl<'a> Map<'a> {
 //        cameras.debug();
         let sounds = SoundFile::read_file(&mut map);
 //        sounds.debug();
-        let pathing = PathMapFile::read_file(&mut map);
+        let _pathing = PathMapFile::read_file(&mut map);
 //        pathing.debug();
         let shaders = ShadowMapFile::read_file(&mut map);
 //        shaders.debug();

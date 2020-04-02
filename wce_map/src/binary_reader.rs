@@ -19,7 +19,7 @@ impl BinaryReader{
 
     pub fn from(file: &mut File) -> BinaryReader{
         let mut buffer: Vec<u8> = vec![];
-        file.read_to_end(&mut buffer);
+        file.read_to_end(&mut buffer).unwrap();
         BinaryReader{
             size: buffer.len(), buffer: Cursor::new(buffer)
         }
@@ -72,7 +72,7 @@ impl BinaryReader{
 
     pub fn read_c_string(&mut self) -> CString{
         let mut result_buf: Vec<u8> = Vec::new();
-        self.buffer.read_until('\0' as u8, &mut result_buf);
+        self.buffer.read_until('\0' as u8, &mut result_buf).unwrap();
         result_buf.pop();
         CString::new(result_buf).unwrap()
     }
@@ -97,7 +97,7 @@ impl BinaryReader{
     }
 
     pub fn skip(&mut self, bytes_to_skip: i64){
-        self.buffer.seek(SeekFrom::Current(bytes_to_skip));
+        self.buffer.seek(SeekFrom::Current(bytes_to_skip)).unwrap();
     }
 
     pub fn read<T: BinaryConverter>(&mut self) -> T{

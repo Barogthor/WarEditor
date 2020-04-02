@@ -1,5 +1,3 @@
-use std::ffi::CString;
-
 use mpq::Archive;
 
 use crate::globals::{GameVersion, MAP_TRIGGERS_SCRIPT};
@@ -48,7 +46,7 @@ impl BinaryConverter for TriggerJassFile {
             }
         }
         count_triggers = reader.read_u32() as usize;
-        for i in 0..count_triggers{
+        for _ in 0..count_triggers{
             let length = reader.read_u32() as usize;
             if length == 0 { continue; }
             text_triggers.push(reader.read_string_utf8(length));

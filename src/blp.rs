@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use wce_map::binary_reader::{BinaryConverter, BinaryReader};
 use wce_map::binary_writer::BinaryWriter;
 
@@ -111,7 +113,7 @@ impl BinaryConverter for BLP{
                    let mut jpeg_buffer = blp.jpeg_header.clone();
                    jpeg_buffer.reserve(size+10);
 //                   jpeg_buffer.append(&mut vec![0xFF, 0xDA]);
-                   let mut raw = reader.read_bytes(size);
+                   let raw = reader.read_bytes(size);
                    blp.jpeg_mipmaps.insert(i,raw.clone());
 
 //                   println!("raw jpeg mipmap size: {}", raw.len());

@@ -28,7 +28,7 @@ fn main() {
 //    }
     let now = Instant::now();
 
-    let game_data = &GameData::new();
+    let game_data = &GameData::new("");
     // let mut trigger_data = DataIni::new();
     // trigger_data.merge(PROFILE_TRIGGER_DATA);
     // trigger_datas.debug();
@@ -95,18 +95,18 @@ fn main() {
     elapsed_time(&now);
     println!("Hello, world!");
 //    let mut mpq = Archive::open("resources/sample_1/Test.w3x").unwrap();
-    let  sample_1 = "resources/sample_1/Test.w3x".to_string();
-    let  sample_2 = "resources/sample_2/Remake1 - Copie.w3x".to_string();
-    let the_death_sheep = "resources/Scenario/(1)TheDeathSheep.w3m".to_string();
-    let harrow = "resources/Scenario/(2)Harrow.w3m".to_string();
-    let circumvention = "resources/Scenario/(2)Circumvention.w3x".to_string();
-    let azure_tower_defense = "resources/Scenario/(8)AzureTowerDefense.w3x".to_string();
-    let sandbox_roc = "resources/Scenario/Sandbox_1.w3m".to_string();
-    let sandbox_tft = "resources/Scenario/Sandbox_1.w3x".to_string();
-    let _map = Map::open(the_death_sheep, game_data);
-    let _map = Map::open(sandbox_roc, game_data);
-    let _map = Map::open(sandbox_tft, game_data);
-    let _map = Map::open(azure_tower_defense, game_data);
+    let _sample_1 = "resources/sample_1/Test.w3x".to_string();
+    let _sample_2 = "resources/sample_2/Remake1 - Copie.w3x".to_string();
+    let _the_death_sheep = "resources/Scenario/(1)TheDeathSheep.w3m".to_string();
+    let _harrow = "resources/Scenario/(2)Harrow.w3m".to_string();
+    let _circumvention = "resources/Scenario/(2)Circumvention.w3x".to_string();
+    let _azure_tower_defense = "resources/Scenario/(8)AzureTowerDefense.w3x".to_string();
+    let _sandbox_roc = "resources/Scenario/Sandbox_1.w3m".to_string();
+    let _sandbox_tft = "resources/Scenario/Sandbox_1.w3x".to_string();
+    // let _map = Map::open(the_death_sheep, game_data);
+    let _map = Map::open(_sandbox_roc, game_data);
+    // let _map = Map::open(sandbox_tft, game_data);
+    // let _map = Map::open(azure_tower_defense, game_data);
     // let _map = Map::open(sample_2, game_data);
 //     let _map = Map::open(azure_tower_defense);
 //     let _map = Map::open(circumvention);

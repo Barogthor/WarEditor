@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 #[macro_use] extern crate lazy_static;
 use crate::data_ini::DataIni;
 use crate::globals::PROFILE_TRIGGER_DATA;
@@ -37,11 +38,11 @@ pub enum OpeningError {
 }
 
 
-pub fn format_data(path: &str) -> String{
-    format!("resources/datas/{}",path)
+pub fn format_data(prefix: &str, path: &str) -> String{
+    format!("{}resources/datas/{}", prefix, path)
 }
-pub fn format_slk(path: &str) -> String{
-    format!("resources/slk/{}",path)
+pub fn format_slk(prefix: &str, path: &str) -> String{
+    format!("{}resources/slk/{}", prefix, path)
 }
 
 pub struct GameData{
@@ -49,9 +50,9 @@ pub struct GameData{
 }
 
 impl GameData {
-    pub fn new() -> Self{
+    pub fn new(prefix: &str) -> Self{
         let mut trigger_data = DataIni::new();
-        trigger_data.merge(&format_data(PROFILE_TRIGGER_DATA));
+        trigger_data.merge(&format_data( prefix,PROFILE_TRIGGER_DATA));
         Self{
             trigger_data
         }
@@ -63,7 +64,6 @@ impl GameData {
 pub mod globals;
 pub mod binary_reader;
 pub mod binary_writer;
-pub mod w3i_subs;
 pub mod w3i_file;
 pub mod mmp_file;
 pub mod region_file;

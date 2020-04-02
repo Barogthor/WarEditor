@@ -1,12 +1,7 @@
-use std::io::Read;
+// use log::{debug, error, info, trace, warn};
 
-use log::{debug, error, info, trace, warn};
-use mpq::Archive;
-
-use crate::GameData;
-use crate::globals::GameVersion::{self, RoC, TFT};
-use crate::binary_reader::{BinaryConverter, BinaryReader};
-use crate::binary_writer::BinaryWriter;
+use crate::globals::GameVersion::{self, RoC};
+use crate::binary_reader::{BinaryReader};
 use crate::data_ini::DataIni;
 use crate::triggers::enums::{ConditionType, ECAType, ParameterType, SubParameterType};
 use crate::triggers::enums::WtgError::{self, UnknownProp};
@@ -47,8 +42,8 @@ impl ECADefinition {
             parameters.push(Parameter::from(reader, game_version, trigger_data)?);
         }
         let childs_eca = match game_version {
-            (RoC) => None,
-            (_) => {
+            RoC => None,
+            _ => {
                 let count_childs = reader.read_u32();
                 let mut v = vec![];
                 for _ in 0..count_childs{
@@ -137,14 +132,12 @@ impl SubParameters {
             info_split.len() - substract
         };
         let mut parameters = vec![];
-        // if count_parameters > 0 {
-            let begin_parameters = reader.read_u32() != 0;
-            if begin_parameters {
-                for _ in 0..count_parameters {
-                    parameters.push(Parameter::from(reader, game_version, trigger_data)?);
-                }
+        let begin_parameters = reader.read_u32() != 0;
+        if begin_parameters {
+            for _ in 0..count_parameters {
+                parameters.push(Parameter::from(reader, game_version, trigger_data)?);
             }
-        // }
+        }
         Ok(Self{
             ptype, name, parameters
         })

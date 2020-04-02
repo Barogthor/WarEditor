@@ -1,5 +1,6 @@
 .idea/
 /target
+*/**/target
 **/*.rs.bk
 resources/**/*
 specs/*

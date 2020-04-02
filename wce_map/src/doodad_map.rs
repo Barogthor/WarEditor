@@ -1,5 +1,3 @@
-use std::ffi::CString;
-
 use mpq::Archive;
 
 use crate::globals::{GameVersion, MAP_TERRAIN_DOODADS};
