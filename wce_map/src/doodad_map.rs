@@ -4,10 +4,10 @@ use mpq::Archive;
 
 use crate::globals::{GameVersion, MAP_TERRAIN_DOODADS};
 use crate::globals::GameVersion::{RoC, TFT, TFT131};
-use crate::map_data::binary_reader::{BinaryConverter, BinaryConverterVersion, BinaryReader};
-use crate::map_data::binary_writer::BinaryWriter;
-use crate::map_data::doodad_map::DestructableFlag::{InvisibleNonSolid, Unnamed, VisibleNonSolid, VisibleSolid};
-use crate::map_data::unit_map::DropItem;
+use crate::binary_reader::{BinaryConverter, BinaryConverterVersion, BinaryReader};
+use crate::binary_writer::BinaryWriter;
+use crate::doodad_map::DestructableFlag::{InvisibleNonSolid, Unnamed, VisibleNonSolid, VisibleSolid};
+use crate::unit_map::DropItem;
 
 pub type Radian = f32;
 

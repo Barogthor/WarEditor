@@ -5,11 +5,11 @@ use mpq::Archive;
 
 use crate::GameData;
 use crate::globals::GameVersion::{self, RoC, TFT};
-use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
-use crate::map_data::binary_writer::BinaryWriter;
-use crate::map_data::data_ini::DataIni;
-use crate::map_data::triggers::enums::{ConditionType, ECAType, ParameterType, SubParameterType};
-use crate::map_data::triggers::enums::WtgError::{self, UnknownProp};
+use crate::binary_reader::{BinaryConverter, BinaryReader};
+use crate::binary_writer::BinaryWriter;
+use crate::data_ini::DataIni;
+use crate::triggers::enums::{ConditionType, ECAType, ParameterType, SubParameterType};
+use crate::triggers::enums::WtgError::{self, UnknownProp};
 
 #[derive(Debug)]
 pub struct ECADefinition {

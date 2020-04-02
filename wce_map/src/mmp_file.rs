@@ -1,8 +1,8 @@
 use mpq::Archive;
 
 use crate::globals::MAP_MENU_MINIMAP;
-use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
-use crate::map_data::binary_writer::BinaryWriter;
+use crate::binary_reader::{BinaryConverter, BinaryReader};
+use crate::binary_writer::BinaryWriter;
 
 type RGBA = Vec<u8>;
 

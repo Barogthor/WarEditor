@@ -4,8 +4,8 @@ use mpq::Archive;
 
 use crate::globals::{GameVersion, MAP_TRIGGERS_SCRIPT};
 use crate::globals::GameVersion::{RoC, TFT};
-use crate::map_data::binary_reader::{BinaryConverter, BinaryReader};
-use crate::map_data::binary_writer::BinaryWriter;
+use crate::binary_reader::{BinaryConverter, BinaryReader};
+use crate::binary_writer::BinaryWriter;
 
 type TextScript = String;
 

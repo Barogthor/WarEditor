@@ -3,11 +3,11 @@ use mpq::Archive;
 
 use crate::globals::{GameVersion, MAP_TRIGGERS};
 use crate::globals::GameVersion::{RoC, TFT};
-use crate::map_data::binary_reader::BinaryReader;
-use crate::map_data::data_ini::DataIni;
-use crate::map_data::triggers::enums::WtgError::{self, UnknownGameVersion};
-use crate::map_data::triggers::misc::{TriggerCategory, VariableDefinition};
-use crate::map_data::triggers::trigger_data::ECADefinition;
+use crate::binary_reader::BinaryReader;
+use crate::data_ini::DataIni;
+use crate::triggers::enums::WtgError::{self, UnknownGameVersion};
+use crate::triggers::misc::{TriggerCategory, VariableDefinition};
+use crate::triggers::trigger_data::ECADefinition;
 
 mod enums;
 mod misc;
