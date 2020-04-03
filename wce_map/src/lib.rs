@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 #[macro_use] extern crate lazy_static;
+#[macro_use] extern crate derivative;
 use crate::data_ini::DataIni;
 use crate::globals::PROFILE_TRIGGER_DATA;
 
