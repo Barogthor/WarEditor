@@ -533,4 +533,103 @@ mod w3i_tests{
         };
         assert_eq!(w3i, mock_w3i);
     }
+    #[test]
+    fn w3i_tft_test(){
+        let mut w3i = File::open("../resources/Scenario/Sandbox_tft/war3map.w3i").unwrap();
+        let mut reader = BinaryReader::from(&mut w3i);
+        let w3i = reader.read::<W3iFile>();
+        let mock_w3i = W3iFile{
+            version: TFT,
+            count_saves: 0,
+            editor_version: 0,
+            map_name: "TRIGSTR_001".to_string(),
+            map_author: "TRIGSTR_004".to_string(),
+            map_description: "TRIGSTR_003".to_string(),
+            recommended_players: "TRIGSTR_002".to_string(),
+            camera_bounds: vec![-1152.0, -1408.0, 1152.0, 1408.0, -1152.0, 1408.0, 1152.0, -1408.0],
+            camera_bounds_complements: vec![3, 3, 3, 3],
+            map_playable_width: 26,
+            map_playable_height: 26,
+            flags: 56336,
+            hide_minimap_preview: false,
+            modifiy_ally_priorities: false,
+            is_melee: false,
+            unknown: false,
+            mask_partial_vision: false,
+            fixed_custom_player_force: false,
+            use_custom_force: false,
+            use_custom_tree: false,
+            use_custom_abilities: false,
+            use_custom_upgrades: false,
+            unkwown_2: false,
+            show_waves_cliff_shores: false,
+            show_waves_rolling_shores: false,
+            unkwown_3: false,
+            unkwown_4: false,
+            unkwown_5: false,
+            ground_type: 'L',
+            campaign_background: 0,
+            custom_loading_screen_model_path: "".to_string(),
+            loading_screen_index: -1,
+            loading_screen_text: "".to_string(),
+            loading_screen_title: "".to_string(),
+            loading_screen_subtitle: "".to_string(),
+            user_game_dataset: 0,
+            prologue_screen_path: "".to_string(),
+            prologue_screen_text: "".to_string(),
+            prologue_screen_title: "".to_string(),
+            prologue_screen_subtitle: "".to_string(),
+            fog_style: 0,
+            fog_z_height_start: 3000.0,
+            fog_z_height_end: 5000.0,
+            fog_density: 0.5,
+            fog_red_tint: 0,
+            fog_green_tint: 0,
+            fog_blue_tint: 0,
+            fog_alpha_value: 255,
+            global_weather: 0,
+            custom_sound_environment: "".to_string(),
+            custom_light_environment_id: '\0',
+            custom_water_red_tint: 255,
+            custom_water_green_tint: 255,
+            custom_water_blue_tint: 255,
+            custom_water_alpha_tint: 255,
+            players: vec![PlayerData{
+                player_id: 0,
+                player_type: 1,
+                player_race: 1,
+                fixed_position: 0,
+                player_name: "TRIGSTR_005".to_string(),
+                starting_pos_x: 0.0,
+                starting_pos_y: 256.0,
+                ally_low_priorities: 0,
+                ally_high_priorities: 2
+            }, PlayerData{
+                player_id: 1,
+                player_type: 1,
+                player_race: 2,
+                fixed_position: 0,
+                player_name: "TRIGSTR_006".to_string(),
+                starting_pos_x: -1280.0,
+                starting_pos_y: -1280.0,
+                ally_low_priorities: 0,
+                ally_high_priorities: 1
+            }],
+            forces: vec![ForceData{
+                flags: 0,
+                allied: false,
+                shared_victory: false,
+                shared_vision: false,
+                shared_unit_control: false,
+                shared_advanced_unit_control: false,
+                player_mask: -1,
+                name: "TRIGSTR_007".to_string()
+            }],
+            upgrades: vec![],
+            techs: vec![],
+            random_unit_tables: vec![],
+            random_item_tables: vec![]
+        };
+        assert_eq!(w3i, mock_w3i);
+    }
 }
