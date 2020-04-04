@@ -139,15 +139,33 @@ impl BinaryConverter for TechAvailability{
 
 #[derive(Debug, PartialEq)]
 struct RandomUnitSet{
-    chance: i32,
-    ids: Vec<u8>,
+    chance: u32,
+    ids: Vec<String>,
+}
+
+#[derive(Debug, PartialEq, Clone, PartialOrd)]
+pub enum RandomTablePositionType {
+    Unit,
+    Building,
+    Item,
+}
+
+impl RandomTablePositionType {
+    pub fn from(n : u32) -> Result<Self, String>{
+        match n {
+            0 => Ok(RandomTablePositionType::Unit),
+            1 => Ok(RandomTablePositionType::Building),
+            2 => Ok(RandomTablePositionType::Item),
+            _ => Err(format!("Unknown position type: {}",n))
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
 struct RandomUnitTable{
     id: i32,
     name: String,
-    position_types: Vec<i32>,
+    position_types: Vec<RandomTablePositionType>,
     sets: Vec<RandomUnitSet>,
 }
 
@@ -156,11 +174,18 @@ impl BinaryConverter for RandomUnitTable{
         let id = reader.read_i32();
         let name = reader.read_c_string().into_string().unwrap();
         let count_pos = reader.read_i32() as usize;
-        let position_types = reader.read_vec_i32(count_pos);
-        let mut sets = vec![];
+        let mut position_types = vec![];
         for _ in 0..count_pos{
-            let chance = reader.read_i32();
-            let ids = reader.read_bytes( count_pos*4);
+            position_types.push(RandomTablePositionType::from(reader.read_u32()).unwrap())
+        }
+        let mut sets = vec![];
+        let count_lines = reader.read_u32();
+        for _ in 0..count_lines{
+            let chance = reader.read_u32();
+            let mut ids = vec![];
+            for _ in 0..count_pos{
+                ids.push(reader.read_string_utf8(4));
+            }
             sets.push(RandomUnitSet{
                 chance,
                 ids
@@ -181,7 +206,7 @@ impl BinaryConverter for RandomUnitTable{
 
 #[derive(Debug, PartialEq)]
 struct RandomItemSet{
-    items: Vec<(i32,String)>
+    items: Vec<(u32,String)>
 }
 
 
@@ -190,7 +215,7 @@ impl BinaryConverter for RandomItemSet{
         let count_items = reader.read_i32();
         let mut items = vec![];
         for _ in 0..count_items{
-            let chance = reader.read_i32();
+            let chance = reader.read_u32();
             let id = String::from_utf8(reader.read_bytes(4)).unwrap();
             items.push((chance, id));
         }
@@ -432,14 +457,10 @@ mod w3i_tests{
 
     use crate::globals::GameVersion::{RoC, TFT};
     use crate::binary_reader::BinaryReader;
-    use crate::w3i_file::{W3iFile, PlayerData, ForceData};
+    use crate::w3i_file::{W3iFile, PlayerData, ForceData, RandomUnitTable, RandomTablePositionType, RandomUnitSet, RandomItemTable, RandomItemSet};
 
-    #[test]
-    fn w3i_roc_test(){
-        let mut w3i = File::open("../resources/Scenario/Sandbox_roc/war3map.w3i").unwrap();
-        let mut reader = BinaryReader::from(&mut w3i);
-        let w3i = reader.read::<W3iFile>();
-        let mock_w3i = W3iFile{
+    fn get_roc_mock() -> W3iFile{
+        W3iFile{
             version: RoC,
             count_saves: 0,
             editor_version: 0,
@@ -528,17 +549,24 @@ mod w3i_tests{
             }],
             upgrades: vec![],
             techs: vec![],
-            random_unit_tables: vec![],
+            random_unit_tables: vec![RandomUnitTable{
+                id: 0,
+                name: "TestRandGroupUnit".to_string(),
+                position_types: vec![RandomTablePositionType::Unit, RandomTablePositionType::Unit],
+                sets: vec![RandomUnitSet{ chance: 95, ids: vec!["YYU6".to_string(), "YYU:".to_string()] }, RandomUnitSet{ chance: 5, ids: vec!["nrwm".to_string(), "\0\0\0\0".to_string()] }]
+            },
+                                     RandomUnitTable{
+                                         id: 1,
+                                         name: "TestRandGroupItem".to_string(),
+                                         position_types: vec![RandomTablePositionType::Item, RandomTablePositionType::Item],
+                                         sets: vec![RandomUnitSet{ chance: 50, ids: vec!["YjI2".to_string(), "desc".to_string()] }, RandomUnitSet{ chance: 50, ids: vec!["ofro".to_string(), "desc".to_string()] }]
+                                     }],
             random_item_tables: vec![]
-        };
-        assert_eq!(w3i, mock_w3i);
+        }
     }
-    #[test]
-    fn w3i_tft_test(){
-        let mut w3i = File::open("../resources/Scenario/Sandbox_tft/war3map.w3i").unwrap();
-        let mut reader = BinaryReader::from(&mut w3i);
-        let w3i = reader.read::<W3iFile>();
-        let mock_w3i = W3iFile{
+
+    fn get_tft_mock() -> W3iFile{
+        W3iFile{
             version: TFT,
             count_saves: 0,
             editor_version: 0,
@@ -628,8 +656,28 @@ mod w3i_tests{
             upgrades: vec![],
             techs: vec![],
             random_unit_tables: vec![],
-            random_item_tables: vec![]
-        };
+            random_item_tables: vec![RandomItemTable{
+                id: 0,
+                name: "TestItemTable".to_string(),
+                sets: vec![RandomItemSet{ items: vec![(100, "modt".to_string())] }, RandomItemSet{ items: vec![(50, "YkI2".to_string()), (50, "YjI2".to_string())] }]
+            }]
+        }
+    }
+
+    #[test]
+    fn w3i_roc_test(){
+        let mut w3i = File::open("../resources/Scenario/Sandbox_roc/war3map.w3i").unwrap();
+        let mut reader = BinaryReader::from(&mut w3i);
+        let w3i = reader.read::<W3iFile>();
+        let mock_w3i = get_roc_mock();
+        assert_eq!(w3i, mock_w3i);
+    }
+    #[test]
+    fn w3i_tft_test(){
+        let mut w3i = File::open("../resources/Scenario/Sandbox_tft/war3map.w3i").unwrap();
+        let mut reader = BinaryReader::from(&mut w3i);
+        let w3i = reader.read::<W3iFile>();
+        let mock_w3i = get_tft_mock();
         assert_eq!(w3i, mock_w3i);
     }
 }
