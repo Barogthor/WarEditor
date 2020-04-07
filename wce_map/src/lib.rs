@@ -1,4 +1,7 @@
 #![allow(dead_code)]
+#[cfg(test)]
+#[macro_use]
+extern crate pretty_assertions;
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate derivative;
 use crate::data_ini::DataIni;
@@ -62,6 +65,7 @@ impl GameData {
     pub fn get_trigger_data(&self) -> &DataIni{ &self.trigger_data }
 }
 
+pub mod error;
 pub mod globals;
 pub mod binary_reader;
 pub mod binary_writer;
