@@ -33,7 +33,6 @@ impl BinaryConverter for TriggerJassFile {
     fn read(reader: &mut BinaryReader) -> Self {
         let version = reader.read_u32();
         let version = to_game_version(version);
-        let count_triggers: usize;
         let mut global_comment: String = Default::default();
         let mut global_script: String = Default::default();
         let mut text_triggers: Vec<TextScript> = Vec::new();
@@ -45,7 +44,7 @@ impl BinaryConverter for TriggerJassFile {
                 global_script =  reader.read_string_utf8(s);
             }
         }
-        count_triggers = reader.read_u32() as usize;
+        let count_triggers = reader.read_u32() as usize;
         for _ in 0..count_triggers{
             let length = reader.read_u32() as usize;
             if length == 0 { continue; }
