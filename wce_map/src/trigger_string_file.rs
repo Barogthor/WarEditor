@@ -2,16 +2,17 @@ use mpq::Archive;
 use regex::Regex;
 
 use crate::globals::MAP_STRINGS;
+use std::collections::HashMap;
 
 const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)\s+\{\r\n+([^\}]*)\r\n\}";
 //const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)";
 //const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)\s+";
-type TRIGSTR = (u32, String);
+type TRIGSTR =  String;
 
 
 #[derive(Debug)]
 pub struct TriggerStringFile {
-    trigger_strings: Vec<TRIGSTR>,
+    trigger_strings: HashMap<String, TRIGSTR>,
 }
 
 impl TriggerStringFile {
@@ -22,11 +23,11 @@ impl TriggerStringFile {
         let buffer = String::from_utf8(buf).unwrap();
         let reg: Regex = Regex::new(EXTRACT_DATA).unwrap();
 
-        let mut trigger_strings: Vec<TRIGSTR> = vec![];
+        let mut trigger_strings = HashMap::new();
         for caps in reg.captures_iter(buffer.as_str()){
-            let id = caps.get(1).unwrap().as_str().parse::<u32>().unwrap();
+            let id = caps.get(1).unwrap().as_str().to_string();
             let content = String::from(caps.get(2).unwrap().as_str());
-            trigger_strings.push((id,content));
+            trigger_strings.insert(id,content);
         }
         TriggerStringFile{
             trigger_strings
