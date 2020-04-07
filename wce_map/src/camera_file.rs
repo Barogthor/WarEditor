@@ -1,4 +1,5 @@
-use std::ffi::CString;
+#[cfg(test)]
+use pretty_assertions::{assert_eq, assert_ne};
 
 use mpq::Archive;
 
@@ -8,7 +9,8 @@ use crate::binary_writer::BinaryWriter;
 
 type Degree = f32;
 
-#[derive(Debug)]
+#[derive(Debug, Derivative)]
+#[derivative(PartialEq, Default)]
 pub struct Camera {
     x: f32,
     y: f32,
@@ -19,26 +21,11 @@ pub struct Camera {
     roll: f32,
     fov: Degree,
     far_clip: f32,
+    #[derivative(Default(value="100.0"))]
     unknown: f32,
-    name: CString,
+    name: String,
 }
-impl Default for Camera {
-    fn default() -> Self {
-        Camera {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-            rotation: 0.0,
-            aoa: 0.0,
-            dist: 0.0,
-            roll: 0.0,
-            fov: 0.0,
-            far_clip: 0.0,
-            unknown: 100.0,
-            name: Default::default()
-        }
-    }
-}
+
 impl BinaryConverter for Camera {
     fn read(reader: &mut BinaryReader) -> Self {
         let mut camera = Self::default();
@@ -52,7 +39,7 @@ impl BinaryConverter for Camera {
         camera.fov = reader.read_f32();
         camera.far_clip = reader.read_f32();
         camera.unknown = reader.read_f32();
-        camera.name = reader.read_c_string();
+        camera.name = reader.read_c_string().into_string().unwrap();
         camera
     }
 
@@ -102,5 +89,45 @@ impl BinaryConverter for CameraFile {
 
     fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
+    }
+}
+
+#[cfg(test)]
+mod w3c_test{
+    use crate::camera_file::{Camera, CameraFile};
+    use std::fs::File;
+    use crate::binary_reader::BinaryReader;
+
+    fn mock_cameras() -> Vec<Camera>{
+        vec![
+        Camera{
+            x: 758.24,
+            y: 178.15,
+            z: 13.5,
+            rotation: 90.0,
+            aoa: 304.0,
+            dist: 1996.5,
+            roll: 2.4,
+            fov: 70.0,
+            far_clip: 5000.0,
+            unknown: 100.0,
+            name: "Camera 001".to_string()
+        }]
+    }
+
+    #[test]
+    fn no_failure(){
+        let mut w3c = File::open("../resources/Scenario/Sandbox_roc/war3map.w3c").unwrap();
+        let mut reader = BinaryReader::from(&mut w3c);
+        reader.read::<CameraFile>();
+    }
+
+    #[test]
+    fn check_values(){
+        let mut w3c = File::open("../resources/Scenario/Sandbox_roc/war3map.w3c").unwrap();
+        let mut reader = BinaryReader::from(&mut w3c);
+        let camera_file = reader.read::<CameraFile>();
+        let mock_cameras = mock_cameras();
+        assert_eq!(camera_file.cameras, mock_cameras);
     }
 }
