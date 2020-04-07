@@ -10,7 +10,7 @@ use crate::binary_writer::BinaryWriter;
 const DEFAULT_FLOAT: f32 = 4.2949673e+009;
 
 #[derive(Debug, Derivative)]
-#[derivative(Default(new="true"))]
+#[derivative(Default(new="true"), PartialEq)]
 pub struct Sound {
     id: String,
     file: String,
@@ -200,7 +200,7 @@ mod w3s_test{
                 unknown_flag: false,
                 fadein: 10,
                 fadeout: 10,
-                volume: 150,
+                volume: 127,
                 pitch: DEFAULT_FLOAT,
                 unknown1: DEFAULT_FLOAT,
                 unknown2: -1,
@@ -284,5 +284,7 @@ mod w3s_test{
         let mut w3s = File::open("../resources/Scenario/Sandbox_roc/war3map.w3s").unwrap();
         let mut reader = BinaryReader::from(&mut w3s);
         let sound_file = reader.read::<SoundFile>();
+        let mock = mock_sounds();
+        assert_eq!(sound_file.sounds, mock);
     }
 }
