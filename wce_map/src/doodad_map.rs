@@ -9,7 +9,7 @@ use crate::unit_map::DropItem;
 
 pub type Radian = f32;
 
-#[derive(PartialOrd, PartialEq, Clone)]
+#[derive(PartialOrd, PartialEq, Clone, Debug)]
 pub enum DestructableFlag {
     InvisibleNonSolid,
     VisibleNonSolid,
@@ -29,6 +29,7 @@ impl DestructableFlag {
     }
 }
 
+#[derive(Debug, PartialOrd, PartialEq)]
 struct Destructable {
     model_id: String,
     variation: u32,
@@ -43,7 +44,7 @@ struct Destructable {
     life: u8,
     drop_table_pointer: i32,
     drop_item_set: Vec<DropItem>,
-    creation_id: u32
+    creation_id: u32,
 }
 
 impl BinaryConverterVersion for Destructable{
@@ -93,11 +94,12 @@ impl BinaryConverterVersion for Destructable{
     }
 }
 
-struct Doodad{
+#[derive(Debug, PartialOrd, PartialEq)]
+struct Doodad {
     model_id: String,
     coord_x: f32,
     coord_y: f32,
-    coord_z: f32
+    coord_z: f32,
 }
 
 impl BinaryConverter for Doodad{
@@ -119,8 +121,9 @@ impl BinaryConverter for Doodad{
     }
 }
 
+#[derive(Debug)]
 pub struct DoodadMap {
-//    id: u32,
+    //    id: u32,
     id: String,
     version: GameVersion,
     subversion: u32,

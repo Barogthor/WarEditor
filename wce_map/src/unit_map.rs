@@ -10,7 +10,8 @@ use crate::unit_map::RandomUnitItemFlag::{Neutral, NotRandom, RandomFromCustomTa
 const RANDOM_ITEM_ID: &str = "iDNR";
 const RANDOM_UNIT_ID: &str = "uDNR";
 
-pub struct DropItem(String,u32);
+#[derive(Debug, PartialOrd, PartialEq)]
+pub struct DropItem(String, u32);
 impl BinaryConverterVersion for DropItem{
     fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> Self {
         let item_id = reader.read_string_utf8(4);
@@ -23,6 +24,7 @@ impl BinaryConverterVersion for DropItem{
     }
 }
 
+#[derive(Debug, PartialOrd, PartialEq)]
 struct InventoryItem(i32, String);
 impl BinaryConverterVersion for InventoryItem{
     fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> Self {
@@ -36,10 +38,11 @@ impl BinaryConverterVersion for InventoryItem{
     }
 }
 
-struct AbilityModification{
+#[derive(Debug, PartialOrd, PartialEq)]
+struct AbilityModification {
     ability_id: String,
     autocast: bool,
-    level: u32
+    level: u32,
 }
 impl BinaryConverterVersion for AbilityModification{
     fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> Self {
@@ -53,6 +56,7 @@ impl BinaryConverterVersion for AbilityModification{
         unimplemented!()
     }
 }
+#[derive(Debug, PartialOrd, PartialEq)]
 struct RandomUnit(String, f32);
 impl BinaryConverterVersion for RandomUnit {
     fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> Self {
@@ -66,11 +70,12 @@ impl BinaryConverterVersion for RandomUnit {
     }
 }
 
+#[derive(Debug, PartialOrd, PartialEq)]
 enum RandomUnitItemFlag {
     Neutral(u32, u8),
     RandomFromTableGroup(i32, u32),
     RandomFromCustomTable(Vec<RandomUnit>),
-    NotRandom
+    NotRandom,
 }
 
 impl RandomUnitItemFlag {
@@ -113,7 +118,8 @@ impl BinaryConverterVersion for RandomUnitItemFlag {
     }
 }
 
-struct UnitItem{
+#[derive(Debug, PartialOrd, PartialEq)]
+struct UnitItem {
     model_id: String,
     variation: u32,
     coord_x: f32,
@@ -232,12 +238,13 @@ impl BinaryConverterVersion for UnitItem{
 }
 
 
-pub struct UnitItemMap{
+#[derive(Debug, PartialOrd, PartialEq)]
+pub struct UnitItemMap {
     //    id: u32,
     id: String,
     version: GameVersion,
     subversion: u32,
-    units_items: Vec<UnitItem>
+    units_items: Vec<UnitItem>,
 }
 
 impl UnitItemMap {
