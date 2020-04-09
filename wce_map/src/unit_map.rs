@@ -298,13 +298,287 @@ fn to_game_version(value: u32) -> GameVersion{
 mod unitmap_tests{
     use std::fs::File;
     use crate::binary_reader::BinaryReader;
-    use crate::unit_map::UnitItemMap;
+    use crate::unit_map::{UnitItemMap, UnitItem, DropItem, AbilityModification, InventoryItem, RandomUnit};
+    use crate::unit_map::RandomUnitItemFlag::{Neutral, RandomFromCustomTable, RandomFromTableGroup};
+    use crate::globals::GameVersion::RoC;
+
+    fn mock_rock() -> Vec<UnitItem>{
+        vec![
+            UnitItem {
+                model_id: "hmpr".to_string(),
+                variation: 0,
+                coord_x: -352.51535,
+                coord_y: 870.0919,
+                coord_z: 0.0,
+                angle: 0.76305795,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                scale_z: 1.0,
+                flags: 2,
+                player_owner: 0,
+                unk1: 0,
+                unk2: 0,
+                hp: -1,
+                mana: -1,
+                map_drop_table_pointer: -1,
+                drop_item_sets: vec![
+                    vec![
+                        DropItem(
+                            "YkI1".to_string(),
+                            100,
+                        ),
+                    ],
+                ],
+                gold_amount: 12500,
+                acquisition_range: -1.0,
+                strength: 0,
+                agility: 0,
+                intelligence: 0,
+                level: 1,
+                inventory: vec![],
+                abilities: vec![],
+                random_type: Neutral(
+                    1,
+                    0,
+                ),
+                color: -1,
+                waygate_region_id: -1,
+                creation_id: 2,
+            },
+            UnitItem {
+                model_id: "Hpal".to_string(),
+                variation: 0,
+                coord_x: 168.12915,
+                coord_y: 1133.3773,
+                coord_z: 0.0,
+                angle: 4.8219957,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                scale_z: 1.0,
+                flags: 2,
+                player_owner: 0,
+                unk1: 0,
+                unk2: 0,
+                hp: -1,
+                mana: -1,
+                map_drop_table_pointer: -1,
+                drop_item_sets: vec![
+                    vec![
+                        DropItem(
+                            "gopr".to_string(),
+                            100,
+                        ),
+                    ],
+                ],
+                gold_amount: 12500,
+                acquisition_range: -1.0,
+                strength: 0,
+                agility: 0,
+                intelligence: 0,
+                level: 3,
+                inventory: vec![
+                    InventoryItem(
+                        0,
+                        "desc".to_string(),
+                    ),
+                ],
+                abilities: vec![
+                    AbilityModification {
+                        ability_id: "AHad".to_string(),
+                        autocast: false,
+                        level: 2,
+                    },
+                ],
+                random_type: Neutral(
+                    1,
+                    0,
+                ),
+                color: -1,
+                waygate_region_id: -1,
+                creation_id: 3,
+            },
+            UnitItem {
+                model_id: "hrif".to_string(),
+                variation: 0,
+                coord_x: 295.05032,
+                coord_y: 703.4983,
+                coord_z: 0.0,
+                angle: 5.930978,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                scale_z: 1.0,
+                flags: 2,
+                player_owner: 0,
+                unk1: 0,
+                unk2: 0,
+                hp: -1,
+                mana: -1,
+                map_drop_table_pointer: -1,
+                drop_item_sets: vec![
+                    vec![
+                        DropItem(
+                            "\u{1}\u{1}\u{0}Q".to_string(),
+                            100,
+                        ),
+                    ]
+                ],
+                gold_amount: 12500,
+                acquisition_range: -1.0,
+                strength: 0,
+                agility: 0,
+                intelligence: 0,
+                level: 1,
+                inventory: vec![],
+                abilities: vec![],
+                random_type: Neutral(
+                    1,
+                    0,
+                ),
+                color: -1,
+                waygate_region_id: -1,
+                creation_id: 9,
+            },
+            UnitItem {
+                model_id: "uDNR".to_string(),
+                variation: 0,
+                coord_x: 1458.814,
+                coord_y: -1488.7827,
+                coord_z: 256.0,
+                angle: 3.2810445,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                scale_z: 1.0,
+                flags: 2,
+                player_owner: 12,
+                unk1: 0,
+                unk2: 0,
+                hp: -1,
+                mana: -1,
+                map_drop_table_pointer: -1,
+                drop_item_sets: vec![],
+                gold_amount: 12500,
+                acquisition_range: -1.0,
+                strength: 0,
+                agility: 0,
+                intelligence: 0,
+                level: 1,
+                inventory: vec![],
+                abilities: vec![],
+                random_type: RandomFromTableGroup(
+                    0,
+                    0,
+                ),
+                color: -1,
+                waygate_region_id: -1,
+                creation_id: 10,
+            },
+            UnitItem {
+                model_id: "uDNR".to_string(),
+                variation: 0,
+                coord_x: 1125.4777,
+                coord_y: -1130.6067,
+                coord_z: 256.0,
+                angle: 5.390973,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                scale_z: 1.0,
+                flags: 2,
+                player_owner: 12,
+                unk1: 0,
+                unk2: 0,
+                hp: -1,
+                mana: -1,
+                map_drop_table_pointer: -1,
+                drop_item_sets: vec![],
+                gold_amount: 12500,
+                acquisition_range: -1.0,
+                strength: 0,
+                agility: 0,
+                intelligence: 0,
+                level: 1,
+                inventory: vec![],
+                abilities: vec![],
+                random_type: RandomFromCustomTable(
+                    vec![
+                        RandomUnit(
+                            "nthl".to_string(),
+                            0.000000000000000000000000000000000000000000048,
+                        ),
+                        RandomUnit(
+                            "nfre".to_string(),
+                            0.000000000000000000000000000000000000000000046,
+                        ),
+                        RandomUnit(
+                            "nsbm".to_string(),
+                            0.000000000000000000000000000000000000000000046,
+                        ),
+                    ],
+                ),
+                color: -1,
+                waygate_region_id: -1,
+                creation_id: 11,
+            },
+            UnitItem {
+                model_id: "uDNR".to_string(),
+                variation: 0,
+                coord_x: 1024.6962,
+                coord_y: -1549.7902,
+                coord_z: 256.0,
+                angle: 0.69725907,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                scale_z: 1.0,
+                flags: 2,
+                player_owner: 12,
+                unk1: 0,
+                unk2: 0,
+                hp: -1,
+                mana: -1,
+                map_drop_table_pointer: -1,
+                drop_item_sets: vec![],
+                gold_amount: 12500,
+                acquisition_range: -1.0,
+                strength: 0,
+                agility: 0,
+                intelligence: 0,
+                level: 1,
+                inventory: vec![],
+                abilities: vec![],
+                random_type: Neutral(
+                    6,
+                    0,
+                ),
+                color: -1,
+                waygate_region_id: -1,
+                creation_id: 12,
+            },
+        ]
+    }
 
     #[test]
     fn no_failure_roc(){
         let mut unititem_file = File::open("../resources/Scenario/Sandbox_roc/war3mapUnits.doo").unwrap();
         let mut reader = BinaryReader::from(&mut unititem_file);
         let unititem_map = reader.read::<UnitItemMap>();
+    }
+
+    #[test]
+    fn check_roc(){
+        let mut unititem_file = File::open("../resources/Scenario/Sandbox_roc/war3mapUnits.doo").unwrap();
+        let mut reader = BinaryReader::from(&mut unititem_file);
+        let unititem_map = reader.read::<UnitItemMap>();
+        assert_eq!(unititem_map.id, "W3do".to_string());
+        assert_eq!(unititem_map.version, RoC);
+        let units_items_mock = mock_rock();
+        let units_items: Vec<UnitItem> = unititem_map.units_items.iter().filter(
+            |unit_item| {
+                let creat_id = unit_item.creation_id;
+                match creat_id{
+                    2 | 3 | 9 | 10 | 11 | 12 => true,
+                    _ => false
+                }
+            }).cloned().collect();
+        assert_eq!(units_items, units_items_mock);
     }
 
     #[test]
