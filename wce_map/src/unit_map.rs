@@ -293,3 +293,24 @@ fn to_game_version(value: u32) -> GameVersion{
         _ => panic!("Unknown or unsupported game version '{}'", value)
     }
 }
+
+#[cfg(test)]
+mod unitmap_tests{
+    use std::fs::File;
+    use crate::binary_reader::BinaryReader;
+    use crate::unit_map::UnitItemMap;
+
+    #[test]
+    fn no_failure_roc(){
+        let mut unititem_file = File::open("../resources/Scenario/Sandbox_roc/war3mapUnits.doo").unwrap();
+        let mut reader = BinaryReader::from(&mut unititem_file);
+        let unititem_map = reader.read::<UnitItemMap>();
+    }
+
+    #[test]
+    fn no_failure_tft(){
+        let mut unititem_file = File::open("../resources/Scenario/Sandbox_tft/war3mapUnits.doo").unwrap();
+        let mut reader = BinaryReader::from(&mut unititem_file);
+        let unititem_map = reader.read::<UnitItemMap>();
+    }
+}
