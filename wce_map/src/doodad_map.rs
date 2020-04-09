@@ -183,3 +183,90 @@ fn to_game_version(value: u32) -> GameVersion{
         _ => panic!("Unknown or unsupported game version '{}'", value)
     }
 }
+
+#[cfg(test)]
+mod doodads_test{
+    use std::fs::File;
+    use crate::binary_reader::BinaryReader;
+    use crate::doodad_map::{DoodadMap, Destructable};
+    use crate::globals::GameVersion::RoC;
+
+    fn mock_destructable_roc() -> Vec<Destructable>{
+        vec![
+            Destructable{
+                model_id: "LTlt".to_string(),
+                variation: 0,
+                coord_x: -1280.0,
+                coord_y: 1600.0,
+                coord_z: 0.0,
+                angle: 4.712389,
+                scale_x: 0.9766412,
+                scale_y: 0.9766412,
+                scale_z: 0.9766412,
+                flags: 2,
+                life: 100,
+                drop_table_pointer: -1,
+                drop_item_set: vec![],
+                creation_id: 0
+            },
+            Destructable{
+                model_id: "LRrk".to_string(),
+                variation: 4,
+                coord_x: 1088.0,
+                coord_y: 1216.0,
+                coord_z: 79.5,
+                angle: 0.5061455,
+                scale_x: 0.9194495,
+                scale_y: 0.9194495,
+                scale_z: 0.9194495,
+                flags: 2,
+                life: 255,
+                drop_table_pointer: -1,
+                drop_item_set: vec![],
+                creation_id: 55
+            },
+            Destructable{
+                model_id: "LRrk".to_string(),
+                variation: 0,
+                coord_x: 960.0,
+                coord_y: 1280.0,
+                coord_z: 46.5,
+                angle: 5.969026,
+                scale_x: 1.0382886,
+                scale_y: 1.0382886,
+                scale_z: 1.0382886,
+                flags: 2,
+                life: 255,
+                drop_table_pointer: -1,
+                drop_item_set: vec![],
+                creation_id: 168
+            }
+        ]
+    }
+    
+    #[test]
+    fn no_failure(){
+        let mut doodad_file = File::open("../resources/Scenario/Sandbox_roc/war3map.doo").unwrap();
+        let mut reader = BinaryReader::from(&mut doodad_file);
+        let doodad_map = reader.read::<DoodadMap>();
+    }
+
+    #[test]
+    fn check_roc(){
+        let mut doodad_file = File::open("../resources/Scenario/Sandbox_roc/war3map.doo").unwrap();
+        let mut reader = BinaryReader::from(&mut doodad_file);
+        let doodad_map = reader.read::<DoodadMap>();
+        let mock_destructables = mock_destructable_roc();
+        assert_eq!(doodad_map.id, "W3do".to_string());
+        assert_eq!(doodad_map.version, RoC);
+        let destructables: Vec<Destructable> = doodad_map.destructables.iter().filter(
+            |destructable| {
+                let creat_id = destructable.creation_id;
+                match creat_id{
+                    168 | 55 | 0 => true,
+                    _ => false
+                }
+            }).cloned().collect();
+        assert_eq!(destructables, mock_destructables);
+    }
+}
