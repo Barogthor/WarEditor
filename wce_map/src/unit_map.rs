@@ -1,3 +1,6 @@
+#[cfg(test)]
+use pretty_assertions::{assert_eq, assert_ne};
+
 use mpq::Archive;
 
 use crate::globals::{GameVersion, MAP_TERRAIN_UNITS};
@@ -10,7 +13,7 @@ use crate::unit_map::RandomUnitItemFlag::{Neutral, NotRandom, RandomFromCustomTa
 const RANDOM_ITEM_ID: &str = "iDNR";
 const RANDOM_UNIT_ID: &str = "uDNR";
 
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct DropItem(String, u32);
 impl BinaryConverterVersion for DropItem{
     fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> Self {
@@ -24,7 +27,7 @@ impl BinaryConverterVersion for DropItem{
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
 struct InventoryItem(i32, String);
 impl BinaryConverterVersion for InventoryItem{
     fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> Self {
@@ -38,7 +41,7 @@ impl BinaryConverterVersion for InventoryItem{
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
 struct AbilityModification {
     ability_id: String,
     autocast: bool,
@@ -56,7 +59,7 @@ impl BinaryConverterVersion for AbilityModification{
         unimplemented!()
     }
 }
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
 struct RandomUnit(String, f32);
 impl BinaryConverterVersion for RandomUnit {
     fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> Self {
@@ -70,7 +73,7 @@ impl BinaryConverterVersion for RandomUnit {
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
 enum RandomUnitItemFlag {
     Neutral(u32, u8),
     RandomFromTableGroup(i32, u32),
@@ -118,7 +121,7 @@ impl BinaryConverterVersion for RandomUnitItemFlag {
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
 struct UnitItem {
     model_id: String,
     variation: u32,

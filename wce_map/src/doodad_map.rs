@@ -1,7 +1,10 @@
+#[cfg(test)]
+use pretty_assertions::{assert_eq, assert_ne};
+
 use mpq::Archive;
 
 use crate::globals::{GameVersion, MAP_TERRAIN_DOODADS};
-use crate::globals::GameVersion::{RoC, TFT, TFT131};
+use crate::globals::GameVersion::{RoC, TFT};
 use crate::binary_reader::{BinaryConverter, BinaryConverterVersion, BinaryReader};
 use crate::binary_writer::BinaryWriter;
 use crate::doodad_map::DestructableFlag::{InvisibleNonSolid, Unnamed, VisibleNonSolid, VisibleSolid};
@@ -29,7 +32,7 @@ impl DestructableFlag {
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
 struct Destructable {
     model_id: String,
     variation: u32,
@@ -61,13 +64,13 @@ impl BinaryConverterVersion for Destructable{
         let flags = reader.read_u8();
         let life = reader.read_u8();
         let (drop_table_pointer, drop_item_set) = match *game_version{
-            TFT | TFT131 => {
+            RoC => (-1, vec![]),
+            _ => {
                 let drop_table_pointer = reader.read_i32();
                 let count_drop_set = reader.read_u32();
                 let drop_item_set = reader.read_vec_version::<DropItem>(count_drop_set as usize, game_version);
                 (drop_table_pointer, drop_item_set)
             },
-            _ => (-1, vec![])
         };
 
         let creation_id = reader.read_u32();

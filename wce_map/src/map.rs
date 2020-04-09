@@ -40,15 +40,17 @@ impl<'a> Map<'a> {
         let mut map = Archive::open(path.to_owned()).unwrap();
 
         let w3i = W3iFile::read_file(&mut map);
-       w3i.debug();
+       // w3i.debug();
         let mmp = MMPFile::read_file(&mut map);
 //        mmp.debug();
         let regions = RegionFile::read_file(&mut map);
+        // println!("{:#?}", regions);
 //        regions.debug();
         let cameras = CameraFile::read_file(&mut map);
+        // println!("{:#?}", cameras);
 //        cameras.debug();
         let sounds = SoundFile::read_file(&mut map);
-//        sounds.debug();
+        // println!("{:#?}", sounds);
         let _pathing = PathMapFile::read_file(&mut map);
 //        pathing.debug();
         let shaders = ShadowMapFile::read_file(&mut map);
@@ -63,6 +65,7 @@ impl<'a> Map<'a> {
 //        triggers_ct.debug();
         let triggers = TriggersFile::read_file(&mut map, game_data.get_trigger_data()).unwrap();
         let doodad_map = DoodadMap::read_file(&mut map);
+        // println!("{:#?}", doodad_map);
         let unit_item_map = UnitItemMap::read_file(&mut map);
         let import_listing = ImportFile::read_file(&mut map);
 
