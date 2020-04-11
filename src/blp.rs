@@ -117,9 +117,6 @@ impl BinaryConverter for BLP{
 
                   let mut reader = Cursor::new(jpeg_buffer);
                   let mut decoder = Decoder::new(reader);
-                  decoder.read_info();
-                  let info = decoder.info();
-                  println!("{:#?}", info);
                   let res = decoder.decode().expect("error while decoding");
                   blp.jpeg_mipmaps.push(res);
                 }
