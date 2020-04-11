@@ -46,7 +46,7 @@ mod blp_parse {
         let blp: BLP = reader.read();
         let mmap1 = &blp.get_jpeg_mipmaps()[1];
         // println!("{:#?}", mmap1[0..mmap1.len()/100]);
-        for i in 0..1{
+        for i in 0..3{
             let name = format!("resources/FrostmourneNew_mmap{}.jpg", i);
             let mut file = File::create(name).unwrap();
             file.write(blp.get_jpeg_header()).unwrap();

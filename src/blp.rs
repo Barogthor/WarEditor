@@ -21,6 +21,16 @@ pub enum BlpFlag {
     NoTeamColor,
 }
 
+impl BlpFlag {
+    pub fn from(n: u32) -> Result<Self, &str>{
+        match n{ //TODO faire conversion slim (regarder jpeg_decoder marker)
+            3 | 4 => Ok(BlpFlag::RGBA),
+            flag if flag >= 5 => Ok(BlpFlag::RGB),
+            _ => Err("Unknown or unsupported blp flag"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum BlpData {
 //    JpgBlp(JpgBlpData),
@@ -31,6 +41,16 @@ pub enum BlpData {
 pub enum Compression {
     JPEG,
     PALETTE,
+}
+
+impl Compression {
+    pub fn from(n: u32) -> Result<Self, &str>{
+        match n{ //TODO faire conversion slim (regarder jpeg_decoder marker)
+            0 => Ok(Compression::JPEG),
+            1 => Ok(Compression::PALETTE),
+            _ => Err("Unknown BLP type")
+        }
+    }
 }
 
 pub struct BLP{
@@ -54,6 +74,43 @@ pub struct BLP{
 }
 
 impl BLP {
+    fn parse_jpeg_mipmaps(&mut self, reader: &mut BinaryReader){
+        self.jpeg_header_size = reader.read_u32();
+        self.jpeg_header = reader.read_bytes(self.jpeg_header_size as usize);
+        for i in 0..MAX_MIPMAP {
+            let size = self.mipmap_sizes[i] as usize;
+            let offset = self.mipmap_offsets[i] as i64;
+            if size == 0 { break; }
+            reader.seek_begin();
+            reader.skip(offset);
+            let mut jpeg_buffer = self.jpeg_header.clone();
+            jpeg_buffer.reserve(size + 10);
+            let mut raw = reader.read_bytes(size);
+            jpeg_buffer.append(&mut raw);
+
+            let mut reader = Cursor::new(jpeg_buffer);
+            let mut decoder = Decoder::new(reader);
+            let res = decoder.decode().expect("error while decoding");
+            self.jpeg_mipmaps.push(res);
+        }
+    }
+
+    fn parse_palette(&mut self, reader: &mut BinaryReader){
+        blp.palette_colors = reader.read_vec_u32(PALETTE_SIZE);
+        for i in 0..MAX_MIPMAP{
+            let size = blp.mipmap_sizes[i] as usize;
+            let offset = blp.mipmap_offsets[i] as i64;
+            if size == 0 {continue;}
+            reader.seek_begin();
+            reader.skip(offset);
+
+            blp.palette_rgb_indexes.push(reader.read_bytes(size));
+            if blp.flag == BlpFlag::RGBA{
+                blp.palette_alpha_indexes.push(reader.read_bytes(size));
+            }
+        }
+    }
+
     pub fn get_jpeg_header(&self) -> &Vec<u8>{
         &self.jpeg_header
     }
@@ -65,19 +122,13 @@ impl BLP {
 impl BinaryConverter for BLP{
     fn read(reader: &mut BinaryReader) -> Self {
         let magic_num = String::from_utf8(reader.read_bytes(4)).unwrap();
-        let compression = match reader.read_u32(){
-            0 => Ok(Compression::JPEG),
-            1 => Ok(Compression::PALETTE),
-            _ => Err("Unknown BLP type")
-        }.unwrap();
+        let compression = reader.read_u32();
+        let compression = Compression::from(compression).unwrap();
         let has_alpha = reader.read_u32() == 0x0000_0008;
         let width = reader.read_u32();
         let height = reader.read_u32();
-        let flag = match reader.read_u32(){ //TODO faire conversion slim (regarder jpeg_decoder marker)
-            3 | 4 => Ok(BlpFlag::RGBA),
-            flag if flag >= 5 => Ok(BlpFlag::RGB),
-            _ => Err("Unknown or unsupported blp flag"),
-        }.unwrap();
+        let flag =  reader.read_u32();
+        let flag = BlpFlag::from(flag).unwrap();
         let smooth = reader.read_u32() == 1;
         let mipmap_offsets = reader.read_vec_u32(MAX_MIPMAP);
         let mipmap_sizes = reader.read_vec_u32(MAX_MIPMAP);
@@ -99,43 +150,8 @@ impl BinaryConverter for BLP{
             palette_alpha_indexes: Vec::with_capacity(MAX_MIPMAP),
         };
         match blp.compression {
-           Compression::JPEG => {
-               blp.jpeg_header_size = reader.read_u32();
-               blp.jpeg_header = reader.read_bytes(blp.jpeg_header_size as usize);
-               for i in 0..MAX_MIPMAP{
-                   let size = blp.mipmap_sizes[i] as usize;
-                   let offset = blp.mipmap_offsets[i] as i64;
-                   if size == 0 {break;}
-                   reader.seek_begin();
-                   reader.skip(offset);
-                   let mut jpeg_buffer = blp.jpeg_header.clone();
-                   jpeg_buffer.reserve(size+10);
-                   let mut raw = reader.read_bytes(size);
-                   blp.jpeg_mipmaps.insert(i,raw.clone());
-
-                  jpeg_buffer.append(&mut raw);
-
-                  let mut reader = Cursor::new(jpeg_buffer);
-                  let mut decoder = Decoder::new(reader);
-                  let res = decoder.decode().expect("error while decoding");
-                  blp.jpeg_mipmaps.push(res);
-                }
-            },
-            Compression::PALETTE => {
-                blp.palette_colors = reader.read_vec_u32(PALETTE_SIZE);
-                for i in 0..MAX_MIPMAP{
-                    let size = blp.mipmap_sizes[i] as usize;
-                    let offset = blp.mipmap_offsets[i] as i64;
-                    if size == 0 {continue;}
-                    reader.seek_begin();
-                    reader.skip(offset);
-
-                    blp.palette_rgb_indexes.push(reader.read_bytes(size));
-                    if blp.flag == BlpFlag::RGBA{
-                        blp.palette_alpha_indexes.push(reader.read_bytes(size));
-                    }
-                }
-            }
+            Compression::JPEG => blp.parse_jpeg_mipmaps(reader),
+            Compression::PALETTE => blp.parse_palette(reader)
         };
         println!("file cursor pos {} / {}", reader.pos(),reader.size());
         blp
