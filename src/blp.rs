@@ -1,5 +1,9 @@
 #![allow(dead_code)]
 
+use std::io::Cursor;
+
+use jpeg_decoder::Decoder;
+
 use wce_map::binary_reader::{BinaryConverter, BinaryReader};
 use wce_map::binary_writer::BinaryWriter;
 
@@ -94,41 +98,30 @@ impl BinaryConverter for BLP{
             palette_rgb_indexes: Vec::with_capacity(MAX_MIPMAP),
             palette_alpha_indexes: Vec::with_capacity(MAX_MIPMAP),
         };
-        println!("buffer size: {}",reader.size());
-        println!("position: {}",reader.pos());
         match blp.compression {
            Compression::JPEG => {
                blp.jpeg_header_size = reader.read_u32();
                blp.jpeg_header = reader.read_bytes(blp.jpeg_header_size as usize);
-               println!("jpeg header: {:?}", blp.jpeg_header);
-               blp.jpeg_mipmaps.reserve_exact(MAX_MIPMAP);
                for i in 0..MAX_MIPMAP{
                    let size = blp.mipmap_sizes[i] as usize;
                    let offset = blp.mipmap_offsets[i] as i64;
-                   if size == 0 {continue;}
+                   if size == 0 {break;}
                    reader.seek_begin();
                    reader.skip(offset);
-                   println!("mipmap[{:2}] | size: {:5}, offset: {:5}", i, size, offset);
-//                   let mut jpeg_buffer = blp.jpeg_header.clone();
                    let mut jpeg_buffer = blp.jpeg_header.clone();
                    jpeg_buffer.reserve(size+10);
-//                   jpeg_buffer.append(&mut vec![0xFF, 0xDA]);
-                   let raw = reader.read_bytes(size);
+                   let mut raw = reader.read_bytes(size);
                    blp.jpeg_mipmaps.insert(i,raw.clone());
 
-//                   println!("raw jpeg mipmap size: {}", raw.len());
-//                   jpeg_buffer.append(&mut raw);
-//                   println!("jpeg mipmap size: {}", jpeg_buffer.len());
+                  jpeg_buffer.append(&mut raw);
 
-//                   let mut reader = Cursor::new(jpeg_buffer);
-//                   let mut decoder = JPEGDecoder::new(reader).unwrap();
-//                   let res = decoder.read_image().unwrap();
-//                   let mut decoder = Decoder::new(reader);
-//                   decoder.read_info();
-//                   let info = decoder.info();
-//                   println!("{:#?}", info);
-//                   let res = decoder.decode().expect("error while decoding");
-//                   mmap.jpeg_mipmaps.push();
+                  let mut reader = Cursor::new(jpeg_buffer);
+                  let mut decoder = Decoder::new(reader);
+                  decoder.read_info();
+                  let info = decoder.info();
+                  println!("{:#?}", info);
+                  let res = decoder.decode().expect("error while decoding");
+                  blp.jpeg_mipmaps.push(res);
                 }
             },
             Compression::PALETTE => {
