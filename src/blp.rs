@@ -3,12 +3,13 @@
 use std::io::Cursor;
 
 use jpeg_decoder::Decoder;
+use rgb::{RGB8, RGBA, RGBA8};
 
 use wce_map::binary_reader::{BinaryConverter, BinaryReader};
 use wce_map::binary_writer::BinaryWriter;
 
-type RGBA = u32;
-type Mipmaps = Vec<Vec<u8>>;
+type MipmapPixels = Vec<Vec<RGB8>>;
+type MipmapIndexes = Vec<Vec<u8>>;
 pub const PALETTE_SIZE: usize = 256;
 pub const JPG_BLP: bool = false;
 pub const PALETTED_BLP: bool = true;
@@ -22,11 +23,11 @@ pub enum BlpFlag {
 }
 
 impl BlpFlag {
-    pub fn from(n: u32) -> Result<Self, &str>{
+    pub fn from(n: u32) -> Result<Self, String>{
         match n{ //TODO faire conversion slim (regarder jpeg_decoder marker)
             3 | 4 => Ok(BlpFlag::RGBA),
             flag if flag >= 5 => Ok(BlpFlag::RGB),
-            _ => Err("Unknown or unsupported blp flag"),
+            _ => Err(format!("Unknown or unsupported blp flag")),
         }
     }
 }
@@ -44,11 +45,11 @@ pub enum Compression {
 }
 
 impl Compression {
-    pub fn from(n: u32) -> Result<Self, &str>{
+    pub fn from(n: u32) -> Result<Self, String>{
         match n{ //TODO faire conversion slim (regarder jpeg_decoder marker)
             0 => Ok(Compression::JPEG),
             1 => Ok(Compression::PALETTE),
-            _ => Err("Unknown BLP type")
+            _ => Err(format!("Unknown BLP type"))
         }
     }
 }
@@ -66,11 +67,11 @@ pub struct BLP{
 
     jpeg_header_size: u32,
     jpeg_header: Vec<u8>,
-    jpeg_mipmaps: Mipmaps,
+    jpeg_mipmaps: MipmapPixels,
 
-    palette_colors: Vec<RGBA>,
-    palette_rgb_indexes: Mipmaps,
-    palette_alpha_indexes: Mipmaps,
+    palette_colors: Vec<RGBA8>,
+    palette_rgb_indexes: MipmapIndexes,
+    palette_alpha_indexes: MipmapIndexes,
 }
 
 impl BLP {
@@ -90,23 +91,31 @@ impl BLP {
 
             let mut reader = Cursor::new(jpeg_buffer);
             let mut decoder = Decoder::new(reader);
-            let res = decoder.decode().expect("error while decoding");
-            self.jpeg_mipmaps.push(res);
+            let mut res = decoder.decode().expect("error while decoding");
+            let pixels: Vec<RGB8> = res.chunks_mut(4).map(|cmyk| cmyk_to_rgb(cmyk) ).collect();
+            self.jpeg_mipmaps.push(pixels);
+
         }
     }
 
     fn parse_palette(&mut self, reader: &mut BinaryReader){
-        blp.palette_colors = reader.read_vec_u32(PALETTE_SIZE);
+        self.palette_colors = reader.read_bytes(PALETTE_SIZE * 4).chunks(4)
+            .map(|bgra| RGBA8{
+                r: bgra[2],
+                g: bgra[1],
+                b: bgra[0],
+                a: 255 - bgra[3]
+            } ).collect();
         for i in 0..MAX_MIPMAP{
-            let size = blp.mipmap_sizes[i] as usize;
-            let offset = blp.mipmap_offsets[i] as i64;
+            let size = self.mipmap_sizes[i] as usize;
+            let offset = self.mipmap_offsets[i] as i64;
             if size == 0 {continue;}
             reader.seek_begin();
             reader.skip(offset);
 
-            blp.palette_rgb_indexes.push(reader.read_bytes(size));
-            if blp.flag == BlpFlag::RGBA{
-                blp.palette_alpha_indexes.push(reader.read_bytes(size));
+            self.palette_rgb_indexes.push(reader.read_bytes(size));
+            if self.flag == BlpFlag::RGBA{
+                self.palette_alpha_indexes.push(reader.read_bytes(size));
             }
         }
     }
@@ -114,7 +123,7 @@ impl BLP {
     pub fn get_jpeg_header(&self) -> &Vec<u8>{
         &self.jpeg_header
     }
-    pub fn get_jpeg_mipmaps(&self) -> &Mipmaps{
+    pub fn get_jpeg_mipmaps(&self) -> &MipmapPixels{
         &self.jpeg_mipmaps
     }
 }
@@ -161,3 +170,22 @@ impl BinaryConverter for BLP{
         unimplemented!()
     }
 }
+
+fn cmyk_to_rgb(cmyk: &mut [u8]) -> RGB8{
+        let c = cmyk[0] as f32 / 255.0;
+        let y = cmyk[1] as f32 / 255.0;
+        let m = cmyk[2] as f32 / 255.0;
+        let k = cmyk[3] as f32 / 255.0;
+        let red = 255.0 * (1. - c) * (1. - k);
+//        let red = 255.0 - c;
+        let green = 255.0 * (1. - y) * (1. - k);
+//        let green = 255.0 - y;
+        let blue = 255.0 * (1. - m) * (1. - k);
+//        let blue = 255.0 - m;
+        RGB8 {r: red as u8, b: blue as u8, g: green as u8 }
+}
+
+//     data.chunks(4).for_each(|cmyk| {
+
+//         println!("[{:.0}, {:.0}, {:.0}] or [{:.0}, {:.0}, {:.0}, {:.0}]", red, green, blue, c*100., m*100. , y*100., k*100.);
+//     });

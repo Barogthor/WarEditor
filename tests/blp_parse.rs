@@ -28,12 +28,13 @@ mod blp_parse {
         file.read_to_end(&mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer.to_owned());
         let blp: BLP = reader.read();
-        for i in 0..1{
-            let name = format!("resources/war3mapMap_mmap{}.jpg", i);
-            let mut file = File::create(name).unwrap();
-            file.write(blp.get_jpeg_header()).unwrap();
-            file.write(&blp.get_jpeg_mipmaps()[i]).unwrap();
-        }
+        // for i in 0..1{
+        //     let name = format!("resources/war3mapMap_mmap{}.jpg", i);
+        //     let mut file = File::create(name).unwrap();
+        //     file.write(blp.get_jpeg_header()).unwrap();
+        //     let mipmap = &blp.get_jpeg_mipmaps()[i];
+        //     file.write().unwrap();
+        // }
         Ok(())
     }
 
@@ -44,14 +45,15 @@ mod blp_parse {
         file.read_to_end(&mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer.to_owned());
         let blp: BLP = reader.read();
-        let mmap1 = &blp.get_jpeg_mipmaps()[1];
+        let mmap1 = &blp.get_jpeg_mipmaps()[3];
+        println!("{:?}", mmap1);
         // println!("{:#?}", mmap1[0..mmap1.len()/100]);
-        for i in 0..3{
-            let name = format!("resources/FrostmourneNew_mmap{}.jpg", i);
-            let mut file = File::create(name).unwrap();
-            file.write(blp.get_jpeg_header()).unwrap();
-            file.write(&blp.get_jpeg_mipmaps()[i]).unwrap();
-        }
+        // for i in 0..3{
+        //     let name = format!("resources/FrostmourneNew_mmap{}.jpg", i);
+        //     let mut file = File::create(name).unwrap();
+        //     file.write(blp.get_jpeg_header()).unwrap();
+        //     file.write(&blp.get_jpeg_mipmaps()[i]).unwrap();
+        // }
         Ok(())
     }
 
