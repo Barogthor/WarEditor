@@ -11,7 +11,6 @@ edition = "2018"
 [dependencies]
 rand = "0.7.0"
 #getset = "0.0.7"
-jpeg-decoder = { git = "https://github.com/Barogthor/jpeg-decoder.git" }
 #vec_map = "0.8.1"
 rust-ini = "0.15.2"
 #num-derive = "0.2.5"
@@ -19,6 +18,5 @@ rust-ini = "0.15.2"
 fern = { version = "0.6.0", features = ["colored"] }
 log = "0.4.8"
 wce_map = { path = "wce_map" }
-rgb = "0.8.16"
 #mozjpeg = { version = "0.8.16"}
 #strum = "0.18.0"

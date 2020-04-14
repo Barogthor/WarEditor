@@ -4,8 +4,7 @@ use std::io::{BufRead, Cursor, Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 
-use crate::globals::GameVersion;
-use crate::binary_writer::BinaryWriter;
+use crate::{BinaryConverter, BinaryConverterVersion, GameVersion};
 
 pub struct BinaryReader{
     buffer: Cursor<Vec<u8>>,
@@ -178,12 +177,3 @@ impl BinaryReader{
 
 }
 
-pub trait BinaryConverter{
-    fn read(reader: &mut BinaryReader) -> Self;
-    fn write(&self, writer: &mut BinaryWriter);
-}
-
-pub trait BinaryConverterVersion{
-    fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> Self;
-    fn write_version(&self, writer: &mut BinaryWriter, game_version: &GameVersion) -> Self;
-}

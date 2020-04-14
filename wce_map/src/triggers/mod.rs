@@ -1,9 +1,9 @@
 // use log::{debug, error, info, trace, warn};
 use mpq::Archive;
 
-use crate::globals::{GameVersion, MAP_TRIGGERS};
-use crate::globals::GameVersion::{RoC, TFT};
-use crate::binary_reader::BinaryReader;
+use crate::globals::{MAP_TRIGGERS};
+use wce_formats::binary_reader::BinaryReader;
+use wce_formats::GameVersion::{self, RoC, TFT};
 use crate::data_ini::DataIni;
 use crate::triggers::enums::WtgError::{self, UnknownGameVersion};
 use crate::triggers::misc::{TriggerCategory, VariableDefinition};

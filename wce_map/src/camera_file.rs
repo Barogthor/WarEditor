@@ -4,8 +4,9 @@ use pretty_assertions::{assert_eq, assert_ne};
 use mpq::Archive;
 
 use crate::globals::MAP_CAMERAS;
-use crate::binary_reader::{BinaryConverter, BinaryReader};
-use crate::binary_writer::BinaryWriter;
+use wce_formats::{BinaryConverter};
+use wce_formats::binary_reader::BinaryReader;
+use wce_formats::binary_writer::BinaryWriter;
 
 type Degree = f32;
 
@@ -96,7 +97,7 @@ impl BinaryConverter for CameraFile {
 mod w3c_test{
     use crate::camera_file::{Camera, CameraFile};
     use std::fs::File;
-    use crate::binary_reader::BinaryReader;
+    use wce_formats::binary_reader::BinaryReader;
 
     fn mock_cameras() -> Vec<Camera>{
         vec![

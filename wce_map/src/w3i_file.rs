@@ -3,10 +3,11 @@ use pretty_assertions::{assert_eq, assert_ne};
 
 use std::fmt::Debug;
 use mpq::Archive;
-use crate::globals::{GameVersion, MAP_INFOS};
-use crate::globals::GameVersion::{RoC, TFT, TFT131};
-use crate::binary_reader::{BinaryConverter, BinaryReader};
-use crate::binary_writer::BinaryWriter;
+use crate::globals::{MAP_INFOS};
+use wce_formats::{BinaryConverter, GameVersion};
+use wce_formats::binary_reader::BinaryReader;
+use wce_formats::GameVersion::{RoC, TFT, TFT131};
+use wce_formats::binary_writer::BinaryWriter;
 
 #[derive(Debug, PartialEq)]
 struct PlayerData{
@@ -454,9 +455,9 @@ fn to_game_version(value: u32) -> GameVersion{
 #[cfg(test)]
 mod w3i_tests{
     use std::fs::File;
-    use crate::globals::GameVersion::{RoC, TFT};
-    use crate::binary_reader::BinaryReader;
     use crate::w3i_file::{W3iFile, PlayerData, ForceData, RandomUnitTable, RandomTablePositionType, RandomUnitSet, RandomItemTable, RandomItemSet};
+    use wce_formats::binary_reader::BinaryReader;
+    use wce_formats::GameVersion::{RoC, TFT};
 
     fn get_roc_mock() -> W3iFile{
         W3iFile{

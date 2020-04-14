@@ -3,10 +3,8 @@
 use std::io::Cursor;
 
 use jpeg_decoder::Decoder;
-use rgb::{RGB8, RGBA, RGBA8};
-
-use wce_map::binary_reader::{BinaryConverter, BinaryReader};
-use wce_map::binary_writer::BinaryWriter;
+use rgb::{RGB8, RGBA8};
+use crate::binary_reader::BinaryReader;
 
 type MipmapPixels = Vec<Vec<RGB8>>;
 type MipmapIndexes = Vec<Vec<u8>>;
@@ -89,7 +87,7 @@ impl BLP {
             let mut raw = reader.read_bytes(size);
             jpeg_buffer.append(&mut raw);
 
-            let mut reader = Cursor::new(jpeg_buffer);
+            let reader = Cursor::new(jpeg_buffer);
             let mut decoder = Decoder::new(reader);
             let mut res = decoder.decode().expect("error while decoding");
             let pixels: Vec<RGB8> = res.chunks_mut(4).map(|cmyk| cmyk_to_rgb(cmyk) ).collect();
@@ -128,8 +126,8 @@ impl BLP {
     }
 }
 
-impl BinaryConverter for BLP{
-    fn read(reader: &mut BinaryReader) -> Self {
+impl BLP{
+    fn from(reader: &mut BinaryReader) -> Self {
         let magic_num = String::from_utf8(reader.read_bytes(4)).unwrap();
         let compression = reader.read_u32();
         let compression = Compression::from(compression).unwrap();
@@ -164,10 +162,6 @@ impl BinaryConverter for BLP{
         };
         println!("file cursor pos {} / {}", reader.pos(),reader.size());
         blp
-    }
-
-    fn write(&self, _writer: &mut BinaryWriter) {
-        unimplemented!()
     }
 }
 

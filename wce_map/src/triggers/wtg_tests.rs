@@ -3,8 +3,8 @@
 #[cfg(test)]
 mod trigger_file_tests{
     use crate::GameData;
-    use crate::globals::GameVersion::TFT;
-    use crate::binary_reader::BinaryReader;
+    use wce_formats::binary_reader::BinaryReader;
+    use wce_formats::GameVersion::{TFT};
     use crate::triggers::TriggerDefinition;
     const PREFIX_RESOURCES_PATH: &str = "../";
 

@@ -3,10 +3,11 @@ use pretty_assertions::{assert_eq, assert_ne};
 
 use mpq::Archive;
 
-use crate::globals::{GameVersion, MAP_TERRAIN_UNITS};
-use crate::globals::GameVersion::{RoC, TFT};
-use crate::binary_reader::{BinaryConverter, BinaryConverterVersion, BinaryReader};
-use crate::binary_writer::BinaryWriter;
+use wce_formats::{BinaryConverter, BinaryConverterVersion};
+use wce_formats::binary_reader::BinaryReader;
+use wce_formats::GameVersion::{self, RoC, TFT};
+use wce_formats::binary_writer::BinaryWriter;
+use crate::globals::{MAP_TERRAIN_UNITS};
 use crate::doodad_map::Radian;
 use crate::unit_map::RandomUnitItemFlag::{Neutral, NotRandom, RandomFromCustomTable, RandomFromTableGroup};
 
@@ -297,10 +298,11 @@ fn to_game_version(value: u32) -> GameVersion{
 #[cfg(test)]
 mod unitmap_tests{
     use std::fs::File;
-    use crate::binary_reader::BinaryReader;
     use crate::unit_map::{UnitItemMap, UnitItem, DropItem, AbilityModification, InventoryItem, RandomUnit};
     use crate::unit_map::RandomUnitItemFlag::{Neutral, RandomFromCustomTable, RandomFromTableGroup};
-    use crate::globals::GameVersion::RoC;
+
+    use wce_formats::binary_reader::BinaryReader;
+    use wce_formats::GameVersion::{RoC};
 
     fn mock_rock() -> Vec<UnitItem>{
         vec![

@@ -4,8 +4,9 @@ use pretty_assertions::{assert_eq, assert_ne};
 use mpq::Archive;
 
 use crate::globals::MAP_REGIONS;
-use crate::binary_reader::{BinaryConverter, BinaryReader};
-use crate::binary_writer::BinaryWriter;
+use wce_formats::{BinaryConverter};
+use wce_formats::binary_reader::BinaryReader;
+use wce_formats::binary_writer::BinaryWriter;
 
 #[derive(Debug, Derivative)]
 #[derivative(Default, PartialEq)]
@@ -94,9 +95,9 @@ impl BinaryConverter for RegionFile{
 
 #[cfg(test)]
 mod w3r_test{
-    use std::fs::File;
-    use crate::binary_reader::BinaryReader;
     use crate::region_file::{RegionFile, Region};
+    use wce_formats::binary_reader::BinaryReader;
+    use std::fs::File;
 
     fn mock_regions() -> Vec<Region>{
         vec![

@@ -7,16 +7,6 @@ extern crate pretty_assertions;
 use crate::data_ini::DataIni;
 use crate::globals::PROFILE_TRIGGER_DATA;
 
-pub fn is_roc(version: i32) -> bool{
-    version == 18
-}
-pub fn is_tft(version: i32) -> bool{
-    version == 25 || version == 28
-}
-pub fn is_remastered(version: i32) -> bool {
-    version == 28
-}
-
 pub const PREFIX_SAMPLE_PATH: &str = "resources/sample_1";
 pub const PREFIX_MDL_PATH: &str = "resources/blp";
 pub const PREFIX_BLP_PATH: &str = "resources/mdl";
@@ -67,8 +57,6 @@ impl GameData {
 
 pub mod error;
 pub mod globals;
-pub mod binary_reader;
-pub mod binary_writer;
 pub mod w3i_file;
 pub mod mmp_file;
 pub mod region_file;

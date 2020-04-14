@@ -3,8 +3,9 @@ use std::ffi::CString;
 use mpq::Archive;
 
 use crate::globals::MAP_IMPORT_LIST;
-use crate::binary_reader::{BinaryConverter, BinaryReader};
-use crate::binary_writer::BinaryWriter;
+use wce_formats::{BinaryConverter};
+use wce_formats::binary_reader::BinaryReader;
+use wce_formats::binary_writer::BinaryWriter;
 
 type ImportPath = Vec<(ImportPathType, CString)>;
 

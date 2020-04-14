@@ -3,10 +3,11 @@ use pretty_assertions::{assert_eq, assert_ne};
 
 use mpq::Archive;
 
-use crate::globals::{GameVersion, MAP_TERRAIN_DOODADS};
-use crate::globals::GameVersion::{RoC, TFT};
-use crate::binary_reader::{BinaryConverter, BinaryConverterVersion, BinaryReader};
-use crate::binary_writer::BinaryWriter;
+use crate::globals::{MAP_TERRAIN_DOODADS};
+use wce_formats::{BinaryConverter, BinaryConverterVersion};
+use wce_formats::binary_reader::BinaryReader;
+use wce_formats::GameVersion::{self, RoC, TFT};
+use wce_formats::binary_writer::BinaryWriter;
 use crate::doodad_map::DestructableFlag::{InvisibleNonSolid, Unnamed, VisibleNonSolid, VisibleSolid};
 use crate::unit_map::DropItem;
 
@@ -187,9 +188,9 @@ fn to_game_version(value: u32) -> GameVersion{
 #[cfg(test)]
 mod doodads_test{
     use std::fs::File;
-    use crate::binary_reader::BinaryReader;
     use crate::doodad_map::{DoodadMap, Destructable};
-    use crate::globals::GameVersion::RoC;
+    use wce_formats::binary_reader::BinaryReader;
+    use wce_formats::GameVersion::{RoC};
 
     fn mock_destructable_roc() -> Vec<Destructable>{
         vec![

@@ -4,8 +4,9 @@ use pretty_assertions::{assert_eq, assert_ne};
 use mpq::Archive;
 
 use crate::globals::MAP_SOUNDS;
-use crate::binary_reader::{BinaryConverter, BinaryReader};
-use crate::binary_writer::BinaryWriter;
+use wce_formats::{BinaryConverter};
+use wce_formats::binary_reader::BinaryReader;
+use wce_formats::binary_writer::BinaryWriter;
 
 const DEFAULT_FLOAT: f32 = 4.2949673e+009;
 
@@ -128,9 +129,9 @@ impl BinaryConverter for SoundFile {
 
 #[cfg(test)]
 mod w3s_test{
-    use std::fs::File;
-    use crate::binary_reader::BinaryReader;
+    use wce_formats::binary_reader::BinaryReader;
     use crate::sound_file::{SoundFile, Sound, DEFAULT_FLOAT};
+    use std::fs::File;
 
     fn mock_sounds() -> Vec<Sound>{
         vec![

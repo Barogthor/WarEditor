@@ -1,7 +1,6 @@
 // use log::{debug, error, info, trace, warn};
-
-use crate::globals::GameVersion::{self, RoC};
-use crate::binary_reader::{BinaryReader};
+use wce_formats::binary_reader::BinaryReader;
+use wce_formats::GameVersion::{self, RoC};
 use crate::data_ini::DataIni;
 use crate::triggers::enums::{ConditionType, ECAType, ParameterType, SubParameterType};
 use crate::triggers::enums::WtgError::{self, UnknownProp};

@@ -1,5 +1,5 @@
-use crate::globals::GameVersion;
-use crate::binary_reader::BinaryReader;
+use wce_formats::binary_reader::BinaryReader;
+use wce_formats::GameVersion::{self};
 
 #[derive(Debug, Default)]
 pub struct VariableDefinition {

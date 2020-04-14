@@ -1,40 +1,5 @@
 pub const REG_PROPERTIES: &str = r"^([^=\r\n]+)=(.+)\r?\n?$";
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
-pub enum GameVersion {
-    RoC,
-    TFT,
-    TFT131,
-}
-
-impl GameVersion {
-    pub fn is_tft(&self) -> bool{
-        match self{
-            GameVersion::RoC => false,
-            GameVersion::TFT | GameVersion::TFT131 => true
-        }
-    }
-    pub fn is_roc(&self) -> bool{
-        match self{
-            GameVersion::RoC => true,
-            GameVersion::TFT | GameVersion::TFT131 => false
-        }
-    }
-    pub fn is_remaster(&self) -> bool{
-        match self{
-            GameVersion::TFT131 => true,
-            _ => false
-        }
-    }
-
-}
-
-
-impl Default for GameVersion{
-    fn default() -> Self {
-        GameVersion::TFT
-    }
-}
 
 pub const MPQ_LISTFILES:                        &str = "(listfile)";
 pub const MPQ_ATTRIBUTES:                       &str = "(attributes)";
