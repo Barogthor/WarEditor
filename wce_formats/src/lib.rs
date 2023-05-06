@@ -1,7 +1,7 @@
 use crate::binary_reader::BinaryReader;
 use crate::binary_writer::BinaryWriter;
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(Debug, PartialOrd, PartialEq, Clone, Copy)]
 pub enum GameVersion {
     RoC,
     TFT,

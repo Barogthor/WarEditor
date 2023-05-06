@@ -1,7 +1,7 @@
 #![allow(dead_code)]
-#[cfg(test)]
-#[macro_use]
-extern crate pretty_assertions;
+// #[cfg(test)]
+// #[macro_use]
+// extern crate pretty_assertions;
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate derivative;
 use crate::data_ini::DataIni;

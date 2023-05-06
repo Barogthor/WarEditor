@@ -430,7 +430,6 @@ name = "wce_map"
 version = "0.1.0"
 dependencies = [
  "bencher",
- "byteorder",
  "derivative",
  "lazy_static",
  "log",

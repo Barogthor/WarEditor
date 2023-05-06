@@ -12,7 +12,7 @@ lazy_static!{
 }
 
 fn parse_ini(path: &str) -> HashMap<String, HashMap<String,String>>{
-    let mut f = File::open(path).unwrap();
+    let mut f = File::open(path).expect(&format!("Unknown file: {}", path));
     let mut buffer = String::new();
     f.read_to_string(&mut buffer).unwrap();
     let buffer: Vec<&str> = buffer.split(EOL).collect();
