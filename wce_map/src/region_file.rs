@@ -1,12 +1,12 @@
-#[cfg(test)]
-use pretty_assertions::{assert_eq, assert_ne};
-
 use mpq::Archive;
+#[cfg(test)]
+use pretty_assertions::assert_eq;
 
-use crate::globals::MAP_REGIONS;
-use wce_formats::{BinaryConverter};
+use wce_formats::BinaryConverter;
 use wce_formats::binary_reader::BinaryReader;
 use wce_formats::binary_writer::BinaryWriter;
+
+use crate::globals::MAP_REGIONS;
 
 #[derive(Debug, Derivative)]
 #[derivative(Default, PartialEq)]
@@ -95,9 +95,11 @@ impl BinaryConverter for RegionFile{
 
 #[cfg(test)]
 mod w3r_test{
-    use crate::region_file::{RegionFile, Region};
-    use wce_formats::binary_reader::BinaryReader;
     use std::fs::File;
+
+    use wce_formats::binary_reader::BinaryReader;
+
+    use crate::region_file::{Region, RegionFile};
 
     fn mock_regions() -> Vec<Region>{
         vec![

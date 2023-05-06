@@ -4,6 +4,7 @@ use std::io::Cursor;
 
 use jpeg_decoder::Decoder;
 use rgb::{RGB8, RGBA8};
+
 use crate::binary_reader::BinaryReader;
 
 type MipmapPixels = Vec<Vec<RGB8>>;
@@ -186,7 +187,7 @@ fn cmyk_to_rgb(cmyk: &mut [u8]) -> RGB8{
 #[cfg(test)]
 mod blp_parse {
     use std::fs::File;
-    use std::io::{BufReader, Read, Write};
+    use std::io::{BufReader, Read};
     use std::io;
 
     use jpeg_decoder::Decoder;
@@ -211,7 +212,7 @@ mod blp_parse {
         let mut buffer: Vec<u8> = Vec::with_capacity(2000);
         file.read_to_end(&mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer.to_owned());
-        let blp = BLP::from(&mut reader);
+        let _blp = BLP::from(&mut reader);
         // for i in 0..1{
         //     let name = format!("resources/war3mapMap_mmap{}.jpg", i);
         //     let mut file = File::create(name).unwrap();
@@ -246,13 +247,13 @@ mod blp_parse {
     // #[test]
     fn open_local_jpeg_mipmap() -> Result<(), ()> {
         let file = File::open("../resources/FrostmourneNew_mmap2.jpg").unwrap();
-        let mut buffer = BufReader::new(file);
+        let buffer = BufReader::new(file);
 
         let mut decoder = Decoder::new(buffer);
         decoder.read_info().unwrap();
         let info = decoder.info();
         println!("{:#?}", info);
-        let res = decoder.decode().expect("error while decoding");
+        decoder.decode().expect("error while decoding");
         Ok(())
     }
 }

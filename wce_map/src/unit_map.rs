@@ -1,14 +1,14 @@
-#[cfg(test)]
-use pretty_assertions::{assert_eq, assert_ne};
-
 use mpq::Archive;
+#[cfg(test)]
+use pretty_assertions::assert_eq;
 
 use wce_formats::{BinaryConverter, BinaryConverterVersion};
 use wce_formats::binary_reader::BinaryReader;
-use wce_formats::GameVersion::{self, RoC, TFT};
 use wce_formats::binary_writer::BinaryWriter;
-use crate::globals::{MAP_TERRAIN_UNITS};
+use wce_formats::GameVersion::{self, RoC, TFT};
+
 use crate::doodad_map::Radian;
+use crate::globals::MAP_TERRAIN_UNITS;
 use crate::unit_map::RandomUnitItemFlag::{Neutral, NotRandom, RandomFromCustomTable, RandomFromTableGroup};
 
 const RANDOM_ITEM_ID: &str = "iDNR";
@@ -298,11 +298,12 @@ fn to_game_version(value: u32) -> GameVersion{
 #[cfg(test)]
 mod unitmap_tests{
     use std::fs::File;
-    use crate::unit_map::{UnitItemMap, UnitItem, DropItem, AbilityModification, InventoryItem, RandomUnit};
-    use crate::unit_map::RandomUnitItemFlag::{Neutral, RandomFromCustomTable, RandomFromTableGroup};
 
     use wce_formats::binary_reader::BinaryReader;
-    use wce_formats::GameVersion::{RoC};
+    use wce_formats::GameVersion::RoC;
+
+    use crate::unit_map::{AbilityModification, DropItem, InventoryItem, RandomUnit, UnitItem, UnitItemMap};
+    use crate::unit_map::RandomUnitItemFlag::{Neutral, RandomFromCustomTable, RandomFromTableGroup};
 
     fn mock_rock() -> Vec<UnitItem>{
         vec![
@@ -561,7 +562,7 @@ mod unitmap_tests{
     fn no_failure_roc(){
         let mut unititem_file = File::open("../resources/Scenario/Sandbox_roc/war3mapUnits.doo").unwrap();
         let mut reader = BinaryReader::from(&mut unititem_file);
-        let unititem_map = reader.read::<UnitItemMap>();
+        let _unititem_map = reader.read::<UnitItemMap>();
     }
 
     #[test]
@@ -587,6 +588,6 @@ mod unitmap_tests{
     fn no_failure_tft(){
         let mut unititem_file = File::open("../resources/Scenario/Sandbox_tft/war3mapUnits.doo").unwrap();
         let mut reader = BinaryReader::from(&mut unititem_file);
-        let unititem_map = reader.read::<UnitItemMap>();
+        let _unititem_map = reader.read::<UnitItemMap>();
     }
 }

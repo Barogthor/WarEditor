@@ -2,10 +2,12 @@
 
 #[cfg(test)]
 mod trigger_file_tests{
-    use crate::GameData;
     use wce_formats::binary_reader::BinaryReader;
-    use wce_formats::GameVersion::{TFT};
+    use wce_formats::GameVersion::TFT;
+
+    use crate::GameData;
     use crate::triggers::TriggerDefinition;
+
     const PREFIX_RESOURCES_PATH: &str = "../";
 
     const TFT_TRIGGER_EVENT: [u8;116] = [0x54, 0x72, 0x69, 0x67, 0x67, 0x65, 0x72, 0x45, 0x76, 0x65, 0x6E, 0x74, 0x00, 0x54, 0x72, 0x69, 0x67, 0x67, 0x65, 0x72, 0x20, 0x45, 0x76, 0x65, 0x6E, 0x74, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x54, 0x72, 0x69, 0x67, 0x67, 0x65, 0x72, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x54, 0x69, 0x6D, 0x65, 0x72, 0x45, 0x76, 0x65, 0x6E, 0x74, 0x53, 0x69, 0x6E, 0x67, 0x6C, 0x65, 0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x35, 0x2E, 0x30, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
@@ -22,7 +24,7 @@ mod trigger_file_tests{
         let game_data = GameData::new(PREFIX_RESOURCES_PATH);
         let buffer = TFT_TRIGGER_EVENT.to_vec();
         let mut reader = BinaryReader::new(buffer);
-        let trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
+        let _trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
         assert_eq!(reader.pos()as usize, TFT_TRIGGER_EVENT.len());
     }
 
@@ -31,7 +33,7 @@ mod trigger_file_tests{
         let game_data = GameData::new(PREFIX_RESOURCES_PATH);
         let buffer = TFT_TRIGGER_CONDITION.to_vec();
         let mut reader = BinaryReader::new(buffer);
-        let trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
+        let _trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
 
         assert_eq!(reader.pos()as usize, TFT_TRIGGER_CONDITION.len());
     }
@@ -41,7 +43,7 @@ mod trigger_file_tests{
         let game_data = GameData::new(PREFIX_RESOURCES_PATH);
         let buffer = TFT_TRIGGER_ACTION.to_vec();
         let mut reader = BinaryReader::new(buffer);
-        let trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
+        let _trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
         assert_eq!(reader.pos()as usize, TFT_TRIGGER_ACTION.len());
     }
 
@@ -50,7 +52,7 @@ mod trigger_file_tests{
         let game_data = GameData::new(PREFIX_RESOURCES_PATH);
         let buffer = TFT_TRIGGER_DISABLED.to_vec();
         let mut reader = BinaryReader::new(buffer);
-        let trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
+        let _trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
         assert_eq!(reader.pos()as usize, TFT_TRIGGER_DISABLED.len());
     }
 
@@ -59,7 +61,7 @@ mod trigger_file_tests{
         let game_data = GameData::new(PREFIX_RESOURCES_PATH);
         let buffer = TFT_TRIGGER_DISABLED_BUT_ON.to_vec();
         let mut reader = BinaryReader::new(buffer);
-        let trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
+        let _trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
         assert_eq!(reader.pos()as usize, TFT_TRIGGER_DISABLED_BUT_ON.len());
     }
 
@@ -68,7 +70,7 @@ mod trigger_file_tests{
         let game_data = GameData::new(PREFIX_RESOURCES_PATH);
         let buffer = TFT_TRIGGER_IF_THEN_ELSE.to_vec();
         let mut reader = BinaryReader::new(buffer);
-        let trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
+        let _trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
         assert_eq!(reader.pos() as usize, TFT_TRIGGER_IF_THEN_ELSE.len());
     }
 
@@ -77,7 +79,7 @@ mod trigger_file_tests{
         let game_data = GameData::new(PREFIX_RESOURCES_PATH);
         let buffer = TFT_TRIGGER_FOR_LOOP_A.to_vec();
         let mut reader = BinaryReader::new(buffer);
-        let trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
+        let _trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
         assert_eq!(reader.pos() as usize, TFT_TRIGGER_FOR_LOOP_A.len());
     }
 }

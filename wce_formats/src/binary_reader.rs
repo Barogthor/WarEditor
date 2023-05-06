@@ -165,7 +165,7 @@ impl BinaryReader{
         vec
     }
     pub fn seek_begin(&mut self){
-        &self.buffer.seek(SeekFrom::Start(0));
+        self.buffer.seek(SeekFrom::Start(0)).expect("Failed to move cursor at start.");
     }
 
     pub fn pos(&self) -> u64{

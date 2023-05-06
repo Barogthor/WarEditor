@@ -1,7 +1,8 @@
-// #[warn(unused_variables)]
-use std::io::{Read};
 use std::fs::File;
-use crate::slk_type::{RecordType, Record};
+// #[warn(unused_variables)]
+use std::io::Read;
+
+use crate::slk_type::{Record, RecordType};
 
 pub mod slk_type;
 pub mod record;
@@ -78,7 +79,7 @@ impl Iterator for SLKScanner{
         match record {
             Ok(Record::EOF) => None,
             Ok(record) => Some(record),
-            Err(msg) => panic!(msg)
+            Err(msg) => panic!("{}",msg)
         }
     }
 }
@@ -88,9 +89,10 @@ impl Iterator for SLKScanner{
 #[cfg(test)]
 mod big_sample {
     use std::time::Instant;
-    use crate::SLKScanner;
+
     use crate::document::Document;
     use crate::elapsed_time;
+    use crate::SLKScanner;
 
     #[test]
     fn test_ability_data() {
@@ -118,10 +120,10 @@ fn elapsed_time(instant: &std::time::Instant) {
 
 #[cfg(test)]
 mod sample {
-    use crate::SLKScanner;
-    use crate::slk_type::{Record};
-    use crate::record::cell::{Cell};
     use crate::document::Document;
+    use crate::record::cell::Cell;
+    use crate::slk_type::Record;
+    use crate::SLKScanner;
 
     #[test]
     fn test_open(){
@@ -143,7 +145,7 @@ mod sample {
         assert_eq!(fetch, Ok( Record::CellContent(cell) ));
 
         for _ in 0..11 {
-            slk_reader.parse_record();
+            slk_reader.parse_record().expect("Failed to parse slk");
         }
         let fetch = slk_reader.parse_record();
         assert_eq!(fetch, Ok( Record::EOF ));

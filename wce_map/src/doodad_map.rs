@@ -1,14 +1,14 @@
-#[cfg(test)]
-use pretty_assertions::{assert_eq, assert_ne};
-
 use mpq::Archive;
+#[cfg(test)]
+use pretty_assertions::assert_eq;
 
-use crate::globals::{MAP_TERRAIN_DOODADS};
 use wce_formats::{BinaryConverter, BinaryConverterVersion};
 use wce_formats::binary_reader::BinaryReader;
-use wce_formats::GameVersion::{self, RoC, TFT};
 use wce_formats::binary_writer::BinaryWriter;
+use wce_formats::GameVersion::{self, RoC, TFT};
+
 use crate::doodad_map::DestructableFlag::{InvisibleNonSolid, Unnamed, VisibleNonSolid, VisibleSolid};
+use crate::globals::MAP_TERRAIN_DOODADS;
 use crate::unit_map::DropItem;
 
 pub type Radian = f32;
@@ -24,9 +24,9 @@ pub enum DestructableFlag {
 impl DestructableFlag {
     pub fn from(value: u8) -> Self{
         match value{
-            0 => (InvisibleNonSolid),
-            1 => (VisibleNonSolid),
-            2 => (VisibleSolid),
+            0 => InvisibleNonSolid,
+            1 => VisibleNonSolid,
+            2 => VisibleSolid,
             _ => Unnamed(value)
 //            _ => panic!("Unknown destructable flag {}", value)
         }
@@ -188,9 +188,11 @@ fn to_game_version(value: u32) -> GameVersion{
 #[cfg(test)]
 mod doodads_test{
     use std::fs::File;
-    use crate::doodad_map::{DoodadMap, Destructable};
+
     use wce_formats::binary_reader::BinaryReader;
-    use wce_formats::GameVersion::{RoC};
+    use wce_formats::GameVersion::RoC;
+
+    use crate::doodad_map::{Destructable, DoodadMap};
 
     fn mock_destructable_roc() -> Vec<Destructable>{
         vec![
@@ -249,7 +251,7 @@ mod doodads_test{
     fn no_failure(){
         let mut doodad_file = File::open("../resources/Scenario/Sandbox_roc/war3map.doo").unwrap();
         let mut reader = BinaryReader::from(&mut doodad_file);
-        let doodad_map = reader.read::<DoodadMap>();
+        let _doodad_map = reader.read::<DoodadMap>();
     }
 
     #[test]

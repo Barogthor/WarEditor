@@ -1,12 +1,12 @@
-#[cfg(test)]
-use pretty_assertions::{assert_eq, assert_ne};
-
 use mpq::Archive;
+#[cfg(test)]
+use pretty_assertions::assert_eq;
 
-use crate::globals::MAP_CAMERAS;
-use wce_formats::{BinaryConverter};
+use wce_formats::BinaryConverter;
 use wce_formats::binary_reader::BinaryReader;
 use wce_formats::binary_writer::BinaryWriter;
+
+use crate::globals::MAP_CAMERAS;
 
 type Degree = f32;
 
@@ -95,9 +95,11 @@ impl BinaryConverter for CameraFile {
 
 #[cfg(test)]
 mod w3c_test{
-    use crate::camera_file::{Camera, CameraFile};
     use std::fs::File;
+
     use wce_formats::binary_reader::BinaryReader;
+
+    use crate::camera_file::{Camera, CameraFile};
 
     fn mock_cameras() -> Vec<Camera>{
         vec![

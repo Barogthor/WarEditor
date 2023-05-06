@@ -1,12 +1,12 @@
-#[cfg(test)]
-use pretty_assertions::{assert_eq, assert_ne};
-
 use mpq::Archive;
+#[cfg(test)]
+use pretty_assertions::assert_eq;
 
-use crate::globals::MAP_SOUNDS;
-use wce_formats::{BinaryConverter};
+use wce_formats::BinaryConverter;
 use wce_formats::binary_reader::BinaryReader;
 use wce_formats::binary_writer::BinaryWriter;
+
+use crate::globals::MAP_SOUNDS;
 
 const DEFAULT_FLOAT: f32 = 4.2949673e+009;
 
@@ -129,9 +129,11 @@ impl BinaryConverter for SoundFile {
 
 #[cfg(test)]
 mod w3s_test{
-    use wce_formats::binary_reader::BinaryReader;
-    use crate::sound_file::{SoundFile, Sound, DEFAULT_FLOAT};
     use std::fs::File;
+
+    use wce_formats::binary_reader::BinaryReader;
+
+    use crate::sound_file::{DEFAULT_FLOAT, Sound, SoundFile};
 
     fn mock_sounds() -> Vec<Sound>{
         vec![
@@ -277,7 +279,7 @@ mod w3s_test{
     fn no_failure(){
         let mut w3s = File::open("../resources/Scenario/Sandbox_roc/war3map.w3s").unwrap();
         let mut reader = BinaryReader::from(&mut w3s);
-        let sound_file = reader.read::<SoundFile>();
+        let _sound_file = reader.read::<SoundFile>();
     }
 
     #[test]
