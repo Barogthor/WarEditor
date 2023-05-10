@@ -73,7 +73,6 @@ fn read_object(reader: &mut BinaryReader, data: &GameData) -> ObjectDefinition {
     if custom_id.iter().all(|c| *c == 0) {
         let id = ObjectId::for_original(original_id);
         ObjectDefinition::with_optional(reader, data, id)
-        // ObjectDefinition::without_optional(reader, id)
     } else {
         let custom_id = [custom_id[0],custom_id[1], custom_id[2], custom_id[3]];
         let id = ObjectId::for_custom(original_id, custom_id);
