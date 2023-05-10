@@ -134,7 +134,12 @@ impl SLKData {
             }
             let self_parameters = self.lines.get_mut(&meta_id).unwrap();
             for (column, parameter) in parameters{
-                self_parameters.insert(headers_count + column, parameter);
+                if parameter == "#VALUE!" || parameter == "-" || parameter == "_" {
+                    self_parameters.insert(headers_count + column, String::new());
+                }
+                else {
+                    self_parameters.insert(headers_count + column, parameter.trim().to_string());
+                }
             }
         }
         for (column, label) in headers {

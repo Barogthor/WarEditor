@@ -28,45 +28,45 @@ impl BinaryReader{
         char::from(self.read_u8())
     }
     pub fn read_u8(&mut self) -> u8{
-        self.buffer.read_u8().unwrap()
+        self.buffer.read_u8().expect(&self.message_error_format())
     }
 
     pub fn read_i16(&mut self) -> i16{
-        self.buffer.read_i16::<LittleEndian>().unwrap()
+        self.buffer.read_i16::<LittleEndian>().expect(&self.message_error_format())
     }
     pub fn read_u16(&mut self) -> u16{
-        self.buffer.read_u16::<LittleEndian>().unwrap()
+        self.buffer.read_u16::<LittleEndian>().expect(&self.message_error_format())
     }
 
     pub fn read_i24(&mut self) -> i32{
-        self.buffer.read_i24::<LittleEndian>().unwrap()
+        self.buffer.read_i24::<LittleEndian>().expect(&self.message_error_format())
     }
     pub fn read_u24(&mut self) -> u32{
-        self.buffer.read_u24::<LittleEndian>().unwrap()
+        self.buffer.read_u24::<LittleEndian>().expect(&self.message_error_format())
     }
 
     pub fn read_i32(&mut self) -> i32{
-        self.buffer.read_i32::<LittleEndian>().unwrap()
+        self.buffer.read_i32::<LittleEndian>().expect(&self.message_error_format())
     }
     pub fn read_i32_big(&mut self) -> i32{
-        self.buffer.read_i32::<BigEndian>().unwrap()
+        self.buffer.read_i32::<BigEndian>().expect(&self.message_error_format())
     }
     pub fn read_u32(&mut self) -> u32{
-        self.buffer.read_u32::<LittleEndian>().unwrap()
+        self.buffer.read_u32::<LittleEndian>().expect(&self.message_error_format())
     }
     pub fn read_u32_big(&mut self) -> u32{
-        self.buffer.read_u32::<BigEndian>().unwrap()
+        self.buffer.read_u32::<BigEndian>().expect(&self.message_error_format())
     }
 
     pub fn read_u64(&mut self) -> u64{
-        self.buffer.read_u64::<LittleEndian>().unwrap()
+        self.buffer.read_u64::<LittleEndian>().expect(&self.message_error_format())
     }
 
     pub fn read_f32(&mut self) -> f32{
-        self.buffer.read_f32::<LittleEndian>().unwrap()
+        self.buffer.read_f32::<LittleEndian>().expect(&self.message_error_format())
     }
     pub fn read_f64(&mut self) -> f64{
-        self.buffer.read_f64::<LittleEndian>().unwrap()
+        self.buffer.read_f64::<LittleEndian>().expect(&self.message_error_format())
     }
 
     pub fn read_c_string(&mut self) -> CString{
@@ -173,6 +173,10 @@ impl BinaryReader{
     }
     pub fn size(&self) -> usize{
         self.size
+    }
+
+    fn message_error_format(&self) -> String {
+        format!("Error while reading : Pos {} out of {}", self.pos(), self.size )
     }
 
 }

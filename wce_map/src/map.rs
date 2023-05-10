@@ -1,7 +1,9 @@
 use mpq::Archive;
 
-use crate::{GameData};
+use crate::GameData;
 use crate::camera_file::CameraFile;
+use crate::custom_datas::ability::CustomAbilityFile;
+use crate::custom_datas::unit::CustomUnitFile;
 use crate::doodad_map::DoodadMap;
 use crate::import_file::ImportFile;
 use crate::mmp_file::MMPFile;
@@ -33,6 +35,7 @@ pub struct Map<'a>{
     unit_item_map: UnitItemMap,
     triggers: TriggersFile,
     import_listing: Option<ImportFile>,
+    unit_datas: CustomUnitFile
 }
 
 impl<'a> Map<'a> {
@@ -68,6 +71,9 @@ impl<'a> Map<'a> {
         // println!("{:#?}", doodad_map);
         let unit_item_map = UnitItemMap::read_file(&mut map);
         let import_listing = ImportFile::read_file(&mut map);
+        let unit_datas = CustomUnitFile::read_file(&mut map, game_data);
+        let ability_datas = CustomAbilityFile::read_file(&mut map, game_data);
+        // unit_datas.debug();
 
         Self{
             game_data,
@@ -86,6 +92,7 @@ impl<'a> Map<'a> {
             doodad_map,
             unit_item_map,
             import_listing,
+            unit_datas,
         }
     }
 }

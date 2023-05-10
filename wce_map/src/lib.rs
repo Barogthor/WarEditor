@@ -1,11 +1,13 @@
 #![allow(dead_code)]
+#[macro_use] extern crate derivative;
 // #[cfg(test)]
 // #[macro_use]
 // extern crate pretty_assertions;
 #[macro_use] extern crate lazy_static;
-#[macro_use] extern crate derivative;
+
 use crate::data_ini::DataIni;
-use crate::globals::PROFILE_TRIGGER_DATA;
+use crate::globals::*;
+use crate::slk_datas::SLKData;
 
 pub const PREFIX_SAMPLE_PATH: &str = "resources/sample_1";
 pub const PREFIX_MDL_PATH: &str = "resources/blp";
@@ -40,15 +42,63 @@ pub fn format_slk(prefix: &str, path: &str) -> String{
 }
 
 pub struct GameData{
-    trigger_data: DataIni
+    trigger_data: DataIni,
+    unit_data: SLKData,
+    unit_meta: SLKData,
+    doodad_meta: SLKData,
+    destructable_meta: SLKData,
+    abilty_meta: SLKData,
+    upgrade_meta: SLKData,
+    upgrade_effect_meta: SLKData,
+    const_meta: SLKData,
+    ui_const_meta: SLKData,
+    ability_buff_meta: SLKData,
+    ability_data: SLKData,
+    upgrade_data: SLKData,
+    doodad_effect_data: SLKData,
+    destructable_effect_data: SLKData,
 }
 
 impl GameData {
     pub fn new(prefix: &str) -> Self{
         let mut trigger_data = DataIni::new();
         trigger_data.merge(&format_data( prefix,PROFILE_TRIGGER_DATA));
+        let unit_meta = SLKData::load(&format_slk("", SLK_UNIT_META_DATA));
+
+        let doodad_meta = SLKData::load(&format_slk("", SLK_DOODAD_META_DATA));
+        let destructable_meta = SLKData::load(&format_slk("", SLK_DESTRUCTABLE_META_DATA));
+        let abilty_meta = SLKData::load(&format_slk("", SLK_ABILITY_META_DATA));
+        let upgrade_meta = SLKData::load(&format_slk("", SLK_UPGRADE_META_DATA));
+        let upgrade_effect_meta = SLKData::load(&format_slk("", SLK_UPGRADE_EFFECT_META_DATA));
+        let const_meta = SLKData::load(&format_slk("", SLK_MISC_META_DATA));
+        let ui_const_meta = SLKData::load(&format_slk("", SLK_SKIN_META_DATA));
+        let ability_buff_meta = SLKData::load(&format_slk("", SLK_ABILITY_BUFF_META_DATA));
+        let mut unit_data = SLKData::new();
+        unit_data.merge(&format_slk("", SLK_UNIT_DATA));
+        unit_data.merge(&format_slk("", SLK_UNIT_BALANCE));
+        unit_data.merge(&format_slk("", SLK_UNIT_UI));
+        unit_data.merge(&format_slk("", SLK_UNIT_ABILITIES));
+        unit_data.merge(&format_slk("", SLK_UNIT_WEAPONS));
+        let ability_data = SLKData::load(&format_slk("", SLK_ABILITY_DATA));
+        let upgrade_data = SLKData::load(&format_slk("", SLK_UPGRADE_DATA));
+        let doodad_effect_data = SLKData::load(&format_slk("", SLK_DOODADS));
+        let destructable_effect_data = SLKData::load(&format_slk("", SLK_DESTRUCTABLE_DATA));
         Self{
-            trigger_data
+            trigger_data,
+            unit_data,
+            unit_meta,
+            doodad_meta,
+            destructable_meta,
+            abilty_meta,
+            upgrade_meta,
+            upgrade_effect_meta,
+            const_meta,
+            ui_const_meta,
+            ability_buff_meta,
+            ability_data,
+            upgrade_data,
+            doodad_effect_data,
+            destructable_effect_data,
         }
     }
 
@@ -75,3 +125,4 @@ pub mod slk_datas;
 pub mod data_ini;
 pub mod doodad_map;
 pub mod unit_map;
+pub mod custom_datas;
