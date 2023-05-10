@@ -9,6 +9,11 @@ use crate::GameData;
 
 pub mod unit;
 pub mod ability;
+pub mod item;
+pub mod destructable;
+pub mod buff;
+pub mod doodad;
+pub mod upgrade;
 
 pub trait UseOptionalInts: Debug {}
 #[derive(Default, Debug)]

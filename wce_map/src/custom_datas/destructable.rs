@@ -6,20 +6,20 @@ use wce_formats::BinaryConverter;
 
 use crate::custom_datas::ObjectDefinition;
 use crate::GameData;
-use crate::globals::MAP_CUSTOM_UNITS;
+use crate::globals::MAP_CUSTOM_DESTRUCTABLES;
 
 use super::{CustomIdCode, ObjectId, OriginalIdCode};
 
 #[derive(Debug)]
-pub struct CustomUnitFile {
+pub struct CustomDestructableFile {
     version: u32,
     original_objects: Vec<ObjectDefinition>,
     custom_objects: Vec<ObjectDefinition>
 }
 
-impl CustomUnitFile {
+impl CustomDestructableFile {
     pub fn read_file(mpq: &mut Archive, data: &GameData) -> Self{
-        let file = mpq.open_file(MAP_CUSTOM_UNITS);
+        let file = mpq.open_file(MAP_CUSTOM_DESTRUCTABLES);
         match file {
             Ok(file) => {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
@@ -43,17 +43,17 @@ impl CustomUnitFile {
         let original_unit_modified = reader.read_u32();
         let mut original_objects = vec![];
         let mut custom_objects = vec![];
-        for i in 0..original_unit_modified {
+        for _i in 0..original_unit_modified {
             let object = read_object(reader, data);
             original_objects.push(object);
         }
         let custom_table_count = reader.read_u32();
-        for i in 0..custom_table_count {
+        for _i in 0..custom_table_count {
             let object = read_object(reader, data);
             custom_objects.push(object);
         }
 
-        assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_CUSTOM_UNITS, reader.size() - reader.pos() as usize);
+        assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_CUSTOM_DESTRUCTABLES, reader.size() - reader.pos() as usize);
         Self {
             version,
             original_objects,

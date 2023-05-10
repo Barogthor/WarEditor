@@ -1,10 +1,15 @@
 use mpq::Archive;
 
-use crate::GameData;
 use crate::camera_file::CameraFile;
 use crate::custom_datas::ability::CustomAbilityFile;
+use crate::custom_datas::buff::CustomBuffFile;
+use crate::custom_datas::destructable::CustomDestructableFile;
+use crate::custom_datas::doodad::CustomDoodadFile;
+use crate::custom_datas::item::CustomItemFile;
 use crate::custom_datas::unit::CustomUnitFile;
+use crate::custom_datas::upgrade::CustomUpgradeFile;
 use crate::doodad_map::DoodadMap;
+use crate::GameData;
 use crate::import_file::ImportFile;
 use crate::mmp_file::MMPFile;
 use crate::pathmap_file::PathMapFile;
@@ -73,6 +78,11 @@ impl<'a> Map<'a> {
         let import_listing = ImportFile::read_file(&mut map);
         let unit_datas = CustomUnitFile::read_file(&mut map, game_data);
         let ability_datas = CustomAbilityFile::read_file(&mut map, game_data);
+        let item_datas = CustomItemFile::read_file(&mut map, game_data);
+        let destructable_datas = CustomDestructableFile::read_file(&mut map, game_data);
+        let doodad_datas = CustomDoodadFile::read_file(&mut map, game_data);
+        let buff_datas = CustomBuffFile::read_file(&mut map, game_data);
+        let upgrade_datas = CustomUpgradeFile::read_file(&mut map, game_data);
         // unit_datas.debug();
 
         Self{

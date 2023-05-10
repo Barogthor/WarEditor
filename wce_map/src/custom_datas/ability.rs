@@ -6,7 +6,7 @@ use wce_formats::BinaryConverter;
 
 use crate::custom_datas::ObjectDefinition;
 use crate::GameData;
-use crate::globals::{MAP_CUSTOM_ABILITIES, MAP_CUSTOM_UNITS};
+use crate::globals::MAP_CUSTOM_ABILITIES;
 
 use super::{CustomIdCode, ObjectId, OriginalIdCode};
 
@@ -19,12 +19,23 @@ pub struct CustomAbilityFile {
 
 impl CustomAbilityFile {
     pub fn read_file(mpq: &mut Archive, data: &GameData) -> Self{
-        let file = mpq.open_file(MAP_CUSTOM_ABILITIES).expect(&format!("Custom unit file should be present"));
-        let mut buffer: Vec<u8> = vec![0; file.size() as usize];
+        let file = mpq.open_file(MAP_CUSTOM_ABILITIES);
+        match file {
+            Ok(file) => {
+                let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-        file.read(mpq, &mut buffer).unwrap();
-        let mut reader = BinaryReader::new(buffer);
-        Self::from(&mut reader, data)
+                file.read(mpq, &mut buffer).unwrap();
+                let mut reader = BinaryReader::new(buffer);
+                Self::from(&mut reader, data)
+            }
+            _ => {
+                Self {
+                    version: 0,
+                    original_objects: vec![],
+                    custom_objects: vec![],
+                }
+            }
+        }
     }
 
     fn from(reader: &mut BinaryReader, data: &GameData) -> Self {
