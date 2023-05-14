@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use crate::binary_reader::BinaryReader;
 use crate::binary_writer::BinaryWriter;
 
@@ -5,25 +7,25 @@ use crate::binary_writer::BinaryWriter;
 pub enum GameVersion {
     RoC,
     TFT,
-    TFT131,
+    Reforged,
 }
 
 impl GameVersion {
     pub fn is_tft(&self) -> bool{
         match self{
             GameVersion::RoC => false,
-            GameVersion::TFT | GameVersion::TFT131 => true
+            GameVersion::TFT | GameVersion::Reforged => true
         }
     }
     pub fn is_roc(&self) -> bool{
         match self{
             GameVersion::RoC => true,
-            GameVersion::TFT | GameVersion::TFT131 => false
+            GameVersion::TFT | GameVersion::Reforged => false
         }
     }
     pub fn is_remaster(&self) -> bool{
         match self{
-            GameVersion::TFT131 => true,
+            GameVersion::Reforged => true,
             _ => false
         }
     }
@@ -58,3 +60,14 @@ mod tests {
         assert_eq!(2 + 2, 4);
     }
 }
+
+pub trait GameDataVersionDescriptorT: Debug {}
+#[derive(Debug)]
+pub struct GameDataRocDescriptor;
+impl GameDataVersionDescriptorT for GameDataRocDescriptor {}
+#[derive(Debug)]
+pub struct GameDataTftDescriptor;
+impl GameDataVersionDescriptorT for GameDataTftDescriptor {}
+#[derive(Debug)]
+pub struct GameDataReforgedDescriptor;
+impl GameDataVersionDescriptorT for GameDataReforgedDescriptor {}

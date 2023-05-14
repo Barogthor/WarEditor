@@ -48,6 +48,7 @@ impl<'a> Map<'a> {
         let mut map = Archive::open(path.to_owned()).unwrap();
 
         let w3i = W3iFile::read_file(&mut map);
+        let game_version = w3i.game_version();
        // w3i.debug();
         let mmp = MMPFile::read_file(&mut map);
 //        mmp.debug();
@@ -76,13 +77,13 @@ impl<'a> Map<'a> {
         // println!("{:#?}", doodad_map);
         let unit_item_map = UnitItemMap::read_file(&mut map);
         let import_listing = ImportFile::read_file(&mut map);
-        let unit_datas = CustomUnitFile::read_file(&mut map, game_data);
-        let ability_datas = CustomAbilityFile::read_file(&mut map, game_data);
-        let item_datas = CustomItemFile::read_file(&mut map, game_data);
-        let destructable_datas = CustomDestructableFile::read_file(&mut map, game_data);
-        let doodad_datas = CustomDoodadFile::read_file(&mut map, game_data);
-        let buff_datas = CustomBuffFile::read_file(&mut map, game_data);
-        let upgrade_datas = CustomUpgradeFile::read_file(&mut map, game_data);
+        let unit_datas = CustomUnitFile::read_file(&mut map, &game_version);
+        let ability_datas = CustomAbilityFile::read_file(&mut map, &game_version);
+        let item_datas = CustomItemFile::read_file(&mut map, &game_version);
+        let destructable_datas = CustomDestructableFile::read_file(&mut map, &game_version);
+        let doodad_datas = CustomDoodadFile::read_file(&mut map, &game_version);
+        let buff_datas = CustomBuffFile::read_file(&mut map, &game_version);
+        let upgrade_datas = CustomUpgradeFile::read_file(&mut map, &game_version);
         // unit_datas.debug();
 
         Self{

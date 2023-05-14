@@ -7,7 +7,7 @@ use pretty_assertions::assert_eq;
 use wce_formats::{BinaryConverter, GameVersion};
 use wce_formats::binary_reader::BinaryReader;
 use wce_formats::binary_writer::BinaryWriter;
-use wce_formats::GameVersion::{RoC, TFT, TFT131};
+use wce_formats::GameVersion::{Reforged, RoC, TFT};
 
 use crate::globals::MAP_INFOS;
 
@@ -343,6 +343,10 @@ impl W3iFile{
         reader.read::<W3iFile>()
     }
 
+    pub fn game_version(&self) -> GameVersion {
+        self.version
+    }
+
     pub fn debug(&self){
         println!("{:#?}",self);
     }
@@ -449,7 +453,7 @@ fn to_game_version(value: u32) -> GameVersion{
     match value{
         18 => RoC,
         25 => TFT,
-        28 => TFT131,
+        28 => Reforged,
         _ => panic!("Unknown or unsupported game version '{}'", value)
     }
 }

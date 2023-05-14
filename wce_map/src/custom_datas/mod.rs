@@ -5,8 +5,6 @@ use wce_formats::binary_reader::BinaryReader;
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion;
 
-use crate::GameData;
-
 pub mod unit;
 pub mod ability;
 pub mod item;
@@ -32,12 +30,38 @@ pub type OriginalIdCode = ObjectIdCode;
 pub type CustomIdCode = ObjectIdCode;
 
 #[derive(Debug)]
-pub enum VariableValue {
+pub enum VariableValueTft {
     Integer(i32),
     Real(f32),
     Unreal(f32),
     String(String)
 }
+
+
+//
+// pub enum VariableValueRoc {
+//     Integer(i32),
+//     Real(f32),
+//     Unreal(f32),
+//     String(String),
+//     Bool(bool),
+//     UnitList(String),
+//     ItemList(String),
+//     RegenType(String),
+//     AttackType(String),
+//     WeaponType(String),
+//     TargetType(String),
+//     MoveType(String),
+//     DefenseType(String),
+//     PathingTexture(String),
+//     UpgradeList(String),
+//     StringList(String),
+//     AbilityList(String),
+//     HeroAbilityList(String),
+//     MissileArt(String),
+//     AttributeType(String),
+//     AttackBits(String),
+// }
 
 #[derive(Debug)]
 pub enum ObjectId{
@@ -57,7 +81,7 @@ impl ObjectId {
 #[derive(Debug)]
 pub struct MetaModification {
     id: MetaId,
-    value: VariableValue,
+    value: VariableValueTft,
     level: i32,
     data_pointer: i32
 }
@@ -75,11 +99,11 @@ pub struct ObjectDefinition {
 }
 
 impl ObjectDefinition {
-    pub fn with_optional(reader: &mut BinaryReader, game_data: & GameData, id: ObjectId) -> Self {
+    pub fn with_optional(reader: &mut BinaryReader, id: ObjectId, game_version: &GameVersion) -> Self {
         let modif_count = reader.read_u32();
         let mut meta_modified = vec![];
         for _i in 0..modif_count {
-            let meta = read_meta_opts(reader, game_data, &id);
+            let meta = read_meta_opts(reader, &id);
             meta_modified.push(meta);
         }
         Self {
@@ -87,11 +111,11 @@ impl ObjectDefinition {
             modified_datas: meta_modified,
         }
     }
-    pub fn without_optional(reader: &mut BinaryReader, game_data: & GameData, id: ObjectId) -> Self {
+    pub fn without_optional(reader: &mut BinaryReader, id: ObjectId, game_version: &GameVersion) -> Self {
         let modif_count = reader.read_u32();
         let mut meta_modified = vec![];
         for _i in 0..modif_count {
-            let meta = read_meta_no_opts(reader, game_data, &id);
+            let meta = read_meta_no_opts(reader, &id);
             meta_modified.push(meta);
         }
         Self {
@@ -101,15 +125,15 @@ impl ObjectDefinition {
     }
 }
 
-fn read_meta_no_opts(reader: &mut BinaryReader, game_data: &GameData, id: &ObjectId) -> MetaModification {
+fn read_meta_no_opts(reader: &mut BinaryReader, id: &ObjectId) -> MetaModification {
     let meta_id = reader.read_bytes(4);
     let meta_id = [meta_id[0],meta_id[1],meta_id[2],meta_id[3]];
     let vtype = reader.read_i32();
     let value = match vtype {
-        0 => VariableValue::Integer(reader.read_i32()),
-        1 => VariableValue::Real(reader.read_f32()),
-        2 => VariableValue::Unreal(reader.read_f32()),
-        3 => VariableValue::String(reader.read_c_string().into_string().expect(
+        0 => VariableValueTft::Integer(reader.read_i32()),
+        1 => VariableValueTft::Real(reader.read_f32()),
+        2 => VariableValueTft::Unreal(reader.read_f32()),
+        3 => VariableValueTft::String(reader.read_c_string().into_string().expect(
             &format!("Failed to read cstring for object '{:?}' of meta '{}'", id, String::from_utf8_lossy(&meta_id) )
         )),
         _ => panic!("Unsupported vtype '{}' for object {:?} on meta '{}'",vtype, id, String::from_utf8_lossy(&meta_id) )
@@ -123,17 +147,17 @@ fn read_meta_no_opts(reader: &mut BinaryReader, game_data: &GameData, id: &Objec
     }
 }
 
-fn read_meta_opts(reader: &mut BinaryReader, game_data: &GameData, id: &ObjectId) -> MetaModification {
+fn read_meta_opts(reader: &mut BinaryReader, id: &ObjectId) -> MetaModification {
     let meta_id = reader.read_bytes(4);
     let meta_id = [meta_id[0],meta_id[1],meta_id[2],meta_id[3]];
     let vtype = reader.read_i32();
     let level = reader.read_i32();
     let data_pointer = reader.read_i32();
     let value = match vtype {
-        0 => VariableValue::Integer(reader.read_i32()),
-        1 => VariableValue::Real(reader.read_f32()),
-        2 => VariableValue::Unreal(reader.read_f32()),
-        3 => VariableValue::String(reader.read_c_string().into_string().expect(
+        0 => VariableValueTft::Integer(reader.read_i32()),
+        1 => VariableValueTft::Real(reader.read_f32()),
+        2 => VariableValueTft::Unreal(reader.read_f32()),
+        3 => VariableValueTft::String(reader.read_c_string().into_string().expect(
             &format!("Failed to read cstring for object '{:?}' of meta '{}' (byte position {})", id, String::from_utf8_lossy(&meta_id), reader.pos() )
         )),
         _ => panic!("Unsupported vtype '{}' for object {:?} on meta '{}' (byte position {})",vtype, id, String::from_utf8_lossy(&meta_id), reader.pos() )
