@@ -40,7 +40,13 @@ pub struct Map<'a>{
     unit_item_map: UnitItemMap,
     triggers: TriggersFile,
     import_listing: Option<ImportFile>,
-    unit_datas: CustomUnitFile
+    unit_datas: CustomUnitFile,
+    item_datas: CustomItemFile,
+    ability_datas: CustomAbilityFile,
+    buff_datas: CustomBuffFile,
+    doodad_datas: CustomDoodadFile,
+    destructable_datas: CustomDestructableFile,
+    upgrade_datas: CustomUpgradeFile
 }
 
 impl<'a> Map<'a> {
@@ -104,6 +110,12 @@ impl<'a> Map<'a> {
             unit_item_map,
             import_listing,
             unit_datas,
+            item_datas,
+            ability_datas,
+            buff_datas,
+            doodad_datas,
+            destructable_datas,
+            upgrade_datas,
         }
     }
 }
