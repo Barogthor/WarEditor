@@ -1,10 +1,10 @@
-// use log::{debug, error, info, trace, warn};
-use mpq::Archive;
-
-use crate::globals::{MAP_TRIGGERS};
 use wce_formats::binary_reader::BinaryReader;
 use wce_formats::GameVersion::{self, RoC, TFT};
+// use log::{debug, error, info, trace, warn};
+use wce_formats::MapArchive;
+
 use crate::data_ini::DataIni;
+use crate::globals::MAP_TRIGGERS;
 use crate::triggers::enums::WtgError::{self, UnknownGameVersion};
 use crate::triggers::misc::{TriggerCategory, VariableDefinition};
 use crate::triggers::trigger_data::ECADefinition;
@@ -63,10 +63,10 @@ pub struct TriggersFile {
 }
 
 impl TriggersFile {
-    pub fn read_file(mpq: &mut Archive, trigger_data: &DataIni) -> Result<Self, WtgError>{
-        let file = mpq.open_file(MAP_TRIGGERS).unwrap();
+    pub fn read_file(map: &mut MapArchive, trigger_data: &DataIni) -> Result<Self, WtgError>{
+        let file = map.open_file(MAP_TRIGGERS).unwrap();
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
-        file.read(mpq, &mut buffer).unwrap();
+        file.read(map, &mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer);
         Self::from(&mut reader, trigger_data)
     }

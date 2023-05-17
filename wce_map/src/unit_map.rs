@@ -1,4 +1,3 @@
-use mpq::Archive;
 #[cfg(test)]
 use pretty_assertions::assert_eq;
 
@@ -6,6 +5,7 @@ use wce_formats::{BinaryConverter, BinaryConverterVersion};
 use wce_formats::binary_reader::BinaryReader;
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{self, RoC, TFT};
+use wce_formats::MapArchive;
 
 use crate::doodad_map::Radian;
 use crate::globals::MAP_TERRAIN_UNITS;
@@ -252,11 +252,11 @@ pub struct UnitItemMap {
 }
 
 impl UnitItemMap {
-    pub fn read_file(mpq: &mut Archive) -> Self{
-        let file = mpq.open_file(MAP_TERRAIN_UNITS).unwrap();
+    pub fn read_file(map: &mut MapArchive) -> Self{
+        let file = map.open_file(MAP_TERRAIN_UNITS).unwrap();
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-        file.read(mpq, &mut buffer).unwrap();
+        file.read(map, &mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer);
         reader.read::<Self>()
     }

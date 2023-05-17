@@ -1,10 +1,10 @@
-use mpq::Archive;
-
-use crate::globals::{MAP_TRIGGERS_SCRIPT};
 use wce_formats::{BinaryConverter, GameVersion};
 use wce_formats::binary_reader::BinaryReader;
-use wce_formats::GameVersion::{RoC, TFT};
 use wce_formats::binary_writer::BinaryWriter;
+use wce_formats::GameVersion::{RoC, TFT};
+use wce_formats::MapArchive;
+
+use crate::globals::MAP_TRIGGERS_SCRIPT;
 
 type TextScript = String;
 
@@ -17,11 +17,11 @@ pub struct TriggerJassFile {
 }
 
 impl TriggerJassFile {
-    pub fn read_file(mpq: &mut Archive) -> Self{
-        let file = mpq.open_file(MAP_TRIGGERS_SCRIPT).unwrap();
+    pub fn read_file(map: &mut MapArchive) -> Self{
+        let file = map.open_file(MAP_TRIGGERS_SCRIPT).unwrap();
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-        file.read(mpq, &mut buffer).unwrap();
+        file.read(map, &mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer);
         reader.read::<TriggerJassFile>()
     }

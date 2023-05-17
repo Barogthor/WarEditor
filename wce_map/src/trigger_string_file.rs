@@ -1,8 +1,10 @@
-use mpq::Archive;
+use std::collections::HashMap;
+
 use regex::Regex;
 
+use wce_formats::MapArchive;
+
 use crate::globals::MAP_STRINGS;
-use std::collections::HashMap;
 
 const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)\s+\{\r\n+([^\}]*)\r\n\}";
 //const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)";
@@ -16,10 +18,10 @@ pub struct TriggerStringFile {
 }
 
 impl TriggerStringFile {
-    pub fn read_file(mpq: &mut Archive) -> Self{
-        let file = mpq.open_file(MAP_STRINGS).unwrap();
+    pub fn read_file(map: &mut MapArchive) -> Self{
+        let file = map.open_file(MAP_STRINGS).unwrap();
         let mut buf: Vec<u8> = vec![0; file.size() as usize];
-        file.read(mpq, &mut buf).unwrap();
+        file.read(map, &mut buf).unwrap();
         let buffer = String::from_utf8(buf).unwrap();
         let reg: Regex = Regex::new(EXTRACT_DATA).unwrap();
 

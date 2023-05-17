@@ -1,4 +1,4 @@
-use mpq::Archive;
+use wce_formats::MapArchive;
 
 use crate::globals::MAP_SHADERS;
 
@@ -8,11 +8,11 @@ pub struct ShadowMapFile {
 }
 
 impl ShadowMapFile {
-    pub fn read_file(mpq: &mut Archive) -> Self{
-        let file = mpq.open_file(MAP_SHADERS).unwrap();
+    pub fn read_file(map: &mut MapArchive) -> Self{
+        let file = map.open_file(MAP_SHADERS).unwrap();
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-        file.read(mpq, &mut buffer).unwrap();
+        file.read(map, &mut buffer).unwrap();
         Self{
             shaders: buffer
         }

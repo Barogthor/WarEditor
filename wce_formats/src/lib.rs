@@ -1,7 +1,12 @@
 use std::fmt::Debug;
+use std::ops::{Deref, DerefMut};
+use std::path::Path;
+
+use mpq::Archive;
 
 use crate::binary_reader::BinaryReader;
 use crate::binary_writer::BinaryWriter;
+use crate::MpqError::IoError;
 
 #[derive(Debug, PartialOrd, PartialEq, Clone, Copy)]
 pub enum GameVersion {
@@ -71,3 +76,59 @@ impl GameDataVersionDescriptorT for GameDataTftDescriptor {}
 #[derive(Debug)]
 pub struct GameDataReforgedDescriptor;
 impl GameDataVersionDescriptorT for GameDataReforgedDescriptor {}
+
+
+#[derive(Debug)]
+pub enum MpqError {
+    IoError(std::io::Error),
+    NotMapArchive,
+}
+// #[derive(Deref, DerefMut)]
+pub struct MapArchive(Archive);
+
+impl MapArchive {
+    pub fn open(path: String) -> Result<Self, MpqError> {
+        let path = Path::new(&path);
+        let ext = path.extension().expect(&format!("No extension for path '{:?}'",path));
+
+        if ext == "w3m" || ext == "w3x" {
+            let archive = Archive::open(path);
+            archive.map(|a| Self(a)).map_err(IoError)
+        } else {
+            Err(MpqError::NotMapArchive)
+        }
+    }
+}
+
+impl Deref for MapArchive {
+    type Target = Archive;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl DerefMut for MapArchive {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+pub struct GameMpq(Archive);
+impl GameMpq {
+    pub fn open(path: String) -> Result<Self, std::io::Error> {
+        let archive = Archive::open(path);
+        archive.map(|a| Self(a))
+    }
+}
+impl Deref for GameMpq {
+    type Target = Archive;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl DerefMut for GameMpq {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}

@@ -1,4 +1,4 @@
-use mpq::Archive;
+use wce_formats::MapArchive;
 
 use crate::camera_file::CameraFile;
 use crate::custom_datas::ability::CustomAbilityFile;
@@ -51,7 +51,7 @@ pub struct Map<'a>{
 
 impl<'a> Map<'a> {
     pub fn open(path: String, game_data: &'a GameData) -> Self{
-        let mut map = Archive::open(path.to_owned()).unwrap();
+        let mut map = MapArchive::open(path.to_owned()).unwrap();
 
         let w3i = W3iFile::read_file(&mut map);
         let game_version = w3i.game_version();

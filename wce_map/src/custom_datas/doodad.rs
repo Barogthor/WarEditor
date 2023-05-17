@@ -1,7 +1,6 @@
-use mpq::Archive;
-
-use wce_formats::GameVersion;
 use wce_formats::binary_reader::BinaryReader;
+use wce_formats::GameVersion;
+use wce_formats::MapArchive;
 
 use crate::custom_datas::ObjectDefinition;
 use crate::globals::MAP_CUSTOM_DOODADS;
@@ -16,13 +15,13 @@ pub struct CustomDoodadFile {
 }
 
 impl CustomDoodadFile {
-    pub fn read_file(mpq: &mut Archive, game_version: &GameVersion) -> Self{
-        let file = mpq.open_file(MAP_CUSTOM_DOODADS);
+    pub fn read_file(map: &mut MapArchive, game_version: &GameVersion) -> Self{
+        let file = map.open_file(MAP_CUSTOM_DOODADS);
         match file {
             Ok(file) => {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-                file.read(mpq, &mut buffer).unwrap();
+                file.read(map, &mut buffer).unwrap();
                 let mut reader = BinaryReader::new(buffer);
                 Self::from(&mut reader, game_version)
             }
