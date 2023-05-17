@@ -63,26 +63,26 @@ impl GameData {
     pub fn new(prefix: &str) -> Self{
         let mut trigger_data = DataIni::new();
         trigger_data.merge(&format_data( prefix,PROFILE_TRIGGER_DATA));
-        let unit_meta = SLKData::load(&format_slk("", SLK_UNIT_META_DATA));
+        let unit_meta = SLKData::load(&format_slk(prefix, SLK_UNIT_META_DATA));
 
-        let doodad_meta = SLKData::load(&format_slk("", SLK_DOODAD_META_DATA));
-        let destructable_meta = SLKData::load(&format_slk("", SLK_DESTRUCTABLE_META_DATA));
-        let abilty_meta = SLKData::load(&format_slk("", SLK_ABILITY_META_DATA));
-        let upgrade_meta = SLKData::load(&format_slk("", SLK_UPGRADE_META_DATA));
-        let upgrade_effect_meta = SLKData::load(&format_slk("", SLK_UPGRADE_EFFECT_META_DATA));
-        let const_meta = SLKData::load(&format_slk("", SLK_MISC_META_DATA));
-        let ui_const_meta = SLKData::load(&format_slk("", SLK_SKIN_META_DATA));
-        let ability_buff_meta = SLKData::load(&format_slk("", SLK_ABILITY_BUFF_META_DATA));
+        let doodad_meta = SLKData::load(&format_slk(prefix, SLK_DOODAD_META_DATA));
+        let destructable_meta = SLKData::load(&format_slk(prefix, SLK_DESTRUCTABLE_META_DATA));
+        let abilty_meta = SLKData::load(&format_slk(prefix, SLK_ABILITY_META_DATA));
+        let upgrade_meta = SLKData::load(&format_slk(prefix, SLK_UPGRADE_META_DATA));
+        let upgrade_effect_meta = SLKData::load(&format_slk(prefix, SLK_UPGRADE_EFFECT_META_DATA));
+        let const_meta = SLKData::load(&format_slk(prefix, SLK_MISC_META_DATA));
+        let ui_const_meta = SLKData::load(&format_slk(prefix, SLK_SKIN_META_DATA));
+        let ability_buff_meta = SLKData::load(&format_slk(prefix, SLK_ABILITY_BUFF_META_DATA));
         let mut unit_data = SLKData::new();
-        unit_data.merge(&format_slk("", SLK_UNIT_DATA));
-        unit_data.merge(&format_slk("", SLK_UNIT_BALANCE));
-        unit_data.merge(&format_slk("", SLK_UNIT_UI));
-        unit_data.merge(&format_slk("", SLK_UNIT_ABILITIES));
-        unit_data.merge(&format_slk("", SLK_UNIT_WEAPONS));
-        let ability_data = SLKData::load(&format_slk("", SLK_ABILITY_DATA));
-        let upgrade_data = SLKData::load(&format_slk("", SLK_UPGRADE_DATA));
-        let doodad_effect_data = SLKData::load(&format_slk("", SLK_DOODADS));
-        let destructable_effect_data = SLKData::load(&format_slk("", SLK_DESTRUCTABLE_DATA));
+        unit_data.merge(&format_slk(prefix, SLK_UNIT_DATA));
+        unit_data.merge(&format_slk(prefix, SLK_UNIT_BALANCE));
+        unit_data.merge(&format_slk(prefix, SLK_UNIT_UI));
+        unit_data.merge(&format_slk(prefix, SLK_UNIT_ABILITIES));
+        unit_data.merge(&format_slk(prefix, SLK_UNIT_WEAPONS));
+        let ability_data = SLKData::load(&format_slk(prefix, SLK_ABILITY_DATA));
+        let upgrade_data = SLKData::load(&format_slk(prefix, SLK_UPGRADE_DATA));
+        let doodad_effect_data = SLKData::load(&format_slk(prefix, SLK_DOODADS));
+        let destructable_effect_data = SLKData::load(&format_slk(prefix, SLK_DESTRUCTABLE_DATA));
         Self{
             trigger_data,
             unit_data,
