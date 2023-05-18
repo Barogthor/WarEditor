@@ -22,6 +22,7 @@ pub enum OpeningError {
     Protected(String),
     Environment(String),
     CustomTextTrigger(String),
+    Triggers(String),
     Import(String),
     Minimap(String),
     MenuMinimap(String),
@@ -29,7 +30,7 @@ pub enum OpeningError {
     Region(String),
     ShadowMap(String),
     Sound(String),
-    TriggerString(String),
+    MapStrings(String),
     Info(String),
 }
 

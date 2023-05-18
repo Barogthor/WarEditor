@@ -1,5 +1,6 @@
 use wce_formats::MapArchive;
 
+use crate::{GameData, OpeningError};
 use crate::camera_file::CameraFile;
 use crate::custom_datas::ability::CustomAbilityFile;
 use crate::custom_datas::buff::CustomBuffFile;
@@ -9,7 +10,6 @@ use crate::custom_datas::item::CustomItemFile;
 use crate::custom_datas::unit::CustomUnitFile;
 use crate::custom_datas::upgrade::CustomUpgradeFile;
 use crate::doodad_map::DoodadMap;
-use crate::GameData;
 use crate::import_file::ImportFile;
 use crate::mmp_file::MMPFile;
 use crate::pathmap_file::PathMapFile;
@@ -50,7 +50,7 @@ pub struct Map<'a>{
 }
 
 impl<'a> Map<'a> {
-    pub fn open(path: String, game_data: &'a GameData) -> Self{
+    pub fn open(path: String, game_data: &'a GameData) -> Result<Self, OpeningError>{
         let mut map = MapArchive::open(path.to_owned()).unwrap();
 
         let w3i = W3iFile::read_file(&mut map);
@@ -78,7 +78,7 @@ impl<'a> Map<'a> {
 //        trigstrs.debug();
         let triggers_ct = TriggerJassFile::read_file(&mut map);
 //        triggers_ct.debug();
-        let triggers = TriggersFile::read_file(&mut map, game_data.get_trigger_data()).unwrap();
+        let triggers = TriggersFile::read_file(&mut map, game_data.get_trigger_data()).map_err(|err| err.into())?;
         let doodad_map = DoodadMap::read_file(&mut map);
         // println!("{:#?}", doodad_map);
         let unit_item_map = UnitItemMap::read_file(&mut map);
@@ -92,7 +92,7 @@ impl<'a> Map<'a> {
         let upgrade_datas = CustomUpgradeFile::read_file(&mut map, &game_version);
         // unit_datas.debug();
 
-        Self{
+        Ok(Self{
             game_data,
             path,
             infos: w3i,
@@ -116,6 +116,6 @@ impl<'a> Map<'a> {
             doodad_datas,
             destructable_datas,
             upgrade_datas,
-        }
+        })
     }
 }

@@ -1,5 +1,9 @@
+use std::fs;
+use std::fs::{File, ReadDir};
+use std::path::{Path, PathBuf};
 use std::time::Instant;
 
+use dotenv::dotenv;
 use log::{debug, error, info, trace, warn};
 
 use war_editor::init_logging;
@@ -18,15 +22,16 @@ fn elapsed_time(instant: &Instant) {
 }
 
 fn main() {
+    dotenv().unwrap();
     init_logging();
     info!("hello world logging");
     warn!("hello world logging");
     error!("hello world logging");
     debug!("hello world logging");
     trace!("hello world logging");
-//    for (key, value) in std::env::vars() {
-//        println!("{}: {}", key, value);
-//    }
+   // for (key, value) in std::env::vars() {
+   //     println!("{}: {}", key, value);
+   // }
     let now = Instant::now();
 
     let game_data = &GameData::new("");
@@ -113,7 +118,18 @@ fn main() {
     // let _map = Map::open(sample_2, game_data);
 //     let _map = Map::open(azure_tower_defense);
     let _map = Map::open(circumvention, game_data);
-   let _map = Map::open(harrow, game_data);
+    let _map = Map::open(harrow, game_data);
+    let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
+    let maps = test_maps(&Path::new(&format!("{}\\Maps",old_dir_w3)), vec![]);
+    println!("{:?}", maps);
+    for map in maps {
+        let path = map.into_os_string().into_string().unwrap();
+        println!("{:?}", path);
+        let map_res = Map::open(path.clone(), game_data);
+        if let Err(err) = map_res {
+            error!("Error on map '{}' : {:?}", path, err);
+        }
+    }
 //    println!("size rgba: {}",size_of_val(&vec![0u8,0u8,0u8,0u8][0..]));
 //    println!("{:X}, {:X}", true as u8, false as u8);
 //    let rgba = RGBA::by_value(0xFF5C15FF);
@@ -124,3 +140,26 @@ fn main() {
 //    sleep(time::Duration::from_secs(10));
 
 }
+
+pub fn test_maps(path: &Path, mut acc: Vec<PathBuf>) -> Vec<PathBuf> {
+    for entry in fs::read_dir(path).unwrap() {
+        let entry = entry.unwrap();
+        let epath = entry.path();
+        let ext = epath.extension();
+        if epath.is_dir() && (epath.ends_with("Scenario") || epath.ends_with("FrozenThrone")) {
+            let mut child_acc = test_maps(&epath, vec![]);
+            acc.append(&mut child_acc);
+            // println!("dir{:?}", acc);
+        }
+        else if let Some(ext) = ext {
+            if ext == "w3m" || ext == "w3x" {
+                acc.push(epath);
+            }
+            // println!("file{:?}", acc);
+        }
+        // println!("{:?}",entry);
+    }
+    acc
+}
+
+

@@ -5,6 +5,7 @@ use log::{
     // warn,
     info, };
 
+use crate::OpeningError;
 use crate::triggers::enums::WtgError::{ConditionConversionError, ECAConversionError, ParameterConversionError, SubParameterConversionError};
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
@@ -18,6 +19,13 @@ pub enum WtgError {
     UnknownGameVersion(String)
 }
 
+impl Into<OpeningError> for WtgError {
+    fn into(self) -> OpeningError {
+        OpeningError::Triggers(format!("{:?}", self))
+    }
+}
+
+
 #[derive(PartialOrd, PartialEq, Copy, Clone, Debug)]
 pub enum ParameterType {
     PRESET,
@@ -28,17 +36,17 @@ pub enum ParameterType {
 }
 
 impl ParameterType {
-    pub fn from(n: i32) -> Result<ParameterType, WtgError> {
+    pub fn from(n: i32, bin_pos: u64) -> Result<ParameterType, WtgError> {
         match n{
             0 => Ok(ParameterType::PRESET),
             1 => Ok(ParameterType::VARIABLE),
             2 => Ok(ParameterType::FUNCTION),
             3 => Ok(ParameterType::STRING),
-            -1 => {
-                info!("Parameter type invalid was found");
-                Ok(ParameterType::INVALID)
-            },
-            _ => Err(ParameterConversionError(format!("Unknown Parameter type {} was found", n)))
+            // -1 => {
+            //     info!("Parameter type invalid was found");
+            //     Ok(ParameterType::INVALID)
+            // },
+            _ => Err(ParameterConversionError(format!("Failure on byte '{}' : Unknown Parameter type {} was found", bin_pos, n)))
 
         }
     }

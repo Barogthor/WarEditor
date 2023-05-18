@@ -90,7 +90,7 @@ impl TriggersFile {
         let mut triggers = vec![];
         for _ in 0..count_triggers{
             // for _ in 0..3{
-            triggers.push(TriggerDefinition::from(reader, &version, trigger_data).unwrap())
+            triggers.push(TriggerDefinition::from(reader, &version, trigger_data)?)
         }
         assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_TRIGGERS, reader.size() - reader.pos() as usize);
         Ok(Self{

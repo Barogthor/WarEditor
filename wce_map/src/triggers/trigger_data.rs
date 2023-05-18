@@ -1,6 +1,7 @@
 // use log::{debug, error, info, trace, warn};
 use wce_formats::binary_reader::BinaryReader;
 use wce_formats::GameVersion::{self, RoC};
+
 use crate::data_ini::DataIni;
 use crate::triggers::enums::{ConditionType, ECAType, ParameterType, SubParameterType};
 use crate::triggers::enums::WtgError::{self, UnknownProp};
@@ -71,7 +72,7 @@ pub struct Parameter {
 impl Parameter {
     pub fn from(reader: &mut BinaryReader, game_version: &GameVersion, trigger_data: &DataIni) -> Result<Self, WtgError>{
         let ptype = reader.read_i32();
-        let ptype = ParameterType::from(ptype)?;
+        let ptype = ParameterType::from(ptype, reader.pos())?;
         let value = reader.read_c_string().into_string().unwrap();
         let has_sub_parameters = reader.read_u32() == 1;
         let sub_parameters = match has_sub_parameters {

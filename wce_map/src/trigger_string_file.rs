@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ffi::{CStr, CString};
 
 use regex::Regex;
 
@@ -22,7 +23,8 @@ impl TriggerStringFile {
         let file = map.open_file(MAP_STRINGS).unwrap();
         let mut buf: Vec<u8> = vec![0; file.size() as usize];
         file.read(map, &mut buf).unwrap();
-        let buffer = String::from_utf8(buf).unwrap();
+        let buffer = String::from_utf8_lossy(&buf).to_string();
+        // let buffer = unsafe { String::from_utf8_unchecked(buf) };
         let reg: Regex = Regex::new(EXTRACT_DATA).unwrap();
 
         let mut trigger_strings = HashMap::new();
