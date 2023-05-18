@@ -52,7 +52,7 @@ impl DataIni {
     pub fn merge(&mut self, path: &str){
 //        let ini = Ini::load_from_file(path).unwrap();
         let ini = parse_ini(path);
-        println!("========== Parse file: {}",path);
+        // println!("========== Parse file: {}",path);
         for (sec,prop) in ini.iter(){
             let sec = sec;
             let mut sec_props = HashMap::new();

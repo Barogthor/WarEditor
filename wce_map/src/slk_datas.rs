@@ -107,7 +107,7 @@ impl SLKData {
         }
     }
     pub fn load(path: &str) -> Self{
-        println!("========== Parse file: {}",path);
+        // println!("========== Parse file: {}",path);
         let scanner = ScannerAdapter::open(path);
         let document = DocumentAdapter::load(scanner);
         let cells = document.get_contents();
@@ -121,7 +121,7 @@ impl SLKData {
     }
 
     pub fn merge(&mut self, path: &str){
-        println!("========== Merge file: {}",path);
+        // println!("========== Merge file: {}",path);
         let scanner = ScannerAdapter::open(path);
         let document = DocumentAdapter::load(scanner);
         let cells = document.get_contents();
