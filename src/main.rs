@@ -160,4 +160,38 @@ pub fn test_maps(path: &Path, mut acc: Vec<PathBuf>) -> Vec<PathBuf> {
     acc
 }
 
+#[cfg(test)]
+mod tests_maps {
+    use std::path::Path;
 
+    use dotenv::dotenv;
+    use log::error;
+
+    use war_editor::init_logging;
+    use wce_map::GameData;
+    use wce_map::map::Map;
+
+    use crate::test_maps;
+
+    #[test]
+    fn test_melee_maps() {
+        dotenv().unwrap();
+        init_logging();
+        let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
+        let mut on_error = false;
+
+        let game_data = &GameData::new("");
+        let maps = test_maps(&Path::new(&format!("{}\\Maps",old_dir_w3)), vec![]);
+        for map in maps {
+            let path = map.into_os_string().into_string().unwrap();
+            let map_res = Map::open(path.clone(), game_data);
+            if let Err(err) = map_res {
+                println!("Error on map '{}' : {:?}", path, err);
+                on_error = true;
+            }
+            if on_error {
+                panic!("Check this test logs");
+            }
+        }
+    }
+}
