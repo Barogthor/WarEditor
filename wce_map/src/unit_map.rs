@@ -9,6 +9,7 @@ use wce_formats::MapArchive;
 
 use crate::doodad_map::Radian;
 use crate::globals::MAP_TERRAIN_UNITS;
+use crate::OpeningError;
 use crate::unit_map::RandomUnitItemFlag::{Neutral, NotRandom, RandomFromCustomTable, RandomFromTableGroup};
 
 const RANDOM_ITEM_ID: &str = "iDNR";
@@ -252,13 +253,13 @@ pub struct UnitItemMap {
 }
 
 impl UnitItemMap {
-    pub fn read_file(map: &mut MapArchive) -> Self{
-        let file = map.open_file(MAP_TERRAIN_UNITS).unwrap();
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError>{
+        let file = map.open_file(MAP_TERRAIN_UNITS).map_err(|e| OpeningError::UnitItem(format!("{}",e)))?;
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-        file.read(map, &mut buffer).unwrap();
+        file.read(map, &mut buffer).map_err(|e| OpeningError::UnitItem(format!("{}",e)))?;
         let mut reader = BinaryReader::new(buffer);
-        reader.read::<Self>()
+        Ok(reader.read::<Self>())
     }
 }
 

@@ -5,6 +5,7 @@ use wce_formats::GameVersion::{RoC, TFT};
 use wce_formats::MapArchive;
 
 use crate::globals::MAP_TRIGGERS_SCRIPT;
+use crate::OpeningError;
 
 type TextScript = String;
 
@@ -17,13 +18,13 @@ pub struct TriggerJassFile {
 }
 
 impl TriggerJassFile {
-    pub fn read_file(map: &mut MapArchive) -> Self{
-        let file = map.open_file(MAP_TRIGGERS_SCRIPT).unwrap();
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError>{
+        let file = map.open_file(MAP_TRIGGERS_SCRIPT).map_err(|e| OpeningError::CustomTextTrigger(format!("{}",e)))?;
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-        file.read(map, &mut buffer).unwrap();
+        file.read(map, &mut buffer).map_err(|e| OpeningError::CustomTextTrigger(format!("{}",e)))?;
         let mut reader = BinaryReader::new(buffer);
-        reader.read::<TriggerJassFile>()
+        Ok(reader.read::<TriggerJassFile>())
     }
     pub fn debug(&self){
         println!("{:#?}",self);

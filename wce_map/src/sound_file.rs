@@ -7,6 +7,7 @@ use wce_formats::BinaryConverter;
 use wce_formats::MapArchive;
 
 use crate::globals::MAP_SOUNDS;
+use crate::OpeningError;
 
 const DEFAULT_FLOAT: f32 = 4.2949673e+009;
 
@@ -90,18 +91,18 @@ pub struct SoundFile {
 }
 
 impl SoundFile {
-    pub fn read_file(map: &mut MapArchive) -> Option<Self>{
+    pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, OpeningError>{
         let file = map.open_file(MAP_SOUNDS);
 
         match file{
             Ok(file) => {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-                file.read(map, &mut buffer).unwrap();
+                file.read(map, &mut buffer).map_err(|e| OpeningError::Sound(format!("{}",e)))?;
                 let mut reader = BinaryReader::new(buffer);
-                Some(reader.read::<SoundFile>())
+                Ok(Some(reader.read::<SoundFile>()))
             }
-            _ => None
+            _ => Ok(None)
         }
 
     }

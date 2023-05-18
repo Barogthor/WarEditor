@@ -1,11 +1,12 @@
 use std::ffi::CString;
 
-use wce_formats::BinaryConverter;
 use wce_formats::binary_reader::BinaryReader;
 use wce_formats::binary_writer::BinaryWriter;
+use wce_formats::BinaryConverter;
 use wce_formats::MapArchive;
 
 use crate::globals::MAP_IMPORT_LIST;
+use crate::OpeningError;
 
 type ImportPath = Vec<(ImportPathType, CString)>;
 
@@ -16,18 +17,18 @@ pub struct ImportFile {
 }
 
 impl ImportFile {
-    pub fn read_file(map: &mut MapArchive) -> Option<Self>{
+    pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, OpeningError>{
         let file = map.open_file(MAP_IMPORT_LIST);
         match file {
             Ok(file) => {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-                file.read(map, &mut buffer).unwrap();
+                file.read(map, &mut buffer).map_err(|e| OpeningError::Import(format!("{}",e)))?;
                 let mut reader = BinaryReader::new(buffer);
                 let v = reader.read::<ImportFile>();
-                Some(v)
+                Ok(Some(v))
             },
-            _ => None
+            _ => Ok(None)
         }
     }
     pub fn debug(&self){

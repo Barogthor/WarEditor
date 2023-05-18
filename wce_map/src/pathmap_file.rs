@@ -1,9 +1,10 @@
-use wce_formats::BinaryConverter;
 use wce_formats::binary_reader::BinaryReader;
 use wce_formats::binary_writer::BinaryWriter;
+use wce_formats::BinaryConverter;
 use wce_formats::MapArchive;
 
 use crate::globals::MAP_PATH_MAP;
+use crate::OpeningError;
 
 type Flag = u8;
 #[derive(Debug)]
@@ -45,18 +46,18 @@ pub struct PathMapFile {
 }
 
 impl PathMapFile {
-    pub fn read_file(map: &mut MapArchive) -> Self{
-        let file = map.open_file(MAP_PATH_MAP).unwrap();
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError>{
+        let file = map.open_file(MAP_PATH_MAP).map_err(|e| OpeningError::PathingMap(format!("{}",e)))?;
 
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-        file.read(map, &mut buffer).unwrap();
+        file.read(map, &mut buffer).map_err(|e| OpeningError::PathingMap(format!("{}",e)))?;
 //        let mut f = File::open(concat_path("war3map.wpm")).unwrap();
 //        let mut buffer: Vec<u8> = Vec::new();
 //        f.read_to_end(&mut buffer).unwrap();
 //        let buffer_size = buffer.len();
         let mut reader = BinaryReader::new(buffer);
-        reader.read::<PathMapFile>()
+        Ok(reader.read::<PathMapFile>())
     }
     pub fn debug(&self){
         println!("{:#?}",self);

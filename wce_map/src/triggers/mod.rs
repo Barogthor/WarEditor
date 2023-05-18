@@ -5,6 +5,7 @@ use wce_formats::MapArchive;
 
 use crate::data_ini::DataIni;
 use crate::globals::MAP_TRIGGERS;
+use crate::OpeningError;
 use crate::triggers::enums::WtgError::{self, UnknownGameVersion};
 use crate::triggers::misc::{TriggerCategory, VariableDefinition};
 use crate::triggers::trigger_data::ECADefinition;
@@ -63,18 +64,19 @@ pub struct TriggersFile {
 }
 
 impl TriggersFile {
-    pub fn read_file(map: &mut MapArchive, trigger_data: &DataIni) -> Result<Self, WtgError>{
-        let file = map.open_file(MAP_TRIGGERS).unwrap();
+    pub fn read_file(map: &mut MapArchive, trigger_data: &DataIni) -> Result<Self, OpeningError>{
+        let file = map.open_file(MAP_TRIGGERS).map_err(|e| OpeningError::Triggers(format!("{}",e)))?;
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
-        file.read(map, &mut buffer).unwrap();
+        file.read(map, &mut buffer).map_err(|e| OpeningError::Triggers(format!("{}",e)))?;
         let mut reader = BinaryReader::new(buffer);
-        Self::from(&mut reader, trigger_data)
+        let res = Self::from(&mut reader, trigger_data).map_err(Into::into)?;
+        Ok(res)
     }
 
     fn from(reader: &mut BinaryReader, trigger_data: &DataIni) -> Result<Self, WtgError>{
         let id = String::from_utf8(reader.read_bytes(4)).unwrap();
         let version = reader.read_u32();
-        let version = to_game_version(version).unwrap();
+        let version = to_game_version(version)?;
         let count_categories = reader.read_u32();
         let mut categories = vec![];
         for _ in 0..count_categories {

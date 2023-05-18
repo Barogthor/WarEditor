@@ -29,9 +29,19 @@ pub enum OpeningError {
     PathingMap(String),
     Region(String),
     ShadowMap(String),
+    Doodad(String),
+    Camera(String),
+    UnitItem(String),
     Sound(String),
     MapStrings(String),
     Info(String),
+    CustomUnit(String),
+    CustomItem(String),
+    CustomAbility(String),
+    CustomBuff(String),
+    CustomUpgrade(String),
+    CustomDoodad(String),
+    CustomDestructable(String),
 }
 
 

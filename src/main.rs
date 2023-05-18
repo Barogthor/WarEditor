@@ -1,5 +1,4 @@
 use std::fs;
-use std::fs::{File, ReadDir};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
@@ -121,7 +120,6 @@ fn main() {
     let _map = Map::open(harrow, game_data);
     let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
     let maps = test_maps(&Path::new(&format!("{}\\Maps",old_dir_w3)), vec![]);
-    println!("{:?}", maps);
     for map in maps {
         let path = map.into_os_string().into_string().unwrap();
         println!("{:?}", path);

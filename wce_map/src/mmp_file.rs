@@ -1,9 +1,10 @@
-use wce_formats::BinaryConverter;
 use wce_formats::binary_reader::BinaryReader;
 use wce_formats::binary_writer::BinaryWriter;
+use wce_formats::BinaryConverter;
 use wce_formats::MapArchive;
 
 use crate::globals::MAP_MENU_MINIMAP;
+use crate::OpeningError;
 
 type RGBA = Vec<u8>;
 
@@ -53,13 +54,13 @@ impl BinaryConverter for MMPFile{
 }
 
 impl MMPFile{
-    pub fn read_file(map: &mut MapArchive) -> Self{
-        let file = map.open_file(MAP_MENU_MINIMAP).unwrap();
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError>{
+        let file = map.open_file(MAP_MENU_MINIMAP).map_err(|e| OpeningError::MenuMinimap(format!("{}",e)))?;
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-        file.read(map, &mut buffer).unwrap();
+        file.read(map, &mut buffer).map_err(|e| OpeningError::MenuMinimap(format!("{}",e)))?;
         let mut reader = BinaryReader::new(buffer);
-        reader.read::<MMPFile>()
+        Ok(reader.read::<MMPFile>())
     }
 
     pub fn debug(&self){

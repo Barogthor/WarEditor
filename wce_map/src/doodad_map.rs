@@ -9,6 +9,7 @@ use wce_formats::MapArchive;
 
 use crate::doodad_map::DestructableFlag::{InvisibleNonSolid, Unnamed, VisibleNonSolid, VisibleSolid};
 use crate::globals::MAP_TERRAIN_DOODADS;
+use crate::OpeningError;
 use crate::unit_map::DropItem;
 
 pub type Radian = f32;
@@ -138,13 +139,13 @@ pub struct DoodadMap {
 }
 
 impl DoodadMap {
-    pub fn read_file(map: &mut MapArchive) -> Self{
-        let file = map.open_file(MAP_TERRAIN_DOODADS).unwrap();
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError>{
+        let file = map.open_file(MAP_TERRAIN_DOODADS).map_err(|e| OpeningError::Doodad(format!("{}",e)))?;
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
         
-        file.read(map, &mut buffer).unwrap();
+        file.read(map, &mut buffer).map_err(|e| OpeningError::Doodad(format!("{}",e)))?;
         let mut reader = BinaryReader::new(buffer);
-        reader.read::<DoodadMap>()
+        Ok(reader.read::<DoodadMap>())
     }
 }
 

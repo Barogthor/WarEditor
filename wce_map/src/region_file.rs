@@ -7,6 +7,7 @@ use wce_formats::BinaryConverter;
 use wce_formats::MapArchive;
 
 use crate::globals::MAP_REGIONS;
+use crate::OpeningError;
 
 #[derive(Debug, Derivative)]
 #[derivative(Default, PartialEq)]
@@ -57,18 +58,18 @@ pub struct RegionFile {
 }
 
 impl RegionFile{
-    pub fn read_file(map: &mut MapArchive) -> Option<Self>{
+    pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, OpeningError>{
         let file = map.open_file(MAP_REGIONS);
 
         match file{
             Ok(file) => {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-                file.read(map, &mut buffer).unwrap();
+                file.read(map, &mut buffer).map_err(|e| OpeningError::Region(format!("{}",e)))?;
                 let mut reader = BinaryReader::new(buffer);
-                Some(reader.read::<RegionFile>())
+                Ok(Some(reader.read::<RegionFile>()))
             },
-            _ => None
+            _ => Ok(None)
         }
     }
     pub fn debug(&self){

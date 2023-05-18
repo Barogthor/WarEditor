@@ -4,6 +4,7 @@ use wce_formats::MapArchive;
 
 use crate::custom_datas::ObjectDefinition;
 use crate::globals::MAP_CUSTOM_BUFFS;
+use crate::OpeningError;
 
 use super::ObjectId;
 
@@ -15,23 +16,17 @@ pub struct CustomBuffFile {
 }
 
 impl CustomBuffFile {
-    pub fn read_file(map: &mut MapArchive, game_version: &GameVersion) -> Self{
+    pub fn read_file(map: &mut MapArchive, game_version: &GameVersion) -> Result<Option<CustomBuffFile>, OpeningError> {
         let file = map.open_file(MAP_CUSTOM_BUFFS);
         match file {
             Ok(file) => {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-                file.read(map, &mut buffer).unwrap();
+                file.read(map, &mut buffer).map_err(|e| OpeningError::CustomBuff(format!("{}",e)))?;
                 let mut reader = BinaryReader::new(buffer);
-                Self::from(&mut reader, game_version)
+                Ok(Some(Self::from(&mut reader, game_version)))
             }
-            _ => {
-                Self {
-                    version: 0,
-                    original_objects: vec![],
-                    custom_objects: vec![],
-                }
-            }
+            _ => Ok(None)
         }
     }
 

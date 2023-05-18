@@ -159,7 +159,7 @@ impl BLP {
             Compression::JPEG => blp.parse_jpeg_mipmaps(reader),
             Compression::PALETTE => blp.parse_palette(reader)
         };
-        println!("file cursor pos {} / {}", reader.pos(),reader.size());
+        assert_eq!(reader.size(), reader.pos() as usize, "BLP reader for hasn't reached EOF. Missing {} bytes", reader.size() - reader.pos() as usize);
         blp
     }
 }
