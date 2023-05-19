@@ -119,7 +119,7 @@ fn main() {
     let _map = Map::open(circumvention, game_data);
     let _map = Map::open(harrow, game_data);
     let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
-    let maps = test_maps(&Path::new(&format!("{}\\Maps",old_dir_w3)), vec![]);
+    let maps = test_melee_maps(&Path::new(&format!("{}\\Maps", old_dir_w3)));
     for map in maps {
         let path = map.into_os_string().into_string().unwrap();
         println!("{:?}", path);
@@ -139,13 +139,29 @@ fn main() {
 
 }
 
-pub fn test_maps(path: &Path, mut acc: Vec<PathBuf>) -> Vec<PathBuf> {
+pub fn is_melee_maps(path: &PathBuf) -> bool {
+    path.is_dir() && (path.ends_with("Scenario") || path.ends_with("FrozenThrone"))
+}
+
+pub fn is_custom_maps(path: &PathBuf) -> bool {
+    path.is_dir() && (path.ends_with("Download"))
+}
+
+pub fn test_melee_maps(path: &Path) -> Vec<PathBuf> {
+    test_maps(path, vec![], is_melee_maps)
+}
+
+pub fn test_custom_maps(path: &Path) -> Vec<PathBuf> {
+    test_maps(path, vec![], is_custom_maps)
+}
+
+pub fn test_maps(path: &Path, mut acc: Vec<PathBuf>, predicate: fn(path: &PathBuf) -> bool) -> Vec<PathBuf> {
     for entry in fs::read_dir(path).unwrap() {
         let entry = entry.unwrap();
         let epath = entry.path();
         let ext = epath.extension();
-        if epath.is_dir() && (epath.ends_with("Scenario") || epath.ends_with("FrozenThrone")) {
-            let mut child_acc = test_maps(&epath, vec![]);
+        if predicate(&epath) {
+            let mut child_acc = test_maps(&epath, vec![], predicate);
             acc.append(&mut child_acc);
             // println!("dir{:?}", acc);
         }
@@ -171,17 +187,16 @@ mod tests_maps {
     use wce_map::GameData;
     use wce_map::map::Map;
 
-    use crate::test_maps;
+    use crate::test_melee_maps;
 
     #[test]
     fn test_melee_maps() {
         dotenv().unwrap();
-        init_logging();
         let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
         let mut on_error = false;
 
         let game_data = &GameData::new("");
-        let maps = test_maps(&Path::new(&format!("{}\\Maps",old_dir_w3)), vec![]);
+        let maps = test_melee_maps(&Path::new(&format!("{}\\Maps", old_dir_w3)));
         for map in maps {
             let path = map.into_os_string().into_string().unwrap();
             let map_res = Map::open(path.clone(), game_data);

@@ -71,19 +71,19 @@ impl BinaryReader{
 
     pub fn read_c_string(&mut self) -> CString{
         let mut result_buf: Vec<u8> = Vec::new();
-        self.buffer.read_until('\0' as u8, &mut result_buf).unwrap();
+        self.buffer.read_until('\0' as u8, &mut result_buf).expect(&self.message_error_format());
         result_buf.pop();
         CString::new(result_buf).unwrap()
     }
     pub fn read_c_string_sized(&mut self, size: usize) -> CString{
         let v = self.read_bytes(size);
 //        println!("pos: {}",self.pos());
-        CString::new(v).unwrap()
+        CString::new(v).expect(&self.message_error_format())
     }
 
     pub fn read_string_utf8(&mut self, bytes_to_read: usize) -> String{
         let v = self.read_bytes(bytes_to_read);
-        String::from_utf8(v).expect(&format!("Error around byte : {}", self.pos()-(bytes_to_read as u64)))
+        String::from_utf8_lossy(&v).to_string()
     }
 
 
