@@ -15,6 +15,18 @@ use crate::unit_map::RandomUnitItemFlag::{Neutral, NotRandom, RandomFromCustomTa
 const RANDOM_ITEM_ID: &str = "iDNR";
 const RANDOM_UNIT_ID: &str = "uDNR";
 
+pub type TablePointer = i32;
+
+#[derive(Debug, PartialOrd, PartialEq)]
+pub enum Drops{
+    PresetTable(TablePointer),
+    EmbeddedTable(Vec<DropItemSet>),
+    Empty
+}
+
+#[derive(Debug, PartialOrd, PartialEq)]
+pub struct DropItemSet(pub Vec<DropItem>);
+
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct DropItem(String, u32);
 impl BinaryConverterVersion for DropItem{
@@ -123,7 +135,7 @@ impl BinaryConverterVersion for RandomUnitItemFlag {
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(Debug, PartialEq, PartialOrd)]
 struct UnitItem {
     model_id: String,
     variation: u32,
@@ -141,7 +153,7 @@ struct UnitItem {
     hp: i32,
     mana: i32,
     map_drop_table_pointer: i32,
-    drop_item_sets: Vec<Vec<DropItem>>,
+    drop_item_sets: Vec<DropItemSet>,
     gold_amount: i32,
     acquisition_range: f32,
     strength: i32,
@@ -182,7 +194,7 @@ impl BinaryConverterVersion for UnitItem{
             for _ in 0..count_random_drop_sets {
                 let count_item_set = reader.read_u32();
                 let vi =reader.read_vec_version::<DropItem>(count_item_set as usize, &game_version);
-                drop_item_sets.push(vi);
+                drop_item_sets.push(DropItemSet(vi));
             }
         }
         let gold_amount = reader.read_i32();
@@ -243,11 +255,13 @@ impl BinaryConverterVersion for UnitItem{
 }
 
 
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, Derivative)]
+#[derivative(PartialEq)]
 pub struct UnitItemMap {
     //    id: u32,
     id: String,
     version: GameVersion,
+    #[derivative(PartialEq="ignore")]
     subversion: u32,
     units_items: Vec<UnitItem>,
 }
@@ -303,7 +317,7 @@ mod unitmap_tests{
     use wce_formats::binary_reader::BinaryReader;
     use wce_formats::GameVersion::RoC;
 
-    use crate::unit_map::{AbilityModification, DropItem, InventoryItem, RandomUnit, UnitItem, UnitItemMap};
+    use crate::unit_map::{AbilityModification, DropItem, DropItemSet, InventoryItem, RandomUnit, UnitItem, UnitItemMap};
     use crate::unit_map::RandomUnitItemFlag::{Neutral, RandomFromCustomTable, RandomFromTableGroup};
 
     fn mock_rock() -> Vec<UnitItem>{
@@ -326,12 +340,12 @@ mod unitmap_tests{
                 mana: -1,
                 map_drop_table_pointer: -1,
                 drop_item_sets: vec![
-                    vec![
+                    DropItemSet(vec![
                         DropItem(
                             "YkI1".to_string(),
                             100,
                         ),
-                    ],
+                    ]),
                 ],
                 gold_amount: 12500,
                 acquisition_range: -1.0,
@@ -367,12 +381,12 @@ mod unitmap_tests{
                 mana: -1,
                 map_drop_table_pointer: -1,
                 drop_item_sets: vec![
-                    vec![
+                    DropItemSet(vec![
                         DropItem(
                             "gopr".to_string(),
                             100,
                         ),
-                    ],
+                    ]),
                 ],
                 gold_amount: 12500,
                 acquisition_range: -1.0,
@@ -419,12 +433,12 @@ mod unitmap_tests{
                 mana: -1,
                 map_drop_table_pointer: -1,
                 drop_item_sets: vec![
-                    vec![
+                    DropItemSet(vec![
                         DropItem(
                             "\u{1}\u{1}\u{0}Q".to_string(),
                             100,
                         ),
-                    ]
+                    ])
                 ],
                 gold_amount: 12500,
                 acquisition_range: -1.0,
@@ -574,14 +588,14 @@ mod unitmap_tests{
         assert_eq!(unititem_map.id, "W3do".to_string());
         assert_eq!(unititem_map.version, RoC);
         let units_items_mock = mock_rock();
-        let units_items: Vec<UnitItem> = unititem_map.units_items.iter().filter(
+        let units_items: Vec<UnitItem> = unititem_map.units_items.into_iter().filter(
             |unit_item| {
                 let creat_id = unit_item.creation_id;
                 match creat_id{
                     2 | 3 | 9 | 10 | 11 | 12 => true,
                     _ => false
                 }
-            }).cloned().collect();
+            }).collect();
         assert_eq!(units_items, units_items_mock);
     }
 

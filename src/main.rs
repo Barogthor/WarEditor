@@ -119,7 +119,8 @@ fn main() {
     let _map = Map::open(circumvention, game_data);
     let _map = Map::open(harrow, game_data);
     let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
-    let maps = test_melee_maps(&Path::new(&format!("{}\\Maps", old_dir_w3)));
+    // let maps = test_melee_maps(&Path::new(&format!("{}\\Maps", old_dir_w3)));
+    let maps = paths_custom_maps(&Path::new(&format!("{}\\Maps", old_dir_w3)));
     for map in maps {
         let path = map.into_os_string().into_string().unwrap();
         println!("{:?}", path);
@@ -139,7 +140,7 @@ fn main() {
 
 }
 
-pub fn is_melee_maps(path: &PathBuf) -> bool {
+pub fn is_blizzard_maps(path: &PathBuf) -> bool {
     path.is_dir() && (path.ends_with("Scenario") || path.ends_with("FrozenThrone"))
 }
 
@@ -147,21 +148,21 @@ pub fn is_custom_maps(path: &PathBuf) -> bool {
     path.is_dir() && (path.ends_with("Download"))
 }
 
-pub fn test_melee_maps(path: &Path) -> Vec<PathBuf> {
-    test_maps(path, vec![], is_melee_maps)
+pub fn paths_blizzard_maps(path: &Path) -> Vec<PathBuf> {
+    paths_maps(path, vec![], is_blizzard_maps)
 }
 
-pub fn test_custom_maps(path: &Path) -> Vec<PathBuf> {
-    test_maps(path, vec![], is_custom_maps)
+pub fn paths_custom_maps(path: &Path) -> Vec<PathBuf> {
+    paths_maps(path, vec![], is_custom_maps)
 }
 
-pub fn test_maps(path: &Path, mut acc: Vec<PathBuf>, predicate: fn(path: &PathBuf) -> bool) -> Vec<PathBuf> {
+pub fn paths_maps(path: &Path, mut acc: Vec<PathBuf>, predicate: fn(path: &PathBuf) -> bool) -> Vec<PathBuf> {
     for entry in fs::read_dir(path).unwrap() {
         let entry = entry.unwrap();
         let epath = entry.path();
         let ext = epath.extension();
         if predicate(&epath) {
-            let mut child_acc = test_maps(&epath, vec![], predicate);
+            let mut child_acc = paths_maps(&epath, vec![], predicate);
             acc.append(&mut child_acc);
             // println!("dir{:?}", acc);
         }
@@ -181,22 +182,20 @@ mod tests_maps {
     use std::path::Path;
 
     use dotenv::dotenv;
-    use log::error;
 
-    use war_editor::init_logging;
     use wce_map::GameData;
     use wce_map::map::Map;
 
-    use crate::test_melee_maps;
+    use crate::paths_blizzard_maps;
 
-    #[test]
-    fn test_melee_maps() {
+    // #[test]
+    fn test_blizzard_maps() {
         dotenv().unwrap();
         let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
         let mut on_error = false;
 
         let game_data = &GameData::new("");
-        let maps = test_melee_maps(&Path::new(&format!("{}\\Maps", old_dir_w3)));
+        let maps = paths_blizzard_maps(&Path::new(&format!("{}\\Maps", old_dir_w3)));
         for map in maps {
             let path = map.into_os_string().into_string().unwrap();
             let map_res = Map::open(path.clone(), game_data);

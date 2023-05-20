@@ -1,16 +1,13 @@
-#[cfg(test)]
-use pretty_assertions::assert_eq;
-
 use wce_formats::{BinaryConverter, BinaryConverterVersion};
 use wce_formats::binary_reader::BinaryReader;
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{self, RoC, TFT};
 use wce_formats::MapArchive;
 
-use crate::doodad_map::DestructableFlag::{InvisibleNonSolid, Unnamed, VisibleNonSolid, VisibleSolid};
+use crate::doodad_map::DestructableFlag::{InvisibleNonSolid, VisibleNonSolid, VisibleSolid};
 use crate::globals::MAP_TERRAIN_DOODADS;
 use crate::OpeningError;
-use crate::unit_map::DropItem;
+use crate::unit_map::{DropItem, DropItemSet, Drops};
 
 pub type Radian = f32;
 
@@ -19,7 +16,6 @@ pub enum DestructableFlag {
     InvisibleNonSolid,
     VisibleNonSolid,
     VisibleSolid,
-    Unnamed(u8)
 }
 
 impl DestructableFlag {
@@ -28,13 +24,12 @@ impl DestructableFlag {
             0 => InvisibleNonSolid,
             1 => VisibleNonSolid,
             2 => VisibleSolid,
-            _ => Unnamed(value)
-//            _ => panic!("Unknown destructable flag {}", value)
+           _ => panic!("Unknown destructable flag {}", value)
         }
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(Debug, PartialOrd, PartialEq)]
 struct Destructable {
     model_id: String,
     variation: u32,
@@ -47,8 +42,7 @@ struct Destructable {
     scale_z: f32,
     flags: u8,
     life: u8,
-    drop_table_pointer: i32,
-    drop_item_set: Vec<DropItem>,
+    drops: Drops,
     creation_id: u32,
 }
 
@@ -65,13 +59,23 @@ impl BinaryConverterVersion for Destructable{
         let scale_z = reader.read_f32();
         let flags = reader.read_u8();
         let life = reader.read_u8();
-        let (drop_table_pointer, drop_item_set) = match *game_version{
-            RoC => (-1, vec![]),
+        let drops = match *game_version{
+            RoC => Drops::Empty,
             _ => {
                 let drop_table_pointer = reader.read_i32();
-                let count_drop_set = reader.read_u32();
-                let drop_item_set = reader.read_vec_version::<DropItem>(count_drop_set as usize, game_version);
-                (drop_table_pointer, drop_item_set)
+                if drop_table_pointer >= 0{
+                    reader.skip(4);
+                    Drops::PresetTable(drop_table_pointer)
+                } else {
+                    let count_drop_set = reader.read_u32();
+                    let mut drop_sets = vec![];
+                    for _ in 0..count_drop_set {
+                        let count_drop_item = reader.read_u32();
+                        let drop_item_set = reader.read_vec_version::<DropItem>(count_drop_item as usize, game_version);
+                        drop_sets.push(DropItemSet(drop_item_set));
+                    }
+                    Drops::EmbeddedTable(drop_sets)
+                }
             },
         };
 
@@ -88,8 +92,7 @@ impl BinaryConverterVersion for Destructable{
             scale_z,
             flags,
             life,
-            drop_table_pointer,
-            drop_item_set,
+            drops,
             creation_id
         }
     }
@@ -100,20 +103,20 @@ impl BinaryConverterVersion for Destructable{
 }
 
 #[derive(Debug, PartialOrd, PartialEq)]
-struct Doodad {
+struct SpecialDoodad {
     model_id: String,
     coord_x: f32,
     coord_y: f32,
     coord_z: f32,
 }
 
-impl BinaryConverter for Doodad{
+impl BinaryConverter for SpecialDoodad {
     fn read(reader: &mut BinaryReader) -> Self {
         let model_id = reader.read_string_utf8(4);
         let coord_x = reader.read_f32();
         let coord_y = reader.read_f32();
         let coord_z = reader.read_f32();
-        Doodad{
+        SpecialDoodad {
             model_id,
             coord_x,
             coord_y,
@@ -126,15 +129,17 @@ impl BinaryConverter for Doodad{
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Derivative)]
+#[derivative(PartialEq)]
 pub struct DoodadMap {
     //    id: u32,
     id: String,
     version: GameVersion,
+    #[derivative(PartialEq="ignore")]
     subversion: u32,
     destructables: Vec<Destructable>,
-    doodad_version: u32,
-    doodads: Vec<Doodad>,
+    special_doodad_version: u32,
+    special_doodads: Vec<SpecialDoodad>,
 
 }
 
@@ -159,17 +164,17 @@ impl BinaryConverter for DoodadMap {
         let subversion = reader.read_u32();
         let count_destructables = reader.read_u32();
         let destructables = reader.read_vec_version::<Destructable>(count_destructables as usize, &version);
-        let doodad_version = reader.read_u32();
-        let count_doodads = reader.read_u32();
-        let doodads = reader.read_vec::<Doodad>(count_doodads as usize);
+        let special_doodad_version = reader.read_u32();
+        let count_special_doodads = reader.read_u32();
+        let special_doodads = reader.read_vec::<SpecialDoodad>(count_special_doodads as usize);
         assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_TERRAIN_DOODADS, reader.size() - reader.pos() as usize);
         DoodadMap {
             id,
             version,
             subversion,
             destructables,
-            doodad_version,
-            doodads
+            special_doodad_version,
+            special_doodads
         }
     }
 
@@ -193,7 +198,7 @@ mod doodads_test{
     use wce_formats::binary_reader::BinaryReader;
     use wce_formats::GameVersion::RoC;
 
-    use crate::doodad_map::{Destructable, DoodadMap};
+    use crate::doodad_map::{Destructable, DoodadMap, Drops};
 
     fn mock_destructable_roc() -> Vec<Destructable>{
         vec![
@@ -209,8 +214,7 @@ mod doodads_test{
                 scale_z: 0.9766412,
                 flags: 2,
                 life: 100,
-                drop_table_pointer: -1,
-                drop_item_set: vec![],
+                drops: Drops::Empty,
                 creation_id: 0
             },
             Destructable{
@@ -225,8 +229,7 @@ mod doodads_test{
                 scale_z: 0.9194495,
                 flags: 2,
                 life: 255,
-                drop_table_pointer: -1,
-                drop_item_set: vec![],
+                drops: Drops::Empty,
                 creation_id: 55
             },
             Destructable{
@@ -241,15 +244,14 @@ mod doodads_test{
                 scale_z: 1.0382886,
                 flags: 2,
                 life: 255,
-                drop_table_pointer: -1,
-                drop_item_set: vec![],
+                drops: Drops::Empty,
                 creation_id: 168
             }
         ]
     }
     
     #[test]
-    fn no_failure(){
+    fn no_failure_roc(){
         let mut doodad_file = File::open("../resources/Scenario/Sandbox_roc/war3map.doo").unwrap();
         let mut reader = BinaryReader::from(&mut doodad_file);
         let _doodad_map = reader.read::<DoodadMap>();
@@ -263,14 +265,21 @@ mod doodads_test{
         let mock_destructables = mock_destructable_roc();
         assert_eq!(doodad_map.id, "W3do".to_string());
         assert_eq!(doodad_map.version, RoC);
-        let destructables: Vec<Destructable> = doodad_map.destructables.iter().filter(
+        let destructables: Vec<Destructable> = doodad_map.destructables.into_iter().filter(
             |destructable| {
                 let creat_id = destructable.creation_id;
                 match creat_id{
                     168 | 55 | 0 => true,
                     _ => false
                 }
-            }).cloned().collect();
+            }).collect();
         assert_eq!(destructables, mock_destructables);
+    }
+
+    #[test]
+    fn no_failure_tft(){
+        let mut doodad_file = File::open("../resources/Scenario/Sandbox_tft/war3map.doo").unwrap();
+        let mut reader = BinaryReader::from(&mut doodad_file);
+        let _doodad_map = reader.read::<DoodadMap>();
     }
 }
