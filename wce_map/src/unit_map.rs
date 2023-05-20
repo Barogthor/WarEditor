@@ -152,8 +152,7 @@ struct UnitItem {
     unk2: u8,
     hp: i32,
     mana: i32,
-    map_drop_table_pointer: i32,
-    drop_item_sets: Vec<DropItemSet>,
+    drops: Drops,
     gold_amount: i32,
     acquisition_range: f32,
     strength: i32,
@@ -185,18 +184,7 @@ impl BinaryConverterVersion for UnitItem{
         let unk2 =  reader.read_u8();
         let hp =  reader.read_i32();
         let mana =  reader.read_i32();
-        let map_drop_table_pointer = if game_version.is_tft() {
-            reader.read_i32()
-        } else { -1 };
-        let count_random_drop_sets = reader.read_u32();
-        let mut drop_item_sets = vec![];
-        if count_random_drop_sets > 0{
-            for _ in 0..count_random_drop_sets {
-                let count_item_set = reader.read_u32();
-                let vi =reader.read_vec_version::<DropItem>(count_item_set as usize, &game_version);
-                drop_item_sets.push(DropItemSet(vi));
-            }
-        }
+        let drops = Self::read_unit_drops(reader, game_version);
         let gold_amount = reader.read_i32();
         let acquisition_range = reader.read_f32();
         let level = reader.read_u32();
@@ -231,8 +219,7 @@ impl BinaryConverterVersion for UnitItem{
             unk2,
             hp,
             mana,
-            map_drop_table_pointer,
-            drop_item_sets,
+            drops,
             gold_amount,
             acquisition_range,
             strength,
@@ -251,6 +238,28 @@ impl BinaryConverterVersion for UnitItem{
 
     fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
         unimplemented!()
+    }
+}
+
+impl UnitItem {
+    fn read_unit_drops(reader: &mut BinaryReader, game_version: &GameVersion) -> Drops {
+        let map_drop_table_pointer = if game_version.is_tft() {
+            reader.read_i32()
+        } else { -1 };
+        let count_random_drop_sets = reader.read_u32();
+        if game_version.is_tft() && map_drop_table_pointer > -1 {
+            Drops::PresetTable(map_drop_table_pointer)
+        } else if count_random_drop_sets > 0 {
+            let mut drop_item_sets = vec![];
+            for _ in 0..count_random_drop_sets {
+                let count_item_set = reader.read_u32();
+                let vi = reader.read_vec_version::<DropItem>(count_item_set as usize, &game_version);
+                drop_item_sets.push(DropItemSet(vi));
+            }
+            Drops::EmbeddedTable(drop_item_sets)
+        } else {
+            Drops::Empty
+        }
     }
 }
 
@@ -317,7 +326,7 @@ mod unitmap_tests{
     use wce_formats::binary_reader::BinaryReader;
     use wce_formats::GameVersion::RoC;
 
-    use crate::unit_map::{AbilityModification, DropItem, DropItemSet, InventoryItem, RandomUnit, UnitItem, UnitItemMap};
+    use crate::unit_map::{AbilityModification, DropItem, DropItemSet, Drops, InventoryItem, RandomUnit, UnitItem, UnitItemMap};
     use crate::unit_map::RandomUnitItemFlag::{Neutral, RandomFromCustomTable, RandomFromTableGroup};
 
     fn mock_rock() -> Vec<UnitItem>{
@@ -338,15 +347,14 @@ mod unitmap_tests{
                 unk2: 0,
                 hp: -1,
                 mana: -1,
-                map_drop_table_pointer: -1,
-                drop_item_sets: vec![
+                drops: Drops::EmbeddedTable(vec![
                     DropItemSet(vec![
                         DropItem(
                             "YkI1".to_string(),
                             100,
                         ),
                     ]),
-                ],
+                ]),
                 gold_amount: 12500,
                 acquisition_range: -1.0,
                 strength: 0,
@@ -379,15 +387,14 @@ mod unitmap_tests{
                 unk2: 0,
                 hp: -1,
                 mana: -1,
-                map_drop_table_pointer: -1,
-                drop_item_sets: vec![
+                drops: Drops::EmbeddedTable(vec![
                     DropItemSet(vec![
                         DropItem(
                             "gopr".to_string(),
                             100,
                         ),
                     ]),
-                ],
+                ]),
                 gold_amount: 12500,
                 acquisition_range: -1.0,
                 strength: 0,
@@ -431,15 +438,14 @@ mod unitmap_tests{
                 unk2: 0,
                 hp: -1,
                 mana: -1,
-                map_drop_table_pointer: -1,
-                drop_item_sets: vec![
+                drops: Drops::EmbeddedTable(vec![
                     DropItemSet(vec![
                         DropItem(
                             "\u{1}\u{1}\u{0}Q".to_string(),
                             100,
                         ),
                     ])
-                ],
+                ]),
                 gold_amount: 12500,
                 acquisition_range: -1.0,
                 strength: 0,
@@ -472,8 +478,7 @@ mod unitmap_tests{
                 unk2: 0,
                 hp: -1,
                 mana: -1,
-                map_drop_table_pointer: -1,
-                drop_item_sets: vec![],
+                drops: Drops::Empty,
                 gold_amount: 12500,
                 acquisition_range: -1.0,
                 strength: 0,
@@ -506,8 +511,7 @@ mod unitmap_tests{
                 unk2: 0,
                 hp: -1,
                 mana: -1,
-                map_drop_table_pointer: -1,
-                drop_item_sets: vec![],
+                drops: Drops::Empty,
                 gold_amount: 12500,
                 acquisition_range: -1.0,
                 strength: 0,
@@ -552,8 +556,7 @@ mod unitmap_tests{
                 unk2: 0,
                 hp: -1,
                 mana: -1,
-                map_drop_table_pointer: -1,
-                drop_item_sets: vec![],
+                drops: Drops::Empty,
                 gold_amount: 12500,
                 acquisition_range: -1.0,
                 strength: 0,

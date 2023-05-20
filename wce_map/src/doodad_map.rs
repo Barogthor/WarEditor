@@ -74,7 +74,11 @@ impl BinaryConverterVersion for Destructable{
                         let drop_item_set = reader.read_vec_version::<DropItem>(count_drop_item as usize, game_version);
                         drop_sets.push(DropItemSet(drop_item_set));
                     }
-                    Drops::EmbeddedTable(drop_sets)
+                    if count_drop_set > 0 {
+                        Drops::EmbeddedTable(drop_sets)
+                    } else {
+                        Drops::Empty
+                    }
                 }
             },
         };
