@@ -59,29 +59,7 @@ impl BinaryConverterVersion for Destructable{
         let scale_z = reader.read_f32();
         let flags = reader.read_u8();
         let life = reader.read_u8();
-        let drops = match *game_version{
-            RoC => Drops::Empty,
-            _ => {
-                let drop_table_pointer = reader.read_i32();
-                if drop_table_pointer >= 0{
-                    reader.skip(4);
-                    Drops::PresetTable(drop_table_pointer)
-                } else {
-                    let count_drop_set = reader.read_u32();
-                    let mut drop_sets = vec![];
-                    for _ in 0..count_drop_set {
-                        let count_drop_item = reader.read_u32();
-                        let drop_item_set = reader.read_vec_version::<DropItem>(count_drop_item as usize, game_version);
-                        drop_sets.push(DropItemSet(drop_item_set));
-                    }
-                    if count_drop_set > 0 {
-                        Drops::EmbeddedTable(drop_sets)
-                    } else {
-                        Drops::Empty
-                    }
-                }
-            },
-        };
+        let drops = Self::load_drops(reader, game_version);
 
         let creation_id = reader.read_u32();
         Destructable{
@@ -103,6 +81,32 @@ impl BinaryConverterVersion for Destructable{
 
     fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
         unimplemented!()
+    }
+}
+
+impl Destructable {
+    fn load_drops(reader: &mut BinaryReader, game_version: &GameVersion) -> Drops {
+        let drops = match *game_version {
+            RoC => Drops::Empty,
+            _ => {
+                let drop_table_pointer = reader.read_i32();
+                let count_drop_set = reader.read_u32();
+                if drop_table_pointer >= 0 {
+                    Drops::PresetTable(drop_table_pointer)
+                } else if count_drop_set == 0 {
+                    Drops::Empty
+                } else {
+                    let mut drop_sets = vec![];
+                    for _ in 0..count_drop_set {
+                        let count_drop_item = reader.read_u32();
+                        let drop_item_set = reader.read_vec_version::<DropItem>(count_drop_item as usize, game_version);
+                        drop_sets.push(DropItemSet(drop_item_set));
+                    }
+                    Drops::EmbeddedTable(drop_sets)
+                }
+            },
+        };
+        drops
     }
 }
 
