@@ -1,4 +1,4 @@
-use wce_formats::binary_reader::BinaryReader;
+use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::BinaryConverter;
 use wce_formats::MapArchive;
@@ -15,64 +15,62 @@ pub struct TilePoint {
     cliff_texture_and_layer_height: u8,
 }
 
-impl TilePoint{
-    pub fn boundary_flag(&self) -> bool{
-        self.water_level & 0x4000 == 1
+impl TilePoint {
+    pub fn boundary_flag(&self) -> bool {
+        self.water_level & 0x4000 == 0x4000
     }
 
-    pub fn get_water_level(&self) -> i16{
+    pub fn get_water_level(&self) -> i16 {
         (self.water_level & 0xBFFF) as i16
     }
 
-    pub fn ramp(&self) -> bool{
-        self.ground_texture_and_flags & 0x0010 == 1
+    pub fn ramp(&self) -> bool {
+        self.ground_texture_and_flags & 0x0010 == 0x0010
     }
 
-    pub fn blight(&self) -> bool{
-        self.ground_texture_and_flags & 0x0020 == 1
+    pub fn blight(&self) -> bool {
+        self.ground_texture_and_flags & 0x0020 == 0x0020
     }
 
-    pub fn water(&self) -> bool{
-        self.ground_texture_and_flags & 0x0040 == 1
+    pub fn water(&self) -> bool {
+        self.ground_texture_and_flags & 0x0040 == 0x0040
     }
 
-    pub fn ground_texture(&self) -> u8{
+    pub fn ground_texture(&self) -> u8 {
         self.ground_texture_and_flags >> 4
     }
 
-    pub fn cliff_texture(&self) -> u8{
+    pub fn cliff_texture(&self) -> u8 {
         self.cliff_texture_and_layer_height & 0x00FF
     }
 
-    pub fn layer_height(&self) -> u8{
+    pub fn layer_height(&self) -> u8 {
         self.cliff_texture_and_layer_height >> 4
     }
 
-    pub fn set_boundary_flag(&mut self, value: bool){
+    pub fn set_boundary_flag(&mut self, value: bool) {
         if value {
             self.water_level |= 0x4000;
-        }
-        else{
+        } else {
             self.water_level &= 0xBFFF;
         }
     }
-
 }
 
-impl BinaryConverter for TilePoint{
-    fn read(reader: &mut BinaryReader) -> Self {
-        let ground_height = reader.read_i16() ;
-        let water_level = reader.read_u16() ;
-        let ground_texture_and_flags = reader.read_u8() ;
-        let texture_details = reader.read_u8() ;
-        let cliff_texture_and_layer_height = reader.read_u8();
-        TilePoint{
+impl BinaryConverter for TilePoint {
+    fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
+        let ground_height = reader.read_i16()?;
+        let water_level = reader.read_u16()?;
+        let ground_texture_and_flags = reader.read_u8()?;
+        let texture_details = reader.read_u8()?;
+        let cliff_texture_and_layer_height = reader.read_u8()?;
+        Ok(TilePoint {
             ground_height,
             water_level,
             ground_texture_and_flags,
             texture_details,
-            cliff_texture_and_layer_height
-        }
+            cliff_texture_and_layer_height,
+        })
     }
 
     fn write(&self, _writer: &mut BinaryWriter) {
@@ -99,52 +97,64 @@ pub struct TerrainFile {
 }
 
 impl TerrainFile {
-    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError>{
-        let file = map.open_file(MAP_TERRAIN).map_err(|e| OpeningError::Environment(format!("{}",e)))?;
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
+        let file = map
+            .open_file(MAP_TERRAIN)
+            .map_err(|e| OpeningError::Environment(format!("{e}")))?;
 
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-        file.read(map, &mut buffer).map_err(|e| OpeningError::Environment(format!("{}", e)))?;
-//        let mut f = File::open(concat_path("war3map.w3e")).unwrap();
-//        let mut buffer: Vec<u8> = Vec::new();
-//        f.read_to_end(&mut buffer).unwrap();
-//        let buffer_size = buffer.len();
+        file.read(map, &mut buffer)
+            .map_err(|e| OpeningError::Environment(format!("{e}")))?;
+        //        let mut f = File::open(concat_path("war3map.w3e")).unwrap();
+        //        let mut buffer: Vec<u8> = Vec::new();
+        //        f.read_to_end(&mut buffer).unwrap();
+        //        let buffer_size = buffer.len();
         let mut reader = BinaryReader::new(buffer);
-        Ok(reader.read::<TerrainFile>())
+        let terrain = reader
+            .read::<TerrainFile>()
+            .map_err(|e| OpeningError::Environment(format!("{e:?}")))?;
+        Ok(terrain)
     }
 
-    pub fn debug(&self){
-        println!("{:#?}",self);
+    pub fn debug(&self) {
+        println!("{:#?}", self);
     }
 }
 
 impl BinaryConverter for TerrainFile {
-    fn read(reader: &mut BinaryReader) -> Self {
-        let id = String::from_utf8(reader.read_bytes(4)).unwrap();
-        let version = reader.read_u32();
-        let main_tileset = reader.read_u8();
-        let custom_tileset = reader.read_u32() == 1;
+    fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
+        let id = String::from_utf8(reader.read_bytes(4)?).unwrap();
+        let version = reader.read_u32()?;
+        let main_tileset = reader.read_u8()?;
+        let custom_tileset = reader.read_u32()? == 1;
 
-        let count_ground_tiles = reader.read_u32(); //TODO Warning for > 16
+        let count_ground_tiles = reader.read_u32()?; //TODO Warning for > 16
         let mut ground_tilesets: Vec<String> = Vec::new();
-        for _i in 0..count_ground_tiles{
-            ground_tilesets.push(String::from_utf8(reader.read_bytes(4)).unwrap())
+        for _i in 0..count_ground_tiles {
+            ground_tilesets.push(String::from_utf8(reader.read_bytes(4)?).unwrap())
         }
-        let count_cliff_tiles = reader.read_u32(); //TODO Warning for > 16
+        let count_cliff_tiles = reader.read_u32()?; //TODO Warning for > 16
         let mut cliff_tilesets: Vec<String> = Vec::new();
-        for _i in 0..count_cliff_tiles{
-            cliff_tilesets.push(String::from_utf8(reader.read_bytes(4)).unwrap())
+        for _i in 0..count_cliff_tiles {
+            cliff_tilesets.push(String::from_utf8(reader.read_bytes(4)?).unwrap())
         }
 
-        let my_height = reader.read_u32();
-        let mx_width = reader.read_u32();
-        let center_offset_x = reader.read_f32();
-        let center_offset_y = reader.read_f32();
+        let my_height = reader.read_u32()?;
+        let mx_width = reader.read_u32()?;
+        let center_offset_x = reader.read_f32()?;
+        let center_offset_y = reader.read_f32()?;
         let count_tilepoints: usize = (mx_width * my_height) as usize;
-        let tilepoints = reader.read_vec::<TilePoint>(count_tilepoints);
+        let tilepoints = reader.read_vec::<TilePoint>(count_tilepoints)?;
 
-        assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_TERRAIN, reader.size() - reader.pos() as usize);
-        TerrainFile {
+        assert_eq!(
+            reader.size(),
+            reader.pos() as usize,
+            "reader for {} hasn't reached EOF. Missing {} bytes",
+            MAP_TERRAIN,
+            reader.size() - reader.pos() as usize
+        );
+        Ok(TerrainFile {
             id,
             version,
             main_tileset,
@@ -155,8 +165,8 @@ impl BinaryConverter for TerrainFile {
             mx_width,
             center_offset_x,
             center_offset_y,
-            tilepoints
-        }
+            tilepoints,
+        })
     }
 
     fn write(&self, _writer: &mut BinaryWriter) {

@@ -55,7 +55,7 @@ impl<'a> Map<'a> {
     pub fn open(path: String, game_data: &'a GameData) -> Result<Self, OpeningError>{
         let mut map = MapArchive::open(path.to_owned()).unwrap();
 
-        let w3i = W3iFile::read_file(&mut map);
+        let w3i = W3iFile::read_file(&mut map)?;
         let game_version = w3i.game_version();
        // w3i.debug();
         let mmp = MMPFile::read_file(&mut map)?;

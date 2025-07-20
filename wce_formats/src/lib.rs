@@ -1,10 +1,11 @@
 use std::fmt::Debug;
+use std::io::Error;
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
 
 use mpq::Archive;
 
-use crate::binary_reader::BinaryReader;
+use crate::binary_reader::{BinaryReader, ReadResult};
 use crate::binary_writer::BinaryWriter;
 use crate::MpqError::IoError;
 
@@ -16,29 +17,27 @@ pub enum GameVersion {
 }
 
 impl GameVersion {
-    pub fn is_tft(&self) -> bool{
-        match self{
+    pub fn is_tft(&self) -> bool {
+        match self {
             GameVersion::RoC => false,
-            GameVersion::TFT | GameVersion::Reforged => true
+            GameVersion::TFT | GameVersion::Reforged => true,
         }
     }
-    pub fn is_roc(&self) -> bool{
-        match self{
+    pub fn is_roc(&self) -> bool {
+        match self {
             GameVersion::RoC => true,
-            GameVersion::TFT | GameVersion::Reforged => false
+            GameVersion::TFT | GameVersion::Reforged => false,
         }
     }
-    pub fn is_remaster(&self) -> bool{
-        match self{
+    pub fn is_remaster(&self) -> bool {
+        match self {
             GameVersion::Reforged => true,
-            _ => false
+            _ => false,
         }
     }
-
 }
 
-
-impl Default for GameVersion{
+impl Default for GameVersion {
     fn default() -> Self {
         GameVersion::TFT
     }
@@ -48,13 +47,17 @@ pub mod binary_reader;
 pub mod binary_writer;
 pub mod blp;
 
-pub trait BinaryConverter{
-    fn read(reader: &mut BinaryReader) -> Self;
+pub trait BinaryConverter {
+    fn read(reader: &mut BinaryReader) -> ReadResult<Self>
+    where
+        Self: Sized;
     fn write(&self, writer: &mut BinaryWriter);
 }
 
-pub trait BinaryConverterVersion{
-    fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> Self;
+pub trait BinaryConverterVersion {
+    fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self>
+    where
+        Self: Sized;
     fn write_version(&self, writer: &mut BinaryWriter, game_version: &GameVersion) -> Self;
 }
 
@@ -77,7 +80,6 @@ impl GameDataVersionDescriptorT for GameDataTftDescriptor {}
 pub struct GameDataReforgedDescriptor;
 impl GameDataVersionDescriptorT for GameDataReforgedDescriptor {}
 
-
 #[derive(Debug)]
 pub enum MpqError {
     IoError(std::io::Error),
@@ -89,7 +91,9 @@ pub struct MapArchive(Archive);
 impl MapArchive {
     pub fn open(path: String) -> Result<Self, MpqError> {
         let path = Path::new(&path);
-        let ext = path.extension().expect(&format!("No extension for path '{:?}'",path));
+        let ext = path
+            .extension()
+            .expect(&format!("No extension for path '{:?}'", path));
 
         if ext == "w3m" || ext == "w3x" {
             let archive = Archive::open(path);
@@ -131,4 +135,11 @@ impl DerefMut for GameMpq {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
+}
+
+#[derive(Debug)]
+pub enum ReadError {
+    EOF(u64, usize),
+    InvalidCString(u64, usize),
+    Other(Error),
 }

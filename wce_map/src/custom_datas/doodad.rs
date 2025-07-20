@@ -1,4 +1,4 @@
-use wce_formats::binary_reader::BinaryReader;
+use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::GameVersion;
 use wce_formats::MapArchive;
 
@@ -22,35 +22,36 @@ impl CustomDoodadFile {
             Ok(file) => {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-                file.read(map, &mut buffer).map_err(|e| OpeningError::CustomDoodad(format!("{}",e)))?;
+                file.read(map, &mut buffer).map_err(|e| OpeningError::CustomDoodad(format!("{e}")))?;
                 let mut reader = BinaryReader::new(buffer);
-                Ok(Some(Self::from(&mut reader, game_version)))
+                let custom_doodad = Self::from(&mut reader, game_version).map_err(|e| OpeningError::CustomDoodad(format!("{e:?}")))?;
+                Ok(Some(custom_doodad))
             }
             _ => Ok(None)
         }
     }
 
-    fn from(reader: &mut BinaryReader, game_version: &GameVersion) -> Self {
-        let version = reader.read_u32();
-        let original_unit_modified = reader.read_u32();
+    fn from(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self> {
+        let version = reader.read_u32()?;
+        let original_unit_modified = reader.read_u32()?;
         let mut original_objects = vec![];
         let mut custom_objects = vec![];
         for _i in 0..original_unit_modified {
-            let object = read_object(reader, game_version);
+            let object = read_object(reader, game_version)?;
             original_objects.push(object);
         }
-        let custom_table_count = reader.read_u32();
+        let custom_table_count = reader.read_u32()?;
         for _i in 0..custom_table_count {
-            let object = read_object(reader, game_version);
+            let object = read_object(reader, game_version)?;
             custom_objects.push(object);
         }
 
         assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_CUSTOM_DOODADS, reader.size() - reader.pos() as usize);
-        Self {
+        Ok(Self {
             version,
             original_objects,
             custom_objects
-        }
+        })
     }
 
     pub fn debug(&self){
@@ -58,16 +59,16 @@ impl CustomDoodadFile {
     }
 }
 
-fn read_object(reader: &mut BinaryReader, game_version: &GameVersion) -> ObjectDefinition {
-    let original_id = reader.read_bytes(4);
+fn read_object(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<ObjectDefinition> {
+    let original_id = reader.read_bytes(4)?;
     let original_id = [original_id[0],original_id[1], original_id[2], original_id[3]];
-    let custom_id = reader.read_bytes(4);
+    let custom_id = reader.read_bytes(4)?;
     if custom_id.iter().all(|c| *c == 0) {
         let id = ObjectId::for_original(original_id);
-        ObjectDefinition::with_optional(reader, id, game_version)
+        Ok(ObjectDefinition::with_optional(reader, id)?)
     } else {
         let custom_id = [custom_id[0],custom_id[1], custom_id[2], custom_id[3]];
         let id = ObjectId::for_custom(original_id, custom_id);
-        ObjectDefinition::with_optional(reader, id, game_version)
+        Ok(ObjectDefinition::with_optional(reader, id)?)
     }
 }

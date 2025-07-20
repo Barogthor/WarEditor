@@ -1,4 +1,4 @@
-use wce_formats::binary_reader::BinaryReader;
+use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::GameVersion;
 use wce_formats::MapArchive;
 
@@ -12,62 +12,90 @@ use super::ObjectId;
 pub struct CustomDestructableFile {
     version: u32,
     original_objects: Vec<ObjectDefinition>,
-    custom_objects: Vec<ObjectDefinition>
+    custom_objects: Vec<ObjectDefinition>,
 }
 
 impl CustomDestructableFile {
-    pub fn read_file(map: &mut MapArchive, game_version: &GameVersion) -> Result<Option<CustomDestructableFile>, OpeningError> {
+    pub fn read_file(
+        map: &mut MapArchive,
+        game_version: &GameVersion,
+    ) -> Result<Option<CustomDestructableFile>, OpeningError> {
         let file = map.open_file(MAP_CUSTOM_DESTRUCTABLES);
         match file {
             Ok(file) => {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-                file.read(map, &mut buffer).map_err(|e| OpeningError::CustomDestructable(format!("{}",e)))?;
+                file.read(map, &mut buffer)
+                    .map_err(|e| OpeningError::CustomDestructable(format!("{e}")))?;
                 let mut reader = BinaryReader::new(buffer);
-                Ok(Some(Self::from(&mut reader, game_version)))
+                let custom_destructable = Self::from(&mut reader, game_version)
+                    .map_err(|e| OpeningError::CustomDestructable(format!("{e:?}")))?;
+                Ok(Some(custom_destructable))
             }
-            _ => Ok(None)
+            _ => Ok(None),
         }
     }
 
-    fn from(reader: &mut BinaryReader, game_version: &GameVersion) -> Self {
-        let version = reader.read_u32();
-        let original_unit_modified = reader.read_u32();
+    fn from(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self> {
+        let version = reader.read_u32()?;
+        let original_unit_modified = reader.read_u32()?;
         let mut original_objects = vec![];
         let mut custom_objects = vec![];
         for _i in 0..original_unit_modified {
-            let object = read_object(reader, game_version);
+            let object = read_object(reader, game_version)?;
             original_objects.push(object);
         }
-        let custom_table_count = reader.read_u32();
+        let custom_table_count = reader.read_u32()?;
         for _i in 0..custom_table_count {
-            let object = read_object(reader,game_version);
+            let object = read_object(reader, game_version)?;
             custom_objects.push(object);
         }
 
-        assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_CUSTOM_DESTRUCTABLES, reader.size() - reader.pos() as usize);
-        Self {
+        assert_eq!(
+            reader.size(),
+            reader.pos() as usize,
+            "reader for {} hasn't reached EOF. Missing {} bytes",
+            MAP_CUSTOM_DESTRUCTABLES,
+            reader.size() - reader.pos() as usize
+        );
+        Ok(Self {
             version,
             original_objects,
-            custom_objects
-        }
+            custom_objects,
+        })
     }
 
-    pub fn debug(&self){
-        println!("{:#?}",self);
+    pub fn debug(&self) {
+        println!("{:#?}", self);
     }
 }
 
-fn read_object(reader: &mut BinaryReader, game_version: &GameVersion) -> ObjectDefinition {
-    let original_id = reader.read_bytes(4);
-    let original_id = [original_id[0],original_id[1], original_id[2], original_id[3]];
-    let custom_id = reader.read_bytes(4);
+fn read_object(
+    reader: &mut BinaryReader,
+    game_version: &GameVersion,
+) -> ReadResult<ObjectDefinition> {
+    let original_id = reader.read_bytes(4)?;
+    let original_id = [
+        original_id[0],
+        original_id[1],
+        original_id[2],
+        original_id[3],
+    ];
+    let custom_id = reader.read_bytes(4)?;
     if custom_id.iter().all(|c| *c == 0) {
         let id = ObjectId::for_original(original_id);
-        ObjectDefinition::without_optional(reader, id, game_version)
+        Ok(ObjectDefinition::without_optional(
+            reader,
+            id,
+            game_version,
+        )?)
     } else {
-        let custom_id = [custom_id[0],custom_id[1], custom_id[2], custom_id[3]];
+        let custom_id = [custom_id[0], custom_id[1], custom_id[2], custom_id[3]];
         let id = ObjectId::for_custom(original_id, custom_id);
-        ObjectDefinition::without_optional(reader, id, game_version)
+        Ok(ObjectDefinition::without_optional(
+            reader,
+            id,
+            game_version,
+        )?)
     }
 }

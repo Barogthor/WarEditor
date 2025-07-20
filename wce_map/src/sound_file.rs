@@ -1,7 +1,7 @@
 #[cfg(test)]
 use pretty_assertions::assert_eq;
 
-use wce_formats::binary_reader::BinaryReader;
+use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::BinaryConverter;
 use wce_formats::MapArchive;
@@ -9,10 +9,10 @@ use wce_formats::MapArchive;
 use crate::globals::MAP_SOUNDS;
 use crate::OpeningError;
 
-const DEFAULT_FLOAT: f32 = 4.2949673e+009;
+const DEFAULT_FLOAT: f32 = 4.294_967_3e9;
 
 #[derive(Debug, Derivative)]
-#[derivative(Default(new="true"), PartialEq)]
+#[derivative(Default(new = "true"), PartialEq)]
 pub struct Sound {
     id: String,
     file: String,
@@ -26,63 +26,62 @@ pub struct Sound {
     fadein: i32,
     fadeout: i32,
     volume: i32,
-    #[derivative(Default(value="DEFAULT_FLOAT"))]
+    #[derivative(Default(value = "DEFAULT_FLOAT"))]
     pitch: f32,
-    #[derivative(Default(value="DEFAULT_FLOAT"))]
+    #[derivative(Default(value = "DEFAULT_FLOAT"))]
     unknown1: f32,
     unknown2: i32,
     channel: i32,
-    #[derivative(Default(value="DEFAULT_FLOAT"))]
+    #[derivative(Default(value = "DEFAULT_FLOAT"))]
     min_dist: f32,
-    #[derivative(Default(value="DEFAULT_FLOAT"))]
+    #[derivative(Default(value = "DEFAULT_FLOAT"))]
     max_dist: f32,
     dist_cutoff: f32,
     unknown3: f32,
     unknown4: f32,
     unknown5: i32,
-    #[derivative(Default(value="DEFAULT_FLOAT"))]
+    #[derivative(Default(value = "DEFAULT_FLOAT"))]
     unknown6: f32,
-    #[derivative(Default(value="DEFAULT_FLOAT"))]
+    #[derivative(Default(value = "DEFAULT_FLOAT"))]
     unknown7: f32,
-    #[derivative(Default(value="DEFAULT_FLOAT"))]
+    #[derivative(Default(value = "DEFAULT_FLOAT"))]
     unknown8: f32,
 }
 impl BinaryConverter for Sound {
-    fn read(reader: &mut BinaryReader) -> Self {
+    fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
         let mut sound: Sound = Default::default();
-        sound.id = reader.read_c_string().into_string().unwrap();
-        sound.file = reader.read_c_string().into_string().unwrap();
-        sound.effect = reader.read_c_string().into_string().unwrap();
-        sound.flags = reader.read_i32();
+        sound.id = reader.read_c_string()?.into_string().unwrap();
+        sound.file = reader.read_c_string()?.into_string().unwrap();
+        sound.effect = reader.read_c_string()?.into_string().unwrap();
+        sound.flags = reader.read_i32()?;
         sound.looping = sound.flags & 0x00000001 == 1;
         sound.sound_3d = sound.flags & 0x00000002 == 2;
         sound.stop_oof = sound.flags & 0x00000004 == 4;
         sound.music = sound.flags & 0x00000008 == 8;
         sound.unknown_flag = sound.flags & 0x00000010 == 16;
-        sound.fadein = reader.read_i32();
-        sound.fadeout = reader.read_i32();
-        sound.volume = reader.read_i32();
-        sound.pitch = reader.read_f32();
-        sound.unknown1 = reader.read_f32();
-        sound.unknown2 = reader.read_i32();
-        sound.channel = reader.read_i32();
-        sound.min_dist = reader.read_f32();
-        sound.max_dist = reader.read_f32();
-        sound.dist_cutoff = reader.read_f32();
-        sound.unknown3 = reader.read_f32();
-        sound.unknown4 = reader.read_f32();
-        sound.unknown5 = reader.read_i32();
-        sound.unknown6 = reader.read_f32();
-        sound.unknown7 = reader.read_f32();
-        sound.unknown8 = reader.read_f32();
-        sound
+        sound.fadein = reader.read_i32()?;
+        sound.fadeout = reader.read_i32()?;
+        sound.volume = reader.read_i32()?;
+        sound.pitch = reader.read_f32()?;
+        sound.unknown1 = reader.read_f32()?;
+        sound.unknown2 = reader.read_i32()?;
+        sound.channel = reader.read_i32()?;
+        sound.min_dist = reader.read_f32()?;
+        sound.max_dist = reader.read_f32()?;
+        sound.dist_cutoff = reader.read_f32()?;
+        sound.unknown3 = reader.read_f32()?;
+        sound.unknown4 = reader.read_f32()?;
+        sound.unknown5 = reader.read_i32()?;
+        sound.unknown6 = reader.read_f32()?;
+        sound.unknown7 = reader.read_f32()?;
+        sound.unknown8 = reader.read_f32()?;
+        Ok(sound)
     }
 
     fn write(&self, _writer: &mut BinaryWriter) {
         unimplemented!()
     }
 }
-
 
 #[derive(Debug)]
 pub struct SoundFile {
@@ -91,36 +90,42 @@ pub struct SoundFile {
 }
 
 impl SoundFile {
-    pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, OpeningError>{
+    pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, OpeningError> {
         let file = map.open_file(MAP_SOUNDS);
 
-        match file{
+        match file {
             Ok(file) => {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-                file.read(map, &mut buffer).map_err(|e| OpeningError::Sound(format!("{}",e)))?;
+                file.read(map, &mut buffer)
+                    .map_err(|e| OpeningError::Sound(format!("{e}")))?;
                 let mut reader = BinaryReader::new(buffer);
-                Ok(Some(reader.read::<SoundFile>()))
+                let sounds = reader
+                    .read::<SoundFile>()
+                    .map_err(|e| OpeningError::Sound(format!("{e:?}")))?;
+                Ok(Some(sounds))
             }
-            _ => Ok(None)
+            _ => Ok(None),
         }
-
     }
-    pub fn debug(&self){
-        println!("{:#?}",self);
+    pub fn debug(&self) {
+        println!("{:#?}", self);
     }
 }
 
 impl BinaryConverter for SoundFile {
-    fn read(reader: &mut BinaryReader) -> Self {
-        let version = reader.read_u32();
-        let count_sound = reader.read_u32() as usize;
-        let sounds = reader.read_vec::<Sound>(count_sound);
-        assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_SOUNDS, reader.size() - reader.pos() as usize);
-        SoundFile {
-            version,
-            sounds
-        }
+    fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
+        let version = reader.read_u32()?;
+        let count_sound = reader.read_u32()? as usize;
+        let sounds = reader.read_vec::<Sound>(count_sound)?;
+        assert_eq!(
+            reader.size(),
+            reader.pos() as usize,
+            "reader for {} hasn't reached EOF. Missing {} bytes",
+            MAP_SOUNDS,
+            reader.size() - reader.pos() as usize
+        );
+        Ok(SoundFile { version, sounds })
     }
 
     fn write(&self, _writer: &mut BinaryWriter) {
@@ -129,16 +134,16 @@ impl BinaryConverter for SoundFile {
 }
 
 #[cfg(test)]
-mod w3s_test{
+mod w3s_test {
     use std::fs::File;
 
     use wce_formats::binary_reader::BinaryReader;
 
-    use crate::sound_file::{DEFAULT_FLOAT, Sound, SoundFile};
+    use crate::sound_file::{Sound, SoundFile, DEFAULT_FLOAT};
 
-    fn mock_sounds() -> Vec<Sound>{
+    fn mock_sounds() -> Vec<Sound> {
         vec![
-            Sound{
+            Sound {
                 id: "gg_snd_RainAmbience".to_string(),
                 file: "Sound\\Ambient\\RainAmbience.wav".to_string(),
                 effect: "DefaultEAXON".to_string(),
@@ -163,9 +168,9 @@ mod w3s_test{
                 unknown5: -1,
                 unknown6: DEFAULT_FLOAT,
                 unknown7: DEFAULT_FLOAT,
-                unknown8: DEFAULT_FLOAT
+                unknown8: DEFAULT_FLOAT,
             },
-            Sound{
+            Sound {
                 id: "gg_snd_WindLoopStereo".to_string(),
                 file: "Sound\\Ambient\\WindLoopStereo.wav".to_string(),
                 effect: "DefaultEAXON".to_string(),
@@ -190,9 +195,9 @@ mod w3s_test{
                 unknown5: -1,
                 unknown6: DEFAULT_FLOAT,
                 unknown7: DEFAULT_FLOAT,
-                unknown8: DEFAULT_FLOAT
+                unknown8: DEFAULT_FLOAT,
             },
-            Sound{
+            Sound {
                 id: "gg_snd_RainAmbience01".to_string(),
                 file: "Sound\\Ambient\\RainAmbience.wav".to_string(),
                 effect: "DefaultEAXON".to_string(),
@@ -217,9 +222,9 @@ mod w3s_test{
                 unknown5: -1,
                 unknown6: DEFAULT_FLOAT,
                 unknown7: DEFAULT_FLOAT,
-                unknown8: DEFAULT_FLOAT
+                unknown8: DEFAULT_FLOAT,
             },
-            Sound{
+            Sound {
                 id: "gg_snd_Avatar".to_string(),
                 file: "Abilities\\Spells\\Human\\Avatar\\Avatar.wav".to_string(),
                 effect: "SpellsEAX".to_string(),
@@ -244,9 +249,9 @@ mod w3s_test{
                 unknown5: -1,
                 unknown6: DEFAULT_FLOAT,
                 unknown7: DEFAULT_FLOAT,
-                unknown8: DEFAULT_FLOAT
+                unknown8: DEFAULT_FLOAT,
             },
-            Sound{
+            Sound {
                 id: "gg_snd_Credits".to_string(),
                 file: "Sound\\Music\\mp3Music\\Credits.mp3".to_string(),
                 effect: "".to_string(),
@@ -271,23 +276,23 @@ mod w3s_test{
                 unknown5: 0,
                 unknown6: DEFAULT_FLOAT,
                 unknown7: DEFAULT_FLOAT,
-                unknown8: DEFAULT_FLOAT
+                unknown8: DEFAULT_FLOAT,
             },
         ]
     }
 
     #[test]
-    fn no_failure(){
+    fn no_failure() {
         let mut w3s = File::open("../resources/Scenario/Sandbox_roc/war3map.w3s").unwrap();
         let mut reader = BinaryReader::from(&mut w3s);
         let _sound_file = reader.read::<SoundFile>();
     }
 
     #[test]
-    fn check_values(){
+    fn check_values() {
         let mut w3s = File::open("../resources/Scenario/Sandbox_roc/war3map.w3s").unwrap();
         let mut reader = BinaryReader::from(&mut w3s);
-        let sound_file = reader.read::<SoundFile>();
+        let sound_file = reader.read::<SoundFile>().unwrap();
         let mock = mock_sounds();
         assert_eq!(sound_file.sounds, mock);
     }

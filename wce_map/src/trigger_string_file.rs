@@ -9,8 +9,7 @@ use crate::globals::MAP_STRINGS;
 const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)\s+\{\r\n+([^\}]*)\r\n\}";
 //const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)";
 //const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)\s+";
-type TRIGSTR =  String;
-
+type TRIGSTR = String;
 
 #[derive(Debug)]
 pub struct TriggerStringFile {
@@ -18,7 +17,7 @@ pub struct TriggerStringFile {
 }
 
 impl TriggerStringFile {
-    pub fn read_file(map: &mut MapArchive) -> Self{
+    pub fn read_file(map: &mut MapArchive) -> Self {
         let file = map.open_file(MAP_STRINGS).unwrap();
         let mut buf: Vec<u8> = vec![0; file.size() as usize];
         file.read(map, &mut buf).unwrap();
@@ -27,22 +26,20 @@ impl TriggerStringFile {
         let reg: Regex = Regex::new(EXTRACT_DATA).unwrap();
 
         let mut trigger_strings = HashMap::new();
-        for caps in reg.captures_iter(buffer.as_str()){
+        for caps in reg.captures_iter(buffer.as_str()) {
             let id = caps.get(1).unwrap().as_str().to_string();
             let content = String::from(caps.get(2).unwrap().as_str());
-            trigger_strings.insert(id,content);
+            trigger_strings.insert(id, content);
         }
-        TriggerStringFile{
-            trigger_strings
-        }
+        TriggerStringFile { trigger_strings }
     }
-    pub fn debug(&self){
-        println!("{:#?}",self);
+    pub fn debug(&self) {
+        println!("{self:#?}");
     }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum ImportPathType{
+pub enum ImportPathType {
     STANDARD(u8),
     CUSTOM(u8),
 }

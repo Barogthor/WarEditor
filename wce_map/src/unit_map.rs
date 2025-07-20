@@ -1,16 +1,18 @@
 #[cfg(test)]
 use pretty_assertions::assert_eq;
 
-use wce_formats::{BinaryConverter, BinaryConverterVersion};
-use wce_formats::binary_reader::BinaryReader;
+use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{self, RoC, TFT};
 use wce_formats::MapArchive;
+use wce_formats::{BinaryConverter, BinaryConverterVersion};
 
 use crate::doodad_map::Radian;
 use crate::globals::MAP_TERRAIN_UNITS;
+use crate::unit_map::RandomUnitItemFlag::{
+    Neutral, NotRandom, RandomFromCustomTable, RandomFromTableGroup,
+};
 use crate::OpeningError;
-use crate::unit_map::RandomUnitItemFlag::{Neutral, NotRandom, RandomFromCustomTable, RandomFromTableGroup};
 
 const RANDOM_ITEM_ID: &str = "iDNR";
 const RANDOM_UNIT_ID: &str = "uDNR";
@@ -18,10 +20,10 @@ const RANDOM_UNIT_ID: &str = "uDNR";
 pub type TablePointer = i32;
 
 #[derive(Debug, PartialOrd, PartialEq)]
-pub enum Drops{
+pub enum Drops {
     PresetTable(TablePointer),
     EmbeddedTable(Vec<DropItemSet>),
-    Empty
+    Empty,
 }
 
 #[derive(Debug, PartialOrd, PartialEq)]
@@ -29,11 +31,11 @@ pub struct DropItemSet(pub Vec<DropItem>);
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct DropItem(String, u32);
-impl BinaryConverterVersion for DropItem{
-    fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> Self {
-        let item_id = reader.read_string_utf8(4);
-        let drop_rate = reader.read_u32();
-        Self(item_id, drop_rate)
+impl BinaryConverterVersion for DropItem {
+    fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> ReadResult<Self> {
+        let item_id = reader.read_string_utf8(4)?;
+        let drop_rate = reader.read_u32()?;
+        Ok(Self(item_id, drop_rate))
     }
 
     fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
@@ -43,11 +45,11 @@ impl BinaryConverterVersion for DropItem{
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 struct InventoryItem(i32, String);
-impl BinaryConverterVersion for InventoryItem{
-    fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> Self {
-        let inventory_slot = reader.read_i32();
-        let item_id = reader.read_string_utf8(4);
-        Self(inventory_slot, item_id)
+impl BinaryConverterVersion for InventoryItem {
+    fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> ReadResult<Self> {
+        let inventory_slot = reader.read_i32()?;
+        let item_id = reader.read_string_utf8(4)?;
+        Ok(Self(inventory_slot, item_id))
     }
 
     fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
@@ -61,12 +63,16 @@ struct AbilityModification {
     autocast: bool,
     level: u32,
 }
-impl BinaryConverterVersion for AbilityModification{
-    fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> Self {
-        let ability_id = reader.read_string_utf8(4);
-        let autocast = reader.read_u32() == 1;
-        let level = reader.read_u32();
-        Self{ability_id, autocast, level}
+impl BinaryConverterVersion for AbilityModification {
+    fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> ReadResult<Self> {
+        let ability_id = reader.read_string_utf8(4)?;
+        let autocast = reader.read_u32()? == 1;
+        let level = reader.read_u32()?;
+        Ok(Self {
+            ability_id,
+            autocast,
+            level,
+        })
     }
 
     fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
@@ -76,10 +82,10 @@ impl BinaryConverterVersion for AbilityModification{
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 struct RandomUnit(String, f32);
 impl BinaryConverterVersion for RandomUnit {
-    fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> Self {
-        let unit_id = reader.read_string_utf8(4);
-        let rate = reader.read_f32();
-        Self(unit_id, rate)
+    fn read_version(reader: &mut BinaryReader, _game_version: &GameVersion) -> ReadResult<Self> {
+        let unit_id = reader.read_string_utf8(4)?;
+        let rate = reader.read_f32()?;
+        Ok(Self(unit_id, rate))
     }
 
     fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
@@ -97,37 +103,36 @@ enum RandomUnitItemFlag {
 
 impl RandomUnitItemFlag {
     fn is_none(&self) -> bool {
-        match self{
+        match self {
             NotRandom => true,
-            _ => false
+            _ => false,
         }
     }
 }
 
 impl BinaryConverterVersion for RandomUnitItemFlag {
-    fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> Self {
-        let kind = reader.read_i32();
-        match kind{
+    fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self> {
+        let kind = reader.read_i32()?;
+        Ok(match kind {
             0 => {
-                let value = reader.read_u32();
+                let value = reader.read_u32()?;
                 let level = value & 0x00FFFFFF;
                 let item_class = (value & 0xFF000000) as u8;
                 Neutral(level, item_class)
-            },
-            1 => {
-                let group_id = reader.read_i32();
-                let column_position = reader.read_u32();
-                RandomFromTableGroup(group_id, column_position)
-            },
-            2 => {
-                let size_custom_group = reader.read_u32();
-                let custom_group = reader.read_vec_version::<RandomUnit>(size_custom_group as usize, game_version);
-                RandomFromCustomTable(custom_group)
-            },
-            _ => {
-                NotRandom
             }
-        }
+            1 => {
+                let group_id = reader.read_i32()?;
+                let column_position = reader.read_u32()?;
+                RandomFromTableGroup(group_id, column_position)
+            }
+            2 => {
+                let size_custom_group = reader.read_u32()?;
+                let custom_group = reader
+                    .read_vec_version::<RandomUnit>(size_custom_group as usize, game_version)?;
+                RandomFromCustomTable(custom_group)
+            }
+            _ => NotRandom,
+        })
     }
 
     fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
@@ -167,43 +172,49 @@ struct UnitItem {
     creation_id: u32,
 }
 
-impl BinaryConverterVersion for UnitItem{
-    fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> Self {
-        let model_id = reader.read_string_utf8(4);
-        let variation = reader.read_u32();
-        let coord_x = reader.read_f32();
-        let coord_y = reader.read_f32();
-        let coord_z = reader.read_f32();
-        let angle = reader.read_f32();
-        let scale_x = reader.read_f32();
-        let scale_y = reader.read_f32();
-        let scale_z = reader.read_f32();
-        let flags = reader.read_u8();
-        let player_owner =  reader.read_u32();
-        let unk1 =  reader.read_u8();
-        let unk2 =  reader.read_u8();
-        let hp =  reader.read_i32();
-        let mana =  reader.read_i32();
-        let drops = Self::read_unit_drops(reader, game_version);
-        let gold_amount = reader.read_i32();
-        let acquisition_range = reader.read_f32();
-        let level = reader.read_u32();
-        let (strength, agility, intelligence) = if game_version.is_tft(){
-            let strength = reader.read_i32();
-            let agility = reader.read_i32();
-            let intelligence = reader.read_i32();
+impl BinaryConverterVersion for UnitItem {
+    fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self> {
+        let model_id = reader.read_string_utf8(4)?;
+        let variation = reader.read_u32()?;
+        let coord_x = reader.read_f32()?;
+        let coord_y = reader.read_f32()?;
+        let coord_z = reader.read_f32()?;
+        let angle = reader.read_f32()?;
+        let scale_x = reader.read_f32()?;
+        let scale_y = reader.read_f32()?;
+        let scale_z = reader.read_f32()?;
+        let flags = reader.read_u8()?;
+        let player_owner = reader.read_u32()?;
+        let unk1 = reader.read_u8()?;
+        let unk2 = reader.read_u8()?;
+        let hp = reader.read_i32()?;
+        let mana = reader.read_i32()?;
+        let drops = Self::read_unit_drops(reader, game_version)?;
+        let gold_amount = reader.read_i32()?;
+        let acquisition_range = reader.read_f32()?;
+        let level = reader.read_u32()?;
+        let (strength, agility, intelligence) = if game_version.is_tft() {
+            let strength = reader.read_i32()?;
+            let agility = reader.read_i32()?;
+            let intelligence = reader.read_i32()?;
             (strength, agility, intelligence)
-        } else { (0,0,0) };
-        let count_item_carrying = reader.read_u32();
-        let inventory = reader.read_vec_version::<InventoryItem>(count_item_carrying as usize, game_version);
-        let count_abilities_modified = reader.read_u32();
-        let abilities = reader.read_vec_version::<AbilityModification>(count_abilities_modified as usize, game_version);
-        let random_type = reader.read_version::<RandomUnitItemFlag>(game_version);
+        } else {
+            (0, 0, 0)
+        };
+        let count_item_carrying = reader.read_u32()?;
+        let inventory =
+            reader.read_vec_version::<InventoryItem>(count_item_carrying as usize, game_version)?;
+        let count_abilities_modified = reader.read_u32()?;
+        let abilities = reader.read_vec_version::<AbilityModification>(
+            count_abilities_modified as usize,
+            game_version,
+        )?;
+        let random_type = reader.read_version::<RandomUnitItemFlag>(game_version)?;
 
-        let color = reader.read_i32();
-        let waygate_region_id = reader.read_i32();
-        let creation_id = reader.read_u32();
-        Self{
+        let color = reader.read_i32()?;
+        let waygate_region_id = reader.read_i32()?;
+        let creation_id = reader.read_u32()?;
+        Ok(Self {
             model_id,
             variation,
             coord_x,
@@ -231,9 +242,8 @@ impl BinaryConverterVersion for UnitItem{
             random_type,
             color,
             waygate_region_id,
-            creation_id
-        }
-
+            creation_id,
+        })
     }
 
     fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
@@ -242,27 +252,29 @@ impl BinaryConverterVersion for UnitItem{
 }
 
 impl UnitItem {
-    fn read_unit_drops(reader: &mut BinaryReader, game_version: &GameVersion) -> Drops {
+    fn read_unit_drops(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Drops> {
         let map_drop_table_pointer = if game_version.is_tft() {
-            reader.read_i32()
-        } else { -1 };
-        let count_random_drop_sets = reader.read_u32();
+            reader.read_i32()?
+        } else {
+            -1
+        };
+        let count_random_drop_sets = reader.read_u32()?;
         if game_version.is_tft() && map_drop_table_pointer > -1 {
-            Drops::PresetTable(map_drop_table_pointer)
+            Ok(Drops::PresetTable(map_drop_table_pointer))
         } else if count_random_drop_sets > 0 {
             let mut drop_item_sets = vec![];
             for _ in 0..count_random_drop_sets {
-                let count_item_set = reader.read_u32();
-                let vi = reader.read_vec_version::<DropItem>(count_item_set as usize, &game_version);
+                let count_item_set = reader.read_u32()?;
+                let vi =
+                    reader.read_vec_version::<DropItem>(count_item_set as usize, game_version)?;
                 drop_item_sets.push(DropItemSet(vi));
             }
-            Drops::EmbeddedTable(drop_item_sets)
+            Ok(Drops::EmbeddedTable(drop_item_sets))
         } else {
-            Drops::Empty
+            Ok(Drops::Empty)
         }
     }
 }
-
 
 #[derive(Debug, Derivative)]
 #[derivative(PartialEq)]
@@ -270,39 +282,52 @@ pub struct UnitItemMap {
     //    id: u32,
     id: String,
     version: GameVersion,
-    #[derivative(PartialEq="ignore")]
+    #[derivative(PartialEq = "ignore")]
     subversion: u32,
     units_items: Vec<UnitItem>,
 }
 
 impl UnitItemMap {
-    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError>{
-        let file = map.open_file(MAP_TERRAIN_UNITS).map_err(|e| OpeningError::UnitItem(format!("{}",e)))?;
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
+        let file = map
+            .open_file(MAP_TERRAIN_UNITS)
+            .map_err(|e| OpeningError::UnitItem(format!("{e}")))?;
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-        file.read(map, &mut buffer).map_err(|e| OpeningError::UnitItem(format!("{}",e)))?;
+        file.read(map, &mut buffer)
+            .map_err(|e| OpeningError::UnitItem(format!("{e}")))?;
         let mut reader = BinaryReader::new(buffer);
-        Ok(reader.read::<Self>())
+        let unit_map = reader
+            .read::<Self>()
+            .map_err(|e| OpeningError::UnitItem(format!("{e:?}")))?;
+        Ok(unit_map)
     }
 }
 
-impl BinaryConverter for UnitItemMap{
-    fn read(reader: &mut BinaryReader) -> Self {
-        let id = reader.read_string_utf8(4);
-//        let id = String::from_utf8(reader.read_bytes(4)).unwrap();
-//        let id = reader.read_u32();
-        let version = reader.read_u32();
+impl BinaryConverter for UnitItemMap {
+    fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
+        let id = reader.read_string_utf8(4)?;
+        //        let id = String::from_utf8(reader.read_bytes(4)).unwrap();
+        //        let id = reader.read_u32();
+        let version = reader.read_u32()?;
         let version = to_game_version(version);
-        let subversion = reader.read_u32();
-        let count_units_items = reader.read_u32();
-        let units_items = reader.read_vec_version::<UnitItem>(count_units_items as usize, &version);
-        assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_TERRAIN_UNITS, reader.size() - reader.pos() as usize);
-        Self{
+        let subversion = reader.read_u32()?;
+        let count_units_items = reader.read_u32()?;
+        let units_items =
+            reader.read_vec_version::<UnitItem>(count_units_items as usize, &version)?;
+        assert_eq!(
+            reader.size(),
+            reader.pos() as usize,
+            "reader for {} hasn't reached EOF. Missing {} bytes",
+            MAP_TERRAIN_UNITS,
+            reader.size() - reader.pos() as usize
+        );
+        Ok(Self {
             id,
             version,
             subversion,
-            units_items
-        }
+            units_items,
+        })
     }
 
     fn write(&self, _writer: &mut BinaryWriter) {
@@ -310,26 +335,30 @@ impl BinaryConverter for UnitItemMap{
     }
 }
 
-
-fn to_game_version(value: u32) -> GameVersion{
-    match value{
+fn to_game_version(value: u32) -> GameVersion {
+    match value {
         7 => RoC,
         8 => TFT,
-        _ => panic!("Unknown or unsupported game version '{}'", value)
+        _ => panic!("Unknown or unsupported game version '{}'", value),
     }
 }
 
 #[cfg(test)]
-mod unitmap_tests{
+mod unitmap_tests {
     use std::fs::File;
 
     use wce_formats::binary_reader::BinaryReader;
     use wce_formats::GameVersion::RoC;
 
-    use crate::unit_map::{AbilityModification, DropItem, DropItemSet, Drops, InventoryItem, RandomUnit, UnitItem, UnitItemMap};
-    use crate::unit_map::RandomUnitItemFlag::{Neutral, RandomFromCustomTable, RandomFromTableGroup};
+    use crate::unit_map::RandomUnitItemFlag::{
+        Neutral, RandomFromCustomTable, RandomFromTableGroup,
+    };
+    use crate::unit_map::{
+        AbilityModification, DropItem, DropItemSet, Drops, InventoryItem, RandomUnit, UnitItem,
+        UnitItemMap,
+    };
 
-    fn mock_rock() -> Vec<UnitItem>{
+    fn mock_rock() -> Vec<UnitItem> {
         vec![
             UnitItem {
                 model_id: "hmpr".to_string(),
@@ -347,14 +376,10 @@ mod unitmap_tests{
                 unk2: 0,
                 hp: -1,
                 mana: -1,
-                drops: Drops::EmbeddedTable(vec![
-                    DropItemSet(vec![
-                        DropItem(
-                            "YkI1".to_string(),
-                            100,
-                        ),
-                    ]),
-                ]),
+                drops: Drops::EmbeddedTable(vec![DropItemSet(vec![DropItem(
+                    "YkI1".to_string(),
+                    100,
+                )])]),
                 gold_amount: 12500,
                 acquisition_range: -1.0,
                 strength: 0,
@@ -363,10 +388,7 @@ mod unitmap_tests{
                 level: 1,
                 inventory: vec![],
                 abilities: vec![],
-                random_type: Neutral(
-                    1,
-                    0,
-                ),
+                random_type: Neutral(1, 0),
                 color: -1,
                 waygate_region_id: -1,
                 creation_id: 2,
@@ -387,37 +409,23 @@ mod unitmap_tests{
                 unk2: 0,
                 hp: -1,
                 mana: -1,
-                drops: Drops::EmbeddedTable(vec![
-                    DropItemSet(vec![
-                        DropItem(
-                            "gopr".to_string(),
-                            100,
-                        ),
-                    ]),
-                ]),
+                drops: Drops::EmbeddedTable(vec![DropItemSet(vec![DropItem(
+                    "gopr".to_string(),
+                    100,
+                )])]),
                 gold_amount: 12500,
                 acquisition_range: -1.0,
                 strength: 0,
                 agility: 0,
                 intelligence: 0,
                 level: 3,
-                inventory: vec![
-                    InventoryItem(
-                        0,
-                        "desc".to_string(),
-                    ),
-                ],
-                abilities: vec![
-                    AbilityModification {
-                        ability_id: "AHad".to_string(),
-                        autocast: false,
-                        level: 2,
-                    },
-                ],
-                random_type: Neutral(
-                    1,
-                    0,
-                ),
+                inventory: vec![InventoryItem(0, "desc".to_string())],
+                abilities: vec![AbilityModification {
+                    ability_id: "AHad".to_string(),
+                    autocast: false,
+                    level: 2,
+                }],
+                random_type: Neutral(1, 0),
                 color: -1,
                 waygate_region_id: -1,
                 creation_id: 3,
@@ -438,14 +446,10 @@ mod unitmap_tests{
                 unk2: 0,
                 hp: -1,
                 mana: -1,
-                drops: Drops::EmbeddedTable(vec![
-                    DropItemSet(vec![
-                        DropItem(
-                            "\u{1}\u{1}\u{0}Q".to_string(),
-                            100,
-                        ),
-                    ])
-                ]),
+                drops: Drops::EmbeddedTable(vec![DropItemSet(vec![DropItem(
+                    "\u{1}\u{1}\u{0}Q".to_string(),
+                    100,
+                )])]),
                 gold_amount: 12500,
                 acquisition_range: -1.0,
                 strength: 0,
@@ -454,10 +458,7 @@ mod unitmap_tests{
                 level: 1,
                 inventory: vec![],
                 abilities: vec![],
-                random_type: Neutral(
-                    1,
-                    0,
-                ),
+                random_type: Neutral(1, 0),
                 color: -1,
                 waygate_region_id: -1,
                 creation_id: 9,
@@ -487,10 +488,7 @@ mod unitmap_tests{
                 level: 1,
                 inventory: vec![],
                 abilities: vec![],
-                random_type: RandomFromTableGroup(
-                    0,
-                    0,
-                ),
+                random_type: RandomFromTableGroup(0, 0),
                 color: -1,
                 waygate_region_id: -1,
                 creation_id: 10,
@@ -520,22 +518,20 @@ mod unitmap_tests{
                 level: 1,
                 inventory: vec![],
                 abilities: vec![],
-                random_type: RandomFromCustomTable(
-                    vec![
-                        RandomUnit(
-                            "nthl".to_string(),
-                            0.000000000000000000000000000000000000000000048,
-                        ),
-                        RandomUnit(
-                            "nfre".to_string(),
-                            0.000000000000000000000000000000000000000000046,
-                        ),
-                        RandomUnit(
-                            "nsbm".to_string(),
-                            0.000000000000000000000000000000000000000000046,
-                        ),
-                    ],
-                ),
+                random_type: RandomFromCustomTable(vec![
+                    RandomUnit(
+                        "nthl".to_string(),
+                        0.000000000000000000000000000000000000000000048,
+                    ),
+                    RandomUnit(
+                        "nfre".to_string(),
+                        0.000000000000000000000000000000000000000000046,
+                    ),
+                    RandomUnit(
+                        "nsbm".to_string(),
+                        0.000000000000000000000000000000000000000000046,
+                    ),
+                ]),
                 color: -1,
                 waygate_region_id: -1,
                 creation_id: 11,
@@ -565,10 +561,7 @@ mod unitmap_tests{
                 level: 1,
                 inventory: vec![],
                 abilities: vec![],
-                random_type: Neutral(
-                    6,
-                    0,
-                ),
+                random_type: Neutral(6, 0),
                 color: -1,
                 waygate_region_id: -1,
                 creation_id: 12,
@@ -577,34 +570,37 @@ mod unitmap_tests{
     }
 
     #[test]
-    fn no_failure_roc(){
-        let mut unititem_file = File::open("../resources/Scenario/Sandbox_roc/war3mapUnits.doo").unwrap();
+    fn no_failure_roc() {
+        let mut unititem_file =
+            File::open("../resources/Scenario/Sandbox_roc/war3mapUnits.doo").unwrap();
         let mut reader = BinaryReader::from(&mut unititem_file);
         let _unititem_map = reader.read::<UnitItemMap>();
     }
 
     #[test]
-    fn check_roc(){
-        let mut unititem_file = File::open("../resources/Scenario/Sandbox_roc/war3mapUnits.doo").unwrap();
+    fn check_roc() {
+        let mut unititem_file =
+            File::open("../resources/Scenario/Sandbox_roc/war3mapUnits.doo").unwrap();
         let mut reader = BinaryReader::from(&mut unititem_file);
-        let unititem_map = reader.read::<UnitItemMap>();
+        let unititem_map = reader.read::<UnitItemMap>().unwrap();
         assert_eq!(unititem_map.id, "W3do".to_string());
         assert_eq!(unititem_map.version, RoC);
         let units_items_mock = mock_rock();
-        let units_items: Vec<UnitItem> = unititem_map.units_items.into_iter().filter(
-            |unit_item| {
+        let units_items: Vec<UnitItem> = unititem_map
+            .units_items
+            .into_iter()
+            .filter(|unit_item| {
                 let creat_id = unit_item.creation_id;
-                match creat_id{
-                    2 | 3 | 9 | 10 | 11 | 12 => true,
-                    _ => false
-                }
-            }).collect();
+                matches!(creat_id, 2 | 3 | 9 | 10 | 11 | 12)
+            })
+            .collect();
         assert_eq!(units_items, units_items_mock);
     }
 
     #[test]
-    fn no_failure_tft(){
-        let mut unititem_file = File::open("../resources/Scenario/Sandbox_tft/war3mapUnits.doo").unwrap();
+    fn no_failure_tft() {
+        let mut unititem_file =
+            File::open("../resources/Scenario/Sandbox_tft/war3mapUnits.doo").unwrap();
         let mut reader = BinaryReader::from(&mut unititem_file);
         let _unititem_map = reader.read::<UnitItemMap>();
     }

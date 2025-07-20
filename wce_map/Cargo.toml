@@ -6,14 +6,15 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dev-dependencies]
-pretty_assertions = "1.3.0"
+pretty_assertions = { workspace = true }
 
 [dependencies]
 slkparser = { path = "../slkparser" }
 wce_formats = { path = "../wce_formats" }
-bencher = "0.1.5"
 regex = "1.3.6"
-lazy_static = "1.3.0"
-derivative = "2.1.0"
-log = "0.4.8"
 smart-default = "0.6.0"
+lazy_static = "1.3.0"
+
+bencher = {workspace = true}
+log = { workspace = true}
+derivative = { workspace = true}

@@ -1,7 +1,12 @@
-use crate::OpeningError;
-use crate::triggers::enums::WtgError::{ConditionConversionError, ECAConversionError, ParameterConversionError, SubParameterConversionError};
+use wce_formats::ReadError;
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
+use crate::triggers::enums::WtgError::{
+    ConditionConversionError, ECAConversionError, ParameterConversionError,
+    SubParameterConversionError,
+};
+use crate::OpeningError;
+
+#[derive(Debug)]
 pub enum WtgError {
     ParameterConversionError(String),
     SubParameterConversionError(String),
@@ -9,38 +14,44 @@ pub enum WtgError {
     ConditionConversionError(String),
     WtgParsingIsntCompleteError(String),
     UnknownProp(String),
-    UnknownGameVersion(String)
+    UnknownGameVersion(String),
+    ErrorReader(ReadError),
 }
-
-impl Into<OpeningError> for WtgError {
-    fn into(self) -> OpeningError {
-        OpeningError::Triggers(format!("{:?}", self))
+impl From<ReadError> for WtgError {
+    fn from(value: ReadError) -> Self {
+        Self::ErrorReader(value)
     }
 }
 
+impl From<WtgError> for OpeningError {
+    fn from(val: WtgError) -> Self {
+        OpeningError::Triggers(format!("{val:?}"))
+    }
+}
 
 #[derive(PartialOrd, PartialEq, Copy, Clone, Debug)]
 pub enum ParameterType {
-    PRESET,
-    VARIABLE,
-    FUNCTION,
-    STRING,
-    INVALID,
+    Preset,
+    Variable,
+    Function,
+    String,
+    Invalid,
 }
 
 impl ParameterType {
     pub fn from(n: i32, bin_pos: u64) -> Result<ParameterType, WtgError> {
-        match n{
-            0 => Ok(ParameterType::PRESET),
-            1 => Ok(ParameterType::VARIABLE),
-            2 => Ok(ParameterType::FUNCTION),
-            3 => Ok(ParameterType::STRING),
+        match n {
+            0 => Ok(ParameterType::Preset),
+            1 => Ok(ParameterType::Variable),
+            2 => Ok(ParameterType::Function),
+            3 => Ok(ParameterType::String),
             // -1 => {
             //     info!("Parameter type invalid was found");
             //     Ok(ParameterType::INVALID)
             // },
-            _ => Err(ParameterConversionError(format!("Failure on byte '{}' : Unknown Parameter type {} was found", bin_pos, n)))
-
+            _ => Err(ParameterConversionError(format!(
+                "Failure on byte '{bin_pos}' : Unknown Parameter type {n} was found"
+            ))),
         }
     }
 }
@@ -49,19 +60,19 @@ impl ParameterType {
 pub enum ECAType {
     Event,
     Condition,
-    Action
+    Action,
 }
 impl ECAType {
     pub fn from(n: u32) -> Result<ECAType, WtgError> {
-        match n{
+        match n {
             0 => Ok(ECAType::Event),
             1 => Ok(ECAType::Condition),
             2 => Ok(ECAType::Action),
-            _ => Err(ECAConversionError(format!("Unknown function type {}",n)))
+            _ => Err(ECAConversionError(format!("Unknown function type {n}"))),
         }
     }
     pub fn get_sector(&self) -> &str {
-        match self{
+        match self {
             ECAType::Event => "TriggerEvents",
             ECAType::Condition => "TriggerConditions",
             ECAType::Action => "TriggerActions",
@@ -73,20 +84,22 @@ pub enum SubParameterType {
     Event,
     Condition,
     Action,
-    Call
+    Call,
 }
 impl SubParameterType {
     pub fn from(n: u32) -> Result<SubParameterType, WtgError> {
-        match n{
+        match n {
             0 => Ok(SubParameterType::Event),
             1 => Ok(SubParameterType::Condition),
             2 => Ok(SubParameterType::Action),
             3 => Ok(SubParameterType::Call),
-            _ => Err(SubParameterConversionError(format!("Unknown sub parameter type {}",n)))
+            _ => Err(SubParameterConversionError(format!(
+                "Unknown sub parameter type {n}"
+            ))),
         }
     }
     pub fn get_sector(&self) -> &str {
-        match self{
+        match self {
             SubParameterType::Event => "TriggerEvents",
             SubParameterType::Condition => "TriggerConditions",
             SubParameterType::Action => "TriggerActions",
@@ -96,18 +109,20 @@ impl SubParameterType {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
-pub enum ConditionType{
+pub enum ConditionType {
     Condition,
     Then,
-    Else
+    Else,
 }
-impl ConditionType{
+impl ConditionType {
     pub fn from(n: u32) -> Result<Self, WtgError> {
-        match n{
+        match n {
             0 => Ok(ConditionType::Condition),
             1 => Ok(ConditionType::Then),
             2 => Ok(ConditionType::Else),
-            _ => Err(ConditionConversionError(format!("Unknown Condition type {}", n)))
+            _ => Err(ConditionConversionError(format!(
+                "Unknown Condition type {n}"
+            ))),
         }
     }
 }

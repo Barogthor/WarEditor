@@ -6,6 +6,7 @@ use jpeg_decoder::Decoder;
 use rgb::{RGB8, RGBA8};
 
 use crate::binary_reader::BinaryReader;
+use crate::ReadError;
 
 type MipmapPixels = Vec<Vec<RGB8>>;
 type MipmapIndexes = Vec<Vec<u8>>;
@@ -74,9 +75,9 @@ pub struct BLP{
 }
 
 impl BLP {
-    fn parse_jpeg_mipmaps(&mut self, reader: &mut BinaryReader){
-        self.jpeg_header_size = reader.read_u32();
-        self.jpeg_header = reader.read_bytes(self.jpeg_header_size as usize);
+    fn parse_jpeg_mipmaps(&mut self, reader: &mut BinaryReader) -> Result<(), ReadError>{
+        self.jpeg_header_size = reader.read_u32()?;
+        self.jpeg_header = reader.read_bytes(self.jpeg_header_size as usize)?;
         for i in 0..MAX_MIPMAP {
             let size = self.mipmap_sizes[i] as usize;
             let offset = self.mipmap_offsets[i] as i64;
@@ -85,7 +86,7 @@ impl BLP {
             reader.skip(offset);
             let mut jpeg_buffer = self.jpeg_header.clone();
             jpeg_buffer.reserve(size + 10);
-            let mut raw = reader.read_bytes(size);
+            let mut raw = reader.read_bytes(size)?;
             jpeg_buffer.append(&mut raw);
 
             let reader = Cursor::new(jpeg_buffer);
@@ -93,12 +94,12 @@ impl BLP {
             let mut res = decoder.decode().expect("error while decoding");
             let pixels: Vec<RGB8> = res.chunks_mut(4).map(|cmyk| cmyk_to_rgb(cmyk) ).collect();
             self.jpeg_mipmaps.push(pixels);
-
         }
+        Ok(())
     }
 
-    fn parse_palette(&mut self, reader: &mut BinaryReader){
-        self.palette_colors = reader.read_bytes(PALETTE_SIZE * 4).chunks(4)
+    fn parse_palette(&mut self, reader: &mut BinaryReader) -> Result<(), ReadError>{
+        self.palette_colors = reader.read_bytes(PALETTE_SIZE * 4)?.chunks(4)
             .map(|bgra| RGBA8{
                 r: bgra[2],
                 g: bgra[1],
@@ -112,11 +113,12 @@ impl BLP {
             reader.seek_begin();
             reader.skip(offset);
 
-            self.palette_rgb_indexes.push(reader.read_bytes(size));
+            self.palette_rgb_indexes.push(reader.read_bytes(size)?);
             if self.flag == BlpFlag::RGBA{
-                self.palette_alpha_indexes.push(reader.read_bytes(size));
+                self.palette_alpha_indexes.push(reader.read_bytes(size)?);
             }
         }
+        Ok(())
     }
 
     pub fn get_jpeg_header(&self) -> &Vec<u8>{
@@ -126,18 +128,18 @@ impl BLP {
         &self.jpeg_mipmaps
     }
 
-    pub fn from(reader: &mut BinaryReader) -> Self {
-        let magic_num = String::from_utf8(reader.read_bytes(4)).unwrap();
-        let compression = reader.read_u32();
+    pub fn from(reader: &mut BinaryReader) -> Result<Self, ReadError> {
+        let magic_num = String::from_utf8(reader.read_bytes(4)?).unwrap();
+        let compression = reader.read_u32()?;
         let compression = Compression::from(compression).unwrap();
-        let has_alpha = reader.read_u32() == 0x0000_0008;
-        let width = reader.read_u32();
-        let height = reader.read_u32();
-        let flag =  reader.read_u32();
+        let has_alpha = reader.read_u32()? == 0x0000_0008;
+        let width = reader.read_u32()?;
+        let height = reader.read_u32()?;
+        let flag =  reader.read_u32()?;
         let flag = BlpFlag::from(flag).unwrap();
-        let smooth = reader.read_u32() == 1;
-        let mipmap_offsets = reader.read_vec_u32(MAX_MIPMAP);
-        let mipmap_sizes = reader.read_vec_u32(MAX_MIPMAP);
+        let smooth = reader.read_u32()? == 1;
+        let mipmap_offsets = reader.read_vec_u32(MAX_MIPMAP)?;
+        let mipmap_sizes = reader.read_vec_u32(MAX_MIPMAP)?;
         let mut blp = BLP {
             magic_num,
             compression,
@@ -156,11 +158,11 @@ impl BLP {
             palette_alpha_indexes: Vec::with_capacity(MAX_MIPMAP),
         };
         match blp.compression {
-            Compression::JPEG => blp.parse_jpeg_mipmaps(reader),
-            Compression::PALETTE => blp.parse_palette(reader)
+            Compression::JPEG => blp.parse_jpeg_mipmaps(reader)?,
+            Compression::PALETTE => blp.parse_palette(reader)?
         };
         assert_eq!(reader.size(), reader.pos() as usize, "BLP reader for hasn't reached EOF. Missing {} bytes", reader.size() - reader.pos() as usize);
-        blp
+        Ok(blp)
     }
 }
 
@@ -229,7 +231,7 @@ mod blp_parse {
         let mut buffer: Vec<u8> = Vec::with_capacity(2000);
         file.read_to_end(&mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer.to_owned());
-        let blp = BLP::from(&mut reader);
+        let blp = BLP::from(&mut reader).unwrap();
         let mmap1 = &blp.get_jpeg_mipmaps()[3];
         println!("{:?}", mmap1);
         // println!("{:#?}", mmap1[0..mmap1.len()/100]);
