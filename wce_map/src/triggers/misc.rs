@@ -36,12 +36,14 @@ pub struct TriggerCategory {
 }
 
 impl TriggerCategory {
-    pub fn from(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self>{
+    pub fn from(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self> {
         let mut def = Self::default();
 
         def.id = reader.read_u32()?;
         def.name = reader.read_c_string()?.into_string().unwrap();
-        if game_version.is_tft() { def.is_comment = reader.read_u32()? == 1; }
+        if game_version.is_tft() {
+            def.is_comment = reader.read_u32()? == 1;
+        }
         Ok(def)
     }
 }

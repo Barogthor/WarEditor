@@ -12,22 +12,27 @@ use super::ObjectId;
 pub struct CustomDoodadFile {
     version: u32,
     original_objects: Vec<ObjectDefinition>,
-    custom_objects: Vec<ObjectDefinition>
+    custom_objects: Vec<ObjectDefinition>,
 }
 
 impl CustomDoodadFile {
-    pub fn read_file(map: &mut MapArchive, game_version: &GameVersion) -> Result<Option<CustomDoodadFile>, OpeningError> {
+    pub fn read_file(
+        map: &mut MapArchive,
+        game_version: &GameVersion,
+    ) -> Result<Option<CustomDoodadFile>, OpeningError> {
         let file = map.open_file(MAP_CUSTOM_DOODADS);
         match file {
             Ok(file) => {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-                file.read(map, &mut buffer).map_err(|e| OpeningError::CustomDoodad(format!("{e}")))?;
+                file.read(map, &mut buffer)
+                    .map_err(|e| OpeningError::CustomDoodad(format!("{e}")))?;
                 let mut reader = BinaryReader::new(buffer);
-                let custom_doodad = Self::from(&mut reader, game_version).map_err(|e| OpeningError::CustomDoodad(format!("{e:?}")))?;
+                let custom_doodad = Self::from(&mut reader, game_version)
+                    .map_err(|e| OpeningError::CustomDoodad(format!("{e:?}")))?;
                 Ok(Some(custom_doodad))
             }
-            _ => Ok(None)
+            _ => Ok(None),
         }
     }
 
@@ -46,28 +51,42 @@ impl CustomDoodadFile {
             custom_objects.push(object);
         }
 
-        assert_eq!(reader.size(), reader.pos() as usize, "reader for {} hasn't reached EOF. Missing {} bytes", MAP_CUSTOM_DOODADS, reader.size() - reader.pos() as usize);
+        assert_eq!(
+            reader.size(),
+            reader.pos() as usize,
+            "reader for {} hasn't reached EOF. Missing {} bytes",
+            MAP_CUSTOM_DOODADS,
+            reader.size() - reader.pos() as usize
+        );
         Ok(Self {
             version,
             original_objects,
-            custom_objects
+            custom_objects,
         })
     }
 
-    pub fn debug(&self){
-        println!("{:#?}",self);
+    pub fn debug(&self) {
+        println!("{:#?}", self);
     }
 }
 
-fn read_object(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<ObjectDefinition> {
+fn read_object(
+    reader: &mut BinaryReader,
+    game_version: &GameVersion,
+) -> ReadResult<ObjectDefinition> {
     let original_id = reader.read_bytes(4)?;
-    let original_id = [original_id[0],original_id[1], original_id[2], original_id[3]];
+    let original_id = [
+        original_id[0],
+        original_id[1],
+        original_id[2],
+        original_id[3],
+    ];
     let custom_id = reader.read_bytes(4)?;
     if custom_id.iter().all(|c| *c == 0) {
         let id = ObjectId::for_original(original_id);
         Ok(ObjectDefinition::with_optional(reader, id)?)
     } else {
-        let custom_id = [custom_id[0],custom_id[1], custom_id[2], custom_id[3]];
+        let custom_id = [custom_id[0], custom_id[1], custom_id[2], custom_id[3]];
         let id = ObjectId::for_custom(original_id, custom_id);
         Ok(ObjectDefinition::with_optional(reader, id)?)
     }

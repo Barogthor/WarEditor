@@ -4,74 +4,72 @@ use std::io::Read;
 
 use crate::slk_type::{Record, RecordType};
 
-pub mod slk_type;
-pub mod record;
 pub mod document;
+pub mod record;
+pub mod slk_type;
 #[cfg(target_os = "macos")]
 pub const END_RECORD: &str = "\n";
 #[cfg(target_os = "windows")]
 pub const END_RECORD: &str = "\r\n";
 pub const FIELD_SEPARATOR: &str = ";";
 
-
-pub struct SLKScanner{
-//    buffer: Vec<String>,
+pub struct SLKScanner {
+    //    buffer: Vec<String>,
     buffer: String,
-    pos: usize
+    pos: usize,
 }
 
 impl SLKScanner {
-    pub fn open(path: &str) -> Self{
-        let mut f = File::open(path).expect(&format!("Unknown file: {}",path));
+    pub fn open(path: &str) -> Self {
+        let mut f = File::open(path).expect(&format!("Unknown file: {}", path));
         let mut buffer: String = Default::default();
         f.read_to_string(&mut buffer).unwrap();
-//        let buffer = buffer.split(END_RECORD).map(|slice: &str| String::from(slice)).collect();
-        SLKScanner{
-            buffer,
-            pos: 0
-        }
+        //        let buffer = buffer.split(END_RECORD).map(|slice: &str| String::from(slice)).collect();
+        SLKScanner { buffer, pos: 0 }
     }
 
-    fn get_record_type(&mut self) -> Result<RecordType, String>{
+    fn get_record_type(&mut self) -> Result<RecordType, String> {
         let start_pos = self.pos;
-        let t = &self.buffer[self.pos..self.pos+1];
-        if t == "E"{
+        let t = &self.buffer[self.pos..self.pos + 1];
+        if t == "E" {
             return Ok(RecordType::EOF);
         }
-        while &self.buffer[self.pos..self.pos+1] != FIELD_SEPARATOR{
-            self.pos+=1;
+        while &self.buffer[self.pos..self.pos + 1] != FIELD_SEPARATOR {
+            self.pos += 1;
         }
         let res = RecordType::from_id(&self.buffer[start_pos..self.pos]);
-        self.pos+=1;
+        self.pos += 1;
         res
     }
 
     pub fn parse_record(&mut self) -> Result<Record, String> {
-        if self.pos >= self.buffer.len(){
+        if self.pos >= self.buffer.len() {
             return Err(String::from("EOF"));
         }
         let record_type = self.get_record_type();
-        if record_type == Ok(RecordType::EOF){
-            self.pos=self.buffer.len();
+        if record_type == Ok(RecordType::EOF) {
+            self.pos = self.buffer.len();
             return Ok(Record::EOF);
         }
         let mut fields: Vec<String> = vec![];
         let mut field_start_pos = self.pos;
-        while self.pos < self.buffer.len()- END_RECORD.len() && &self.buffer[self.pos..self.pos+END_RECORD.len()] != END_RECORD{
-            if &self.buffer[self.pos..self.pos+1] == FIELD_SEPARATOR{
+        while self.pos < self.buffer.len() - END_RECORD.len()
+            && &self.buffer[self.pos..self.pos + END_RECORD.len()] != END_RECORD
+        {
+            if &self.buffer[self.pos..self.pos + 1] == FIELD_SEPARATOR {
                 fields.push(String::from(&self.buffer[field_start_pos..self.pos]));
-                field_start_pos=self.pos+1;
+                field_start_pos = self.pos + 1;
             }
-            self.pos+=1;
-        };
+            self.pos += 1;
+        }
         let field = String::from(&self.buffer[field_start_pos..self.pos]);
         fields.push(field.replace("\r", ""));
-        self.pos+=END_RECORD.len();
+        self.pos += END_RECORD.len();
         Record::from(record_type, &fields)
     }
 }
 
-impl Iterator for SLKScanner{
+impl Iterator for SLKScanner {
     type Item = Record;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -79,12 +77,10 @@ impl Iterator for SLKScanner{
         match record {
             Ok(Record::EOF) => None,
             Ok(record) => Some(record),
-            Err(msg) => panic!("{}",msg)
+            Err(msg) => panic!("{}", msg),
         }
     }
 }
-
-
 
 #[cfg(test)]
 mod big_sample {
@@ -101,9 +97,8 @@ mod big_sample {
         let mut document = Document::default();
         document.load(slk_reader);
         elapsed_time(&now);
-//        for _ in document.get_contents(){}
+        //        for _ in document.get_contents(){}
         elapsed_time(&now);
-
     }
 }
 
@@ -117,7 +112,6 @@ fn elapsed_time(instant: &std::time::Instant) {
     println!("Elapsed time: {}:{}:{}::{}", hours, mins, seconds, millis);
 }
 
-
 #[cfg(test)]
 mod sample {
     use crate::document::Document;
@@ -126,7 +120,7 @@ mod sample {
     use crate::SLKScanner;
 
     #[test]
-    fn test_open(){
+    fn test_open() {
         SLKScanner::open("resources/sample_1.slk");
     }
 
@@ -135,20 +129,20 @@ mod sample {
         let to_s = |s: &str| String::from(s);
         let mut slk_reader = SLKScanner::open("resources/sample_1.slk");
         let fetch = slk_reader.parse_record();
-        assert_eq!(fetch, Ok( Record::Header ));
+        assert_eq!(fetch, Ok(Record::Header));
 
         let fetch = slk_reader.parse_record();
-        assert_eq!(fetch, Ok( Record::Info(3, 4) ));
+        assert_eq!(fetch, Ok(Record::Info(3, 4)));
 
         let fetch = slk_reader.parse_record();
-        let cell = Cell::new(1u32, Some(1u32), Some(to_s("a")) );
-        assert_eq!(fetch, Ok( Record::CellContent(cell) ));
+        let cell = Cell::new(1u32, Some(1u32), Some(to_s("a")));
+        assert_eq!(fetch, Ok(Record::CellContent(cell)));
 
         for _ in 0..11 {
             slk_reader.parse_record().expect("Failed to parse slk");
         }
         let fetch = slk_reader.parse_record();
-        assert_eq!(fetch, Ok( Record::EOF ));
+        assert_eq!(fetch, Ok(Record::EOF));
         let fetch = slk_reader.parse_record();
         assert_eq!(fetch, Err(to_s("EOF")));
     }
@@ -159,9 +153,9 @@ mod sample {
         let mut count = 0;
         for record in slk_reader {
             println!("{:?}", record);
-            count+=1;
+            count += 1;
         }
-        assert_eq!(count,14);
+        assert_eq!(count, 14);
     }
 
     #[test]

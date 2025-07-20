@@ -1,6 +1,6 @@
 use crate::record::cell::Cell;
-use crate::SLKScanner;
 use crate::slk_type::Record;
+use crate::SLKScanner;
 
 #[derive(Default, Debug)]
 pub struct Document {
@@ -11,28 +11,31 @@ pub struct Document {
 }
 
 impl Document {
-    pub fn load(&mut self, scanner: SLKScanner){
-        for record in scanner{
+    pub fn load(&mut self, scanner: SLKScanner) {
+        for record in scanner {
             match record {
                 Record::Info(rows, columns) => {
                     self.rows = rows;
                     self.columns = columns;
-                },
+                }
                 Record::CellContent(cell) => self.contents.push(cell),
-                _ => ()
+                _ => (),
             }
         }
     }
 
-    pub fn get_contents(&self) -> &Vec<Cell>{
+    pub fn get_contents(&self) -> &Vec<Cell> {
         &self.contents
     }
 
-    pub fn row_count(&self) -> u32 {self.rows}
-    pub fn column_count(&self) -> u32 {self.columns}
+    pub fn row_count(&self) -> u32 {
+        self.rows
+    }
+    pub fn column_count(&self) -> u32 {
+        self.columns
+    }
 
-    pub fn debug(&self){
+    pub fn debug(&self) {
         println!("{:#?}", self);
     }
 }
-

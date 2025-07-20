@@ -23,8 +23,9 @@ pub enum BlpFlag {
 }
 
 impl BlpFlag {
-    pub fn from(n: u32) -> Result<Self, String>{
-        match n{ //TODO faire conversion slim (regarder jpeg_decoder marker)
+    pub fn from(n: u32) -> Result<Self, String> {
+        match n {
+            //TODO faire conversion slim (regarder jpeg_decoder marker)
             3 | 4 => Ok(BlpFlag::RGBA),
             flag if flag >= 5 => Ok(BlpFlag::RGB),
             _ => Err(format!("Unknown or unsupported blp flag")),
@@ -34,8 +35,8 @@ impl BlpFlag {
 
 #[derive(Debug)]
 pub enum BlpData {
-//    JpgBlp(JpgBlpData),
-//    PalettedBlp(PalettedBlpData),
+    //    JpgBlp(JpgBlpData),
+    //    PalettedBlp(PalettedBlpData),
 }
 
 #[derive(PartialOrd, PartialEq, Clone, Debug)]
@@ -45,16 +46,17 @@ pub enum Compression {
 }
 
 impl Compression {
-    pub fn from(n: u32) -> Result<Self, String>{
-        match n{ //TODO faire conversion slim (regarder jpeg_decoder marker)
+    pub fn from(n: u32) -> Result<Self, String> {
+        match n {
+            //TODO faire conversion slim (regarder jpeg_decoder marker)
             0 => Ok(Compression::JPEG),
             1 => Ok(Compression::PALETTE),
-            _ => Err(format!("Unknown BLP type"))
+            _ => Err(format!("Unknown BLP type")),
         }
     }
 }
 
-pub struct BLP{
+pub struct BLP {
     magic_num: String,
     compression: Compression,
     has_alpha: bool,
@@ -75,13 +77,15 @@ pub struct BLP{
 }
 
 impl BLP {
-    fn parse_jpeg_mipmaps(&mut self, reader: &mut BinaryReader) -> Result<(), ReadError>{
+    fn parse_jpeg_mipmaps(&mut self, reader: &mut BinaryReader) -> Result<(), ReadError> {
         self.jpeg_header_size = reader.read_u32()?;
         self.jpeg_header = reader.read_bytes(self.jpeg_header_size as usize)?;
         for i in 0..MAX_MIPMAP {
             let size = self.mipmap_sizes[i] as usize;
             let offset = self.mipmap_offsets[i] as i64;
-            if size == 0 { break; }
+            if size == 0 {
+                break;
+            }
             reader.seek_begin();
             reader.skip(offset);
             let mut jpeg_buffer = self.jpeg_header.clone();
@@ -92,39 +96,44 @@ impl BLP {
             let reader = Cursor::new(jpeg_buffer);
             let mut decoder = Decoder::new(reader);
             let mut res = decoder.decode().expect("error while decoding");
-            let pixels: Vec<RGB8> = res.chunks_mut(4).map(|cmyk| cmyk_to_rgb(cmyk) ).collect();
+            let pixels: Vec<RGB8> = res.chunks_mut(4).map(|cmyk| cmyk_to_rgb(cmyk)).collect();
             self.jpeg_mipmaps.push(pixels);
         }
         Ok(())
     }
 
-    fn parse_palette(&mut self, reader: &mut BinaryReader) -> Result<(), ReadError>{
-        self.palette_colors = reader.read_bytes(PALETTE_SIZE * 4)?.chunks(4)
-            .map(|bgra| RGBA8{
+    fn parse_palette(&mut self, reader: &mut BinaryReader) -> Result<(), ReadError> {
+        self.palette_colors = reader
+            .read_bytes(PALETTE_SIZE * 4)?
+            .chunks(4)
+            .map(|bgra| RGBA8 {
                 r: bgra[2],
                 g: bgra[1],
                 b: bgra[0],
-                a: 255 - bgra[3]
-            } ).collect();
-        for i in 0..MAX_MIPMAP{
+                a: 255 - bgra[3],
+            })
+            .collect();
+        for i in 0..MAX_MIPMAP {
             let size = self.mipmap_sizes[i] as usize;
             let offset = self.mipmap_offsets[i] as i64;
-            if size == 0 {continue;}
+            if size == 0 {
+                continue;
+            }
             reader.seek_begin();
             reader.skip(offset);
 
             self.palette_rgb_indexes.push(reader.read_bytes(size)?);
-            if self.flag == BlpFlag::RGBA{
+            if self.flag == BlpFlag::RGBA {
                 self.palette_alpha_indexes.push(reader.read_bytes(size)?);
             }
         }
         Ok(())
     }
 
-    pub fn get_jpeg_header(&self) -> &Vec<u8>{
+    pub fn get_jpeg_header(&self) -> &Vec<u8> {
         &self.jpeg_header
     }
-    pub fn get_jpeg_mipmaps(&self) -> &MipmapPixels{
+    pub fn get_jpeg_mipmaps(&self) -> &MipmapPixels {
         &self.jpeg_mipmaps
     }
 
@@ -135,7 +144,7 @@ impl BLP {
         let has_alpha = reader.read_u32()? == 0x0000_0008;
         let width = reader.read_u32()?;
         let height = reader.read_u32()?;
-        let flag =  reader.read_u32()?;
+        let flag = reader.read_u32()?;
         let flag = BlpFlag::from(flag).unwrap();
         let smooth = reader.read_u32()? == 1;
         let mipmap_offsets = reader.read_vec_u32(MAX_MIPMAP)?;
@@ -159,25 +168,34 @@ impl BLP {
         };
         match blp.compression {
             Compression::JPEG => blp.parse_jpeg_mipmaps(reader)?,
-            Compression::PALETTE => blp.parse_palette(reader)?
+            Compression::PALETTE => blp.parse_palette(reader)?,
         };
-        assert_eq!(reader.size(), reader.pos() as usize, "BLP reader for hasn't reached EOF. Missing {} bytes", reader.size() - reader.pos() as usize);
+        assert_eq!(
+            reader.size(),
+            reader.pos() as usize,
+            "BLP reader for hasn't reached EOF. Missing {} bytes",
+            reader.size() - reader.pos() as usize
+        );
         Ok(blp)
     }
 }
 
-fn cmyk_to_rgb(cmyk: &mut [u8]) -> RGB8{
-        let c = cmyk[0] as f32 / 255.0;
-        let y = cmyk[1] as f32 / 255.0;
-        let m = cmyk[2] as f32 / 255.0;
-        let k = cmyk[3] as f32 / 255.0;
-        let red = 255.0 * (1. - c) * (1. - k);
-//        let red = 255.0 - c;
-        let green = 255.0 * (1. - y) * (1. - k);
-//        let green = 255.0 - y;
-        let blue = 255.0 * (1. - m) * (1. - k);
-//        let blue = 255.0 - m;
-        RGB8 {r: red as u8, b: blue as u8, g: green as u8 }
+fn cmyk_to_rgb(cmyk: &mut [u8]) -> RGB8 {
+    let c = cmyk[0] as f32 / 255.0;
+    let y = cmyk[1] as f32 / 255.0;
+    let m = cmyk[2] as f32 / 255.0;
+    let k = cmyk[3] as f32 / 255.0;
+    let red = 255.0 * (1. - c) * (1. - k);
+    //        let red = 255.0 - c;
+    let green = 255.0 * (1. - y) * (1. - k);
+    //        let green = 255.0 - y;
+    let blue = 255.0 * (1. - m) * (1. - k);
+    //        let blue = 255.0 - m;
+    RGB8 {
+        r: red as u8,
+        b: blue as u8,
+        g: green as u8,
+    }
 }
 
 //     data.chunks(4).for_each(|cmyk| {
@@ -185,12 +203,11 @@ fn cmyk_to_rgb(cmyk: &mut [u8]) -> RGB8{
 //         println!("[{:.0}, {:.0}, {:.0}] or [{:.0}, {:.0}, {:.0}, {:.0}]", red, green, blue, c*100., m*100. , y*100., k*100.);
 //     });
 
-
 #[cfg(test)]
 mod blp_parse {
     use std::fs::File;
-    use std::io::{BufReader, Read};
     use std::io;
+    use std::io::{BufReader, Read};
 
     use jpeg_decoder::Decoder;
 
@@ -204,12 +221,11 @@ mod blp_parse {
         file.read_to_end(&mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer.to_owned());
         let _blp = BLP::from(&mut reader);
-//        println!("{:?}", s);
-
+        //        println!("{:?}", s);
     }
 
     #[test]
-    fn open_local_blp_jpeg_map() -> Result<(), io::Error>{
+    fn open_local_blp_jpeg_map() -> Result<(), io::Error> {
         let mut file = File::open("../resources/sample_2/war3mapMap.blp")?;
         let mut buffer: Vec<u8> = Vec::with_capacity(2000);
         file.read_to_end(&mut buffer).unwrap();
@@ -226,7 +242,7 @@ mod blp_parse {
     }
 
     #[test]
-    fn open_local_blp_jpeg_texture() -> Result<(), io::Error>{
+    fn open_local_blp_jpeg_texture() -> Result<(), io::Error> {
         let mut file = File::open("../resources/blp/FrostmourneNew.blp")?;
         let mut buffer: Vec<u8> = Vec::with_capacity(2000);
         file.read_to_end(&mut buffer).unwrap();
@@ -243,8 +259,6 @@ mod blp_parse {
         // }
         Ok(())
     }
-
-
 
     // #[test]
     fn open_local_jpeg_mipmap() -> Result<(), ()> {

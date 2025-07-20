@@ -1,4 +1,1 @@
-
-pub struct BinaryWriter{
-
-}
+pub struct BinaryWriter {}

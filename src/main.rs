@@ -191,7 +191,7 @@ mod tests_maps {
     use wce_map::map::Map;
     use wce_map::GameData;
 
-    use crate::paths_blizzard_maps;
+    use crate::{paths_blizzard_maps, paths_custom_maps};
 
     #[test]
     fn test_blizzard_maps() {
@@ -217,6 +217,19 @@ mod tests_maps {
             if on_error {
                 panic!("Check this test logs");
             }
+        }
+    }
+
+    #[test]
+    fn test_custom_maps_opening_without_panic() {
+        dotenv().unwrap();
+        let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
+
+        let game_data = &GameData::new("");
+        let maps = paths_custom_maps(Path::new(&format!("{old_dir_w3}\\Maps")));
+        for map in maps {
+            let path = map.into_os_string().into_string().unwrap();
+            let _map_res = Map::open(path.clone(), game_data);
         }
     }
 }
