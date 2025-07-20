@@ -3,8 +3,8 @@ use std::ffi::CString;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{RoC, TFT};
-use wce_formats::MapArchive;
 use wce_formats::{BinaryConverter, GameVersion};
+use wce_formats::{MapArchive, ReadError};
 
 use crate::globals::MAP_IMPORT_LIST;
 use crate::OpeningError;
@@ -49,8 +49,13 @@ impl BinaryConverter for ImportFile {
             let path_type = reader.read_u8()?;
             let path_type = match version {
                 RoC => ImportPathType::RoC,
-                _ => ImportPathType::from_u8(path_type)
-                    .unwrap_or_else(|| panic!("Path type : '{path_type}'")),
+                _ => ImportPathType::from_u8(path_type).ok_or_else(|| {
+                    ReadError::Reason(format!(
+                        "Invalid import type '{path_type}' at {}/{}.",
+                        reader.pos(),
+                        reader.size()
+                    ))
+                })?,
             };
             let path = reader.read_c_string()?;
             files.push((path_type, path));

@@ -140,6 +140,8 @@ impl DerefMut for GameMpq {
 #[derive(Debug)]
 pub enum ReadError {
     EOF(u64, usize),
-    InvalidCString(u64, usize),
+    InvalidCString(String),
+    NullCString(u64, usize),
     Other(Error),
+    Reason(String),
 }

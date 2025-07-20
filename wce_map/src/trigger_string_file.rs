@@ -4,7 +4,7 @@ use regex::Regex;
 
 use wce_formats::MapArchive;
 
-use crate::globals::MAP_STRINGS;
+use crate::{globals::MAP_STRINGS, OpeningError};
 
 const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)\s+\{\r\n+([^\}]*)\r\n\}";
 //const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)";
@@ -17,10 +17,13 @@ pub struct TriggerStringFile {
 }
 
 impl TriggerStringFile {
-    pub fn read_file(map: &mut MapArchive) -> Self {
-        let file = map.open_file(MAP_STRINGS).unwrap();
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
+        let file = map
+            .open_file(MAP_STRINGS)
+            .map_err(|e| OpeningError::MapStrings(format!("{e:?}")))?;
         let mut buf: Vec<u8> = vec![0; file.size() as usize];
-        file.read(map, &mut buf).unwrap();
+        file.read(map, &mut buf)
+            .map_err(|e| OpeningError::MapStrings(format!("{e:?}")))?;
         let buffer = String::from_utf8_lossy(&buf).to_string();
         // let buffer = unsafe { String::from_utf8_unchecked(buf) };
         let reg: Regex = Regex::new(EXTRACT_DATA).unwrap();
@@ -31,7 +34,7 @@ impl TriggerStringFile {
             let content = String::from(caps.get(2).unwrap().as_str());
             trigger_strings.insert(id, content);
         }
-        TriggerStringFile { trigger_strings }
+        Ok(TriggerStringFile { trigger_strings })
     }
     pub fn debug(&self) {
         println!("{self:#?}");

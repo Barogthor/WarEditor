@@ -328,7 +328,7 @@ impl BinaryConverter for PlayerData {
         let player_type = reader.read_i32()?;
         let player_race = reader.read_i32()?;
         let fixed_position = reader.read_i32()?;
-        let player_name = reader.read_c_string()?.into_string().unwrap();
+        let player_name = read_c_string_safe(reader)?;
         let starting_pos_x = reader.read_f32()?;
         let starting_pos_y = reader.read_f32()?;
         let ally_low_priorities = reader.read_i32()?;
@@ -363,7 +363,7 @@ impl BinaryConverter for ForceData {
         let flags = reader.read_i32()?;
         let force_flags = ForceFlags::new(flags);
         let player_mask = reader.read_i32()?;
-        let name = reader.read_c_string()?.into_string().unwrap();
+        let name = read_c_string_safe(reader)?;
         Ok(ForceData {
             force_flags,
             player_mask,
@@ -459,7 +459,7 @@ struct RandomUnitTable {
 impl BinaryConverter for RandomUnitTable {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
         let id = reader.read_i32()?;
-        let name = reader.read_c_string()?.into_string().unwrap();
+        let name = read_c_string_safe(reader)?;
         let count_pos = reader.read_i32()? as usize;
         let mut position_types = vec![];
         for _ in 0..count_pos {
@@ -520,7 +520,7 @@ pub struct RandomItemTable {
 impl BinaryConverter for RandomItemTable {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
         let id = reader.read_i32()?;
-        let name = reader.read_c_string()?.into_string().unwrap();
+        let name = read_c_string_safe(reader)?;
         let count_sets = reader.read_i32()? as usize;
         let sets = reader.read_vec::<RandomItemSet>(count_sets)?;
         Ok(RandomItemTable { id, name, sets })
@@ -619,6 +619,17 @@ impl W3iFile {
     }
 }
 
+/// Helper function to read a C string and convert to String with proper error handling
+fn read_c_string_safe(reader: &mut BinaryReader) -> Result<String, ReadError> {
+    reader.read_c_string()?.into_string().map_err(|e| {
+        ReadError::InvalidCString(format!(
+            "Failed to convert C String to UTF-8 at position {}/{}. Reason `{e}`",
+            reader.pos(),
+            reader.size()
+        ))
+    })
+}
+
 impl BinaryConverter for W3iFile {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
         let mut w3i = W3iFile::default();
@@ -627,10 +638,10 @@ impl BinaryConverter for W3iFile {
         w3i.version = to_game_version(version);
         w3i.count_saves = reader.read_i32()?;
         w3i.editor_version = reader.read_i32()?;
-        w3i.map_name = reader.read_c_string()?.into_string().unwrap();
-        w3i.map_author = reader.read_c_string()?.into_string().unwrap();
-        w3i.map_description = reader.read_c_string()?.into_string().unwrap();
-        w3i.recommended_players = reader.read_c_string()?.into_string().unwrap();
+        w3i.map_name = read_c_string_safe(reader)?;
+        w3i.map_author = read_c_string_safe(reader)?;
+        w3i.map_description = read_c_string_safe(reader)?;
+        w3i.recommended_players = read_c_string_safe(reader)?;
         w3i.camera_bounds = reader.read_vec_f32(8)?;
         w3i.camera_bounds_complements = reader.read_vec_i32(4)?;
         w3i.map_playable_width = reader.read_i32()?;
@@ -642,26 +653,25 @@ impl BinaryConverter for W3iFile {
         match w3i.version {
             RoC => {
                 w3i.campaign_background = reader.read_i32()?;
-                w3i.loading_screen_text = reader.read_c_string()?.into_string().unwrap();
-                w3i.loading_screen_title = reader.read_c_string()?.into_string().unwrap();
-                w3i.loading_screen_subtitle = reader.read_c_string()?.into_string().unwrap();
+                w3i.loading_screen_text = read_c_string_safe(reader)?;
+                w3i.loading_screen_title = read_c_string_safe(reader)?;
+                w3i.loading_screen_subtitle = read_c_string_safe(reader)?;
                 w3i.loading_screen_index = reader.read_i32()?;
-                w3i.prologue_screen_text = reader.read_c_string()?.into_string().unwrap();
-                w3i.prologue_screen_title = reader.read_c_string()?.into_string().unwrap();
-                w3i.prologue_screen_subtitle = reader.read_c_string()?.into_string().unwrap();
+                w3i.prologue_screen_text = read_c_string_safe(reader)?;
+                w3i.prologue_screen_title = read_c_string_safe(reader)?;
+                w3i.prologue_screen_subtitle = read_c_string_safe(reader)?;
             }
             _ => {
                 w3i.loading_screen_index = reader.read_i32()?;
-                w3i.custom_loading_screen_model_path =
-                    reader.read_c_string()?.into_string().unwrap();
-                w3i.loading_screen_text = reader.read_c_string()?.into_string().unwrap();
-                w3i.loading_screen_title = reader.read_c_string()?.into_string().unwrap();
-                w3i.loading_screen_subtitle = reader.read_c_string()?.into_string().unwrap();
+                w3i.custom_loading_screen_model_path = read_c_string_safe(reader)?;
+                w3i.loading_screen_text = read_c_string_safe(reader)?;
+                w3i.loading_screen_title = read_c_string_safe(reader)?;
+                w3i.loading_screen_subtitle = read_c_string_safe(reader)?;
                 w3i.user_game_dataset = reader.read_i32()?;
-                w3i.prologue_screen_path = reader.read_c_string()?.into_string().unwrap();
-                w3i.prologue_screen_text = reader.read_c_string()?.into_string().unwrap();
-                w3i.prologue_screen_title = reader.read_c_string()?.into_string().unwrap();
-                w3i.prologue_screen_subtitle = reader.read_c_string()?.into_string().unwrap();
+                w3i.prologue_screen_path = read_c_string_safe(reader)?;
+                w3i.prologue_screen_text = read_c_string_safe(reader)?;
+                w3i.prologue_screen_title = read_c_string_safe(reader)?;
+                w3i.prologue_screen_subtitle = read_c_string_safe(reader)?;
                 w3i.fog_style = reader.read_i32()?;
                 w3i.fog_z_height_start = reader.read_f32()?;
                 w3i.fog_z_height_end = reader.read_f32()?;
@@ -671,7 +681,7 @@ impl BinaryConverter for W3iFile {
                 w3i.fog_blue_tint = reader.read_u8()?;
                 w3i.fog_alpha_value = reader.read_u8()?;
                 w3i.global_weather = reader.read_i32()?;
-                w3i.custom_sound_environment = reader.read_c_string()?.into_string().unwrap();
+                w3i.custom_sound_environment = read_c_string_safe(reader)?;
                 w3i.custom_light_environment_id = reader.read_char()?;
                 w3i.custom_water_red_tint = reader.read_u8()?;
                 w3i.custom_water_green_tint = reader.read_u8()?;
