@@ -725,7 +725,7 @@ mod w3i_tests {
     use wce_formats::GameVersion::{RoC, TFT};
 
     use crate::w3i_file::{
-        ForceData, HeaderFlags, PlayerData, RandomItemSet, RandomItemTable,
+        ForceData, ForceFlags, HeaderFlags, PlayerData, RandomItemSet, RandomItemTable,
         RandomTablePositionType, RandomUnitSet, RandomUnitTable, W3iFile,
     };
 
@@ -797,12 +797,7 @@ mod w3i_tests {
                 },
             ],
             forces: vec![ForceData {
-                flags: 0,
-                allied: false,
-                shared_victory: false,
-                shared_vision: false,
-                shared_unit_control: false,
-                shared_advanced_unit_control: false,
+                force_flags: ForceFlags::new(0),
                 player_mask: -1,
                 name: "TRIGSTR_007".to_string(),
             }],
@@ -918,12 +913,7 @@ mod w3i_tests {
                 },
             ],
             forces: vec![ForceData {
-                flags: 0,
-                allied: false,
-                shared_victory: false,
-                shared_vision: false,
-                shared_unit_control: false,
-                shared_advanced_unit_control: false,
+                force_flags: ForceFlags::new(0),
                 player_mask: -1,
                 name: "TRIGSTR_007".to_string(),
             }],
