@@ -17,6 +17,298 @@ pub enum MapInfoError {
     ReadError(ReadError),
 }
 
+/// TFT flags:
+/// - Unknown 3
+/// - Unknown 4
+/// - Unknown 5
+#[derive(Debug, PartialEq, Clone, Default)]
+pub struct HeaderFlags {
+    raw_value: i32,
+}
+
+impl HeaderFlags {
+    pub fn new(flags: i32) -> Self {
+        Self { raw_value: flags }
+    }
+
+    pub fn hide_minimap_preview(&self) -> bool {
+        self.raw_value & 0x0001 == 0x0001
+    }
+
+    pub fn modify_ally_priorities(&self) -> bool {
+        self.raw_value & 0x0002 == 0x0002
+    }
+
+    pub fn is_melee(&self) -> bool {
+        self.raw_value & 0x0004 == 0x0004
+    }
+
+    pub fn unknown(&self) -> bool {
+        self.raw_value & 0x0008 == 0x0008
+    }
+
+    pub fn mask_partial_vision(&self) -> bool {
+        self.raw_value & 0x0010 == 0x0010
+    }
+
+    pub fn fixed_custom_player_force(&self) -> bool {
+        self.raw_value & 0x0020 == 0x0020
+    }
+
+    pub fn use_custom_force(&self) -> bool {
+        self.raw_value & 0x0040 == 0x0040
+    }
+
+    pub fn use_custom_tree(&self) -> bool {
+        self.raw_value & 0x0080 == 0x0080
+    }
+
+    pub fn use_custom_abilities(&self) -> bool {
+        self.raw_value & 0x0100 == 0x0100
+    }
+
+    pub fn use_custom_upgrades(&self) -> bool {
+        self.raw_value & 0x0200 == 0x0200
+    }
+
+    pub fn unknown_2(&self) -> bool {
+        self.raw_value & 0x0400 == 0x0400
+    }
+
+    pub fn show_waves_cliff_shores(&self) -> bool {
+        self.raw_value & 0x0800 == 0x0800
+    }
+
+    pub fn show_waves_rolling_shores(&self) -> bool {
+        self.raw_value & 0x1000 == 0x1000
+    }
+
+    /// TFT flag
+    pub fn unknown_3(&self) -> bool {
+        self.raw_value & 0x2000 == 0x2000
+    }
+
+    /// TFT flag
+    pub fn unknown_4(&self) -> bool {
+        self.raw_value & 0x4000 == 0x4000
+    }
+
+    /// TFT flag
+    pub fn unknown_5(&self) -> bool {
+        self.raw_value & 0x8000 == 0x8000
+    }
+
+    pub fn set_hide_minimap_preview(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0001;
+        } else {
+            self.raw_value &= !0x0001;
+        }
+    }
+
+    pub fn set_modify_ally_priorities(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0002;
+        } else {
+            self.raw_value &= !0x0002;
+        }
+    }
+
+    pub fn set_is_melee(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0004;
+        } else {
+            self.raw_value &= !0x0004;
+        }
+    }
+
+    pub fn set_unknown(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0008;
+        } else {
+            self.raw_value &= !0x0008;
+        }
+    }
+
+    pub fn set_mask_partial_vision(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0010;
+        } else {
+            self.raw_value &= !0x0010;
+        }
+    }
+
+    pub fn set_fixed_custom_player_force(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0020;
+        } else {
+            self.raw_value &= !0x0020;
+        }
+    }
+
+    pub fn set_use_custom_force(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0040;
+        } else {
+            self.raw_value &= !0x0040;
+        }
+    }
+
+    pub fn set_use_custom_tree(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0080;
+        } else {
+            self.raw_value &= !0x0080;
+        }
+    }
+
+    pub fn set_use_custom_abilities(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0100;
+        } else {
+            self.raw_value &= !0x0100;
+        }
+    }
+
+    pub fn set_use_custom_upgrades(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0200;
+        } else {
+            self.raw_value &= !0x0200;
+        }
+    }
+
+    pub fn set_unknown_2(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0400;
+        } else {
+            self.raw_value &= !0x0400;
+        }
+    }
+
+    pub fn set_show_waves_cliff_shores(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0800;
+        } else {
+            self.raw_value &= !0x0800;
+        }
+    }
+
+    pub fn set_show_waves_rolling_shores(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x1000;
+        } else {
+            self.raw_value &= !0x1000;
+        }
+    }
+
+    /// TFT flag
+    pub fn set_unknown_3(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x2000;
+        } else {
+            self.raw_value &= !0x2000;
+        }
+    }
+
+    /// TFT flag
+    pub fn set_unknown_4(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x4000;
+        } else {
+            self.raw_value &= !0x4000;
+        }
+    }
+
+    /// TFT flag
+    pub fn set_unknown_5(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x8000;
+        } else {
+            self.raw_value &= !0x8000;
+        }
+    }
+
+    pub fn raw_value(&self) -> i32 {
+        self.raw_value
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Default)]
+pub struct ForceFlags {
+    raw_value: i32,
+}
+
+impl ForceFlags {
+    pub fn new(flags: i32) -> Self {
+        Self { raw_value: flags }
+    }
+
+    pub fn allied(&self) -> bool {
+        self.raw_value & 0x0001 == 0x0001
+    }
+
+    pub fn shared_victory(&self) -> bool {
+        self.raw_value & 0x0002 == 0x0002
+    }
+
+    pub fn shared_vision(&self) -> bool {
+        self.raw_value & 0x0004 == 0x0004
+    }
+
+    pub fn shared_unit_control(&self) -> bool {
+        self.raw_value & 0x0010 == 0x0010
+    }
+
+    pub fn shared_advanced_unit_control(&self) -> bool {
+        self.raw_value & 0x0020 == 0x0020
+    }
+
+    pub fn set_allied(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0001;
+        } else {
+            self.raw_value &= !0x0001;
+        }
+    }
+
+    pub fn set_shared_victory(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0002;
+        } else {
+            self.raw_value &= !0x0002;
+        }
+    }
+
+    pub fn set_shared_vision(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0004;
+        } else {
+            self.raw_value &= !0x0004;
+        }
+    }
+
+    pub fn set_shared_unit_control(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0010;
+        } else {
+            self.raw_value &= !0x0010;
+        }
+    }
+
+    pub fn set_shared_advanced_unit_control(&mut self, value: bool) {
+        if value {
+            self.raw_value |= 0x0020;
+        } else {
+            self.raw_value &= !0x0020;
+        }
+    }
+
+    pub fn raw_value(&self) -> i32 {
+        self.raw_value
+    }
+}
+
 #[derive(Debug, PartialEq)]
 struct PlayerData {
     player_id: i32,
@@ -61,12 +353,7 @@ impl BinaryConverter for PlayerData {
 
 #[derive(Debug, PartialEq)]
 struct ForceData {
-    flags: i32,
-    allied: bool,
-    shared_victory: bool,
-    shared_vision: bool,
-    shared_unit_control: bool,
-    shared_advanced_unit_control: bool,
+    force_flags: ForceFlags,
     player_mask: i32,
     name: String,
 }
@@ -74,20 +361,11 @@ struct ForceData {
 impl BinaryConverter for ForceData {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
         let flags = reader.read_i32()?;
-        let allied = flags & 0x0001 == 1;
-        let shared_victory = flags & 0x0002 == 0x0002;
-        let shared_vision = flags & 0x0004 == 0x0004;
-        let shared_unit_control = flags & 0x0010 == 0x0010;
-        let shared_advanced_unit_control = flags & 0x0020 == 0x0020;
+        let force_flags = ForceFlags::new(flags);
         let player_mask = reader.read_i32()?;
         let name = reader.read_c_string()?.into_string().unwrap();
         Ok(ForceData {
-            flags,
-            allied,
-            shared_victory,
-            shared_vision,
-            shared_unit_control,
-            shared_advanced_unit_control,
+            force_flags,
             player_mask,
             name,
         })
@@ -270,23 +548,7 @@ pub struct W3iFile {
     map_playable_width: i32,
     map_playable_height: i32,
 
-    flags: i32,
-    hide_minimap_preview: bool,
-    modifiy_ally_priorities: bool,
-    is_melee: bool,
-    unknown: bool,
-    mask_partial_vision: bool,
-    fixed_custom_player_force: bool,
-    use_custom_force: bool,
-    use_custom_tree: bool,
-    use_custom_abilities: bool,
-    use_custom_upgrades: bool,
-    unkwown_2: bool,
-    show_waves_cliff_shores: bool,
-    show_waves_rolling_shores: bool,
-    unkwown_3: bool, // TFT
-    unkwown_4: bool, // TFT
-    unkwown_5: bool, // TFT
+    header_flags: HeaderFlags,
 
     ground_type: char,
     campaign_background: i32,                 // RoC
@@ -344,6 +606,14 @@ impl W3iFile {
         self.version
     }
 
+    pub fn header_flags(&self) -> &HeaderFlags {
+        &self.header_flags
+    }
+
+    pub fn header_flags_mut(&mut self) -> &mut HeaderFlags {
+        &mut self.header_flags
+    }
+
     pub fn debug(&self) {
         println!("{self:#?}");
     }
@@ -365,23 +635,8 @@ impl BinaryConverter for W3iFile {
         w3i.camera_bounds_complements = reader.read_vec_i32(4)?;
         w3i.map_playable_width = reader.read_i32()?;
         w3i.map_playable_height = reader.read_i32()?;
-        w3i.flags = reader.read_i32()?;
-        w3i.hide_minimap_preview = w3i.flags & 0x0001 == 0x0001;
-        w3i.modifiy_ally_priorities = w3i.flags & 0x0002 == 0x0002;
-        w3i.is_melee = w3i.flags & 0x0004 == 0x0004;
-        w3i.unknown = w3i.flags & 0x0008 == 0x0008;
-        w3i.mask_partial_vision = w3i.flags & 0x0010 == 0x0010;
-        w3i.fixed_custom_player_force = w3i.flags & 0x0020 == 0x0020;
-        w3i.use_custom_force = w3i.flags & 0x0040 == 0x0040;
-        w3i.use_custom_tree = w3i.flags & 0x0080 == 0x0080;
-        w3i.use_custom_abilities = w3i.flags & 0x0100 == 0x0100;
-        w3i.use_custom_upgrades = w3i.flags & 0x0200 == 0x0200;
-        w3i.unkwown_2 = w3i.flags & 0x0400 == 0x0400;
-        w3i.show_waves_cliff_shores = w3i.flags & 0x0800 == 0x0800;
-        w3i.show_waves_rolling_shores = w3i.flags & 0x1000 == 0x1000;
-        w3i.unkwown_3 = w3i.flags & 0x2000 == 0x2000;
-        w3i.unkwown_4 = w3i.flags & 0x4000 == 0x4000;
-        w3i.unkwown_5 = w3i.flags & 0x8000 == 0x8000;
+        let flags = reader.read_i32()?;
+        w3i.header_flags = HeaderFlags::new(flags);
         w3i.ground_type = reader.read_char()?;
 
         match w3i.version {
@@ -470,8 +725,8 @@ mod w3i_tests {
     use wce_formats::GameVersion::{RoC, TFT};
 
     use crate::w3i_file::{
-        ForceData, PlayerData, RandomItemSet, RandomItemTable, RandomTablePositionType,
-        RandomUnitSet, RandomUnitTable, W3iFile,
+        ForceData, HeaderFlags, PlayerData, RandomItemSet, RandomItemTable,
+        RandomTablePositionType, RandomUnitSet, RandomUnitTable, W3iFile,
     };
 
     fn get_roc_mock() -> W3iFile {
@@ -489,23 +744,7 @@ mod w3i_tests {
             camera_bounds_complements: vec![3, 3, 3, 3],
             map_playable_width: 26,
             map_playable_height: 26,
-            flags: 39952,
-            hide_minimap_preview: false,
-            modifiy_ally_priorities: false,
-            is_melee: false,
-            unknown: false,
-            mask_partial_vision: false,
-            fixed_custom_player_force: false,
-            use_custom_force: false,
-            use_custom_tree: false,
-            use_custom_abilities: false,
-            use_custom_upgrades: false,
-            unkwown_2: false,
-            show_waves_cliff_shores: false,
-            show_waves_rolling_shores: false,
-            unkwown_3: false,
-            unkwown_4: false,
-            unkwown_5: false,
+            header_flags: HeaderFlags::new(39952),
             ground_type: 'L',
             campaign_background: -1,
             custom_loading_screen_model_path: "".to_string(),
@@ -626,23 +865,7 @@ mod w3i_tests {
             camera_bounds_complements: vec![3, 3, 3, 3],
             map_playable_width: 26,
             map_playable_height: 26,
-            flags: 56336,
-            hide_minimap_preview: false,
-            modifiy_ally_priorities: false,
-            is_melee: false,
-            unknown: false,
-            mask_partial_vision: false,
-            fixed_custom_player_force: false,
-            use_custom_force: false,
-            use_custom_tree: false,
-            use_custom_abilities: false,
-            use_custom_upgrades: false,
-            unkwown_2: false,
-            show_waves_cliff_shores: false,
-            show_waves_rolling_shores: false,
-            unkwown_3: false,
-            unkwown_4: false,
-            unkwown_5: false,
+            header_flags: HeaderFlags::new(56336),
             ground_type: 'L',
             campaign_background: 0,
             custom_loading_screen_model_path: "".to_string(),
