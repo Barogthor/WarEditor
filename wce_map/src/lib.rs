@@ -16,7 +16,7 @@ pub const PREFIX_MDL_PATH: &str = "resources/blp";
 pub const PREFIX_BLP_PATH: &str = "resources/mdl";
 
 pub fn concat_path(path: &str) -> String {
-    format!("{}/{}", PREFIX_SAMPLE_PATH, path)
+    format!("{PREFIX_SAMPLE_PATH}/{path}")
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -47,10 +47,10 @@ pub enum OpeningError {
 }
 
 pub fn path_to_data(prefix: &str, path: &str) -> String {
-    format!("{}resources/datas/{}", prefix, path)
+    format!("{prefix}resources/datas/{path}")
 }
 pub fn path_to_slk(prefix: &str, path: &str) -> String {
-    format!("{}resources/slk/{}", prefix, path)
+    format!("{prefix}resources/slk/{path}")
 }
 
 pub struct GameData {

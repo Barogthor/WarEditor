@@ -70,6 +70,6 @@ impl MMPFile {
     }
 
     pub fn debug(&self) {
-        println!("{:#?}", self);
+        println!("{self:#?}");
     }
 }

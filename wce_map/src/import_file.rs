@@ -36,7 +36,7 @@ impl ImportFile {
         }
     }
     pub fn debug(&self) {
-        println!("{:#?}", self);
+        println!("{self:#?}");
     }
 }
 

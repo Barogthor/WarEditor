@@ -17,10 +17,7 @@ fn elapsed_time(instant: &Instant) {
     let seconds = (elasped / 1000) % 60;
     let mins = elasped / 60000;
     let hours = elasped / 3600000;
-    println!(
-        "Elapsed time: {:02}:{:02}:{:02}::{:03}",
-        hours, mins, seconds, millis
-    );
+    println!("Elapsed time: {hours:02}:{mins:02}:{seconds:02}::{millis:03}");
 }
 
 fn main() {
@@ -123,13 +120,13 @@ fn main() {
     let _map = Map::open(harrow, local_game_data);
     let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
     // let maps = test_melee_maps(&Path::new(&format!("{}\\Maps", old_dir_w3)));
-    let maps = paths_custom_maps(&Path::new(&format!("{}\\Maps", old_dir_w3)));
+    let maps = paths_custom_maps(Path::new(&format!("{old_dir_w3}\\Maps")));
     for map in maps {
         let path = map.into_os_string().into_string().unwrap();
-        println!("{:?}", path);
+        println!("{path:?}");
         let map_res = Map::open(path.clone(), local_game_data);
         if let Err(err) = map_res {
-            error!("Error on map '{}' : {:?}", path, err);
+            error!("Error on map '{path}' : {err:?}");
         }
     }
     //    println!("size rgba: {}",size_of_val(&vec![0u8,0u8,0u8,0u8][0..]));
@@ -200,7 +197,7 @@ mod tests_maps {
         let mut on_error = false;
 
         let game_data = &GameData::new("");
-        let maps = paths_blizzard_maps(&Path::new(&format!("{}\\Maps", old_dir_w3)));
+        let maps = paths_blizzard_maps(Path::new(&format!("{old_dir_w3}\\Maps")));
         for map in maps {
             let path = map.into_os_string().into_string().unwrap();
 
@@ -211,7 +208,7 @@ mod tests_maps {
 
             let map_res = Map::open(path.clone(), game_data);
             if let Err(err) = map_res {
-                println!("Error on map '{}' : {:?}", path, err);
+                println!("Error on map '{path}' : {err:?}");
                 on_error = true;
             }
             if on_error {

@@ -9,9 +9,10 @@ use crate::binary_reader::{BinaryReader, ReadResult};
 use crate::binary_writer::BinaryWriter;
 use crate::MpqError::IoError;
 
-#[derive(Debug, PartialOrd, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialOrd, PartialEq, Clone, Copy, Default)]
 pub enum GameVersion {
     RoC,
+    #[default]
     TFT,
     Reforged,
 }
@@ -30,16 +31,7 @@ impl GameVersion {
         }
     }
     pub fn is_remaster(&self) -> bool {
-        match self {
-            GameVersion::Reforged => true,
-            _ => false,
-        }
-    }
-}
-
-impl Default for GameVersion {
-    fn default() -> Self {
-        GameVersion::TFT
+        matches!(self, GameVersion::Reforged)
     }
 }
 
@@ -93,11 +85,11 @@ impl MapArchive {
         let path = Path::new(&path);
         let ext = path
             .extension()
-            .expect(&format!("No extension for path '{:?}'", path));
+            .unwrap_or_else(|| panic!("No extension for path '{:?}'", path));
 
         if ext == "w3m" || ext == "w3x" {
             let archive = Archive::open(path);
-            archive.map(|a| Self(a)).map_err(IoError)
+            archive.map(Self).map_err(IoError)
         } else {
             Err(MpqError::NotMapArchive)
         }
@@ -121,7 +113,7 @@ pub struct GameMpq(Archive);
 impl GameMpq {
     pub fn open(path: String) -> Result<Self, std::io::Error> {
         let archive = Archive::open(path);
-        archive.map(|a| Self(a))
+        archive.map(Self)
     }
 }
 impl Deref for GameMpq {

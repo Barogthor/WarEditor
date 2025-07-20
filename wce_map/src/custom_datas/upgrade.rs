@@ -26,10 +26,10 @@ impl CustomUpgradeFile {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
                 file.read(map, &mut buffer)
-                    .map_err(|e| OpeningError::CustomUpgrade(format!("{}", e)))?;
+                    .map_err(|e| OpeningError::CustomUpgrade(format!("{e}")))?;
                 let mut reader = BinaryReader::new(buffer);
                 let custom_upgrade = Self::from(&mut reader, game_version)
-                    .map_err(|e| OpeningError::CustomUpgrade(format!("{:?}", e)))?;
+                    .map_err(|e| OpeningError::CustomUpgrade(format!("{e:?}")))?;
                 Ok(Some(custom_upgrade))
             }
             _ => Ok(None),
@@ -66,7 +66,7 @@ impl CustomUpgradeFile {
     }
 
     pub fn debug(&self) {
-        println!("{:#?}", self);
+        println!("{self:#?}");
     }
 }
 

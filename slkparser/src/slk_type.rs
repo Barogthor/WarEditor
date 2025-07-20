@@ -88,7 +88,7 @@ impl RecordType {
             "W" => Ok(RecordType::WindowDefinitions),
             "NL" => Ok(RecordType::ChartExtLink),
             "E" => Ok(RecordType::EOF),
-            _ => Err(format!("Unknown record {}", id)),
+            _ => Err(format!("Unknown record {id}")),
         }
     }
 }

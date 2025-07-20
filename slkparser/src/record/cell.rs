@@ -61,7 +61,7 @@ impl Cell {
         Cell { column, row, value }
     }
 
-    pub fn parse(fields: &Vec<String>, _line: Option<u32>) -> Self {
+    pub fn parse(fields: &[String], _line: Option<u32>) -> Self {
         let mut cell = Cell::default();
         for field in fields.iter() {
             let field_id = &field[0..1];

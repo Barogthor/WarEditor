@@ -21,7 +21,7 @@ pub struct SLKScanner {
 
 impl SLKScanner {
     pub fn open(path: &str) -> Self {
-        let mut f = File::open(path).expect(&format!("Unknown file: {}", path));
+        let mut f = File::open(path).expect(&format!("Unknown file: {path}"));
         let mut buffer: String = Default::default();
         f.read_to_string(&mut buffer).unwrap();
         //        let buffer = buffer.split(END_RECORD).map(|slice: &str| String::from(slice)).collect();

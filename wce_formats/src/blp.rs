@@ -28,7 +28,7 @@ impl BlpFlag {
             //TODO faire conversion slim (regarder jpeg_decoder marker)
             3 | 4 => Ok(BlpFlag::RGBA),
             flag if flag >= 5 => Ok(BlpFlag::RGB),
-            _ => Err(format!("Unknown or unsupported blp flag")),
+            _ => Err("Unknown or unsupported blp flag".to_string()),
         }
     }
 }
@@ -51,7 +51,7 @@ impl Compression {
             //TODO faire conversion slim (regarder jpeg_decoder marker)
             0 => Ok(Compression::JPEG),
             1 => Ok(Compression::PALETTE),
-            _ => Err(format!("Unknown BLP type")),
+            _ => Err("Unknown BLP type".to_string()),
         }
     }
 }
@@ -96,7 +96,7 @@ impl BLP {
             let reader = Cursor::new(jpeg_buffer);
             let mut decoder = Decoder::new(reader);
             let mut res = decoder.decode().expect("error while decoding");
-            let pixels: Vec<RGB8> = res.chunks_mut(4).map(|cmyk| cmyk_to_rgb(cmyk)).collect();
+            let pixels: Vec<RGB8> = res.chunks_mut(4).map(cmyk_to_rgb).collect();
             self.jpeg_mipmaps.push(pixels);
         }
         Ok(())

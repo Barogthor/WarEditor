@@ -107,8 +107,7 @@ impl ObjectDefinition {
 
 fn cstring_to_string_meta(cstr: CString, id: &ObjectId, meta_id: &[u8; 4]) -> String {
     cstr.into_string().expect(&format!(
-        "Failed to read cstring for object '{:?}' of meta '{}'",
-        id,
+        "Failed to read cstring for object '{id:?}' of meta '{}'",
         String::from_utf8_lossy(meta_id)
     ))
 }
@@ -240,8 +239,7 @@ fn read_meta_opts(reader: &mut BinaryReader, id: &ObjectId) -> ReadResult<MetaMo
         1 => VariableValue::Real(reader.read_f32()?),
         2 => VariableValue::Unreal(reader.read_f32()?),
         3 => VariableValue::String(reader.read_c_string()?.into_string().expect(&format!(
-            "Failed to read cstring for object '{:?}' of meta '{}' (byte position {})",
-            id,
+            "Failed to read cstring for object '{id:?}' of meta '{}' (byte position {})",
             String::from_utf8_lossy(&meta_id),
             reader.pos()
         ))),

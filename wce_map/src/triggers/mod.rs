@@ -140,7 +140,7 @@ impl TriggersFile {
     }
 
     pub fn debug(&self) {
-        println!("{:#?}", self);
+        println!("{self:#?}");
     }
 }
 
@@ -149,8 +149,7 @@ fn to_game_version(value: u32) -> Result<GameVersion, WtgError> {
         4 => Ok(RoC),
         7 => Ok(TFT),
         _ => Err(UnknownGameVersion(format!(
-            "Unknown or unsupported game version '{}'",
-            value
+            "Unknown or unsupported game version '{value}'"
         ))),
     }
 }

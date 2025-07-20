@@ -75,7 +75,7 @@ impl CameraFile {
         }
     }
     pub fn debug(&self) {
-        println!("{:#?}", self);
+        println!("{self:#?}");
     }
 }
 
