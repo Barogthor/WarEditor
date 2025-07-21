@@ -45,10 +45,7 @@ impl ParameterType {
             1 => Ok(ParameterType::Variable),
             2 => Ok(ParameterType::Function),
             3 => Ok(ParameterType::String),
-            // -1 => {
-            //     info!("Parameter type invalid was found");
-            //     Ok(ParameterType::INVALID)
-            // },
+            -1 => Ok(ParameterType::Invalid),
             _ => Err(ParameterConversionError(format!(
                 "Failure on byte '{bin_pos}' : Unknown Parameter type {n} was found"
             ))),

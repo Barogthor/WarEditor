@@ -21,11 +21,11 @@ impl TriggerJassFile {
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
         let file = map
             .open_file(MAP_TRIGGERS_SCRIPT)
-            .map_err(|e| OpeningError::CustomTextTrigger(format!("{e}")))?;
+            .map_err(|e| OpeningError::CustomTextTrigger(format!("{e:?}")))?;
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
         file.read(map, &mut buffer)
-            .map_err(|e| OpeningError::CustomTextTrigger(format!("{e}")))?;
+            .map_err(|e| OpeningError::CustomTextTrigger(format!("{e:?}")))?;
         let mut reader = BinaryReader::new(buffer);
         let jass = reader
             .read::<TriggerJassFile>()

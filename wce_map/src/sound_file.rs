@@ -139,7 +139,10 @@ mod w3s_test {
 
     use wce_formats::binary_reader::BinaryReader;
 
-    use crate::sound_file::{Sound, SoundFile, DEFAULT_FLOAT};
+    use crate::{
+        get_resources_path,
+        sound_file::{Sound, SoundFile, DEFAULT_FLOAT},
+    };
 
     fn mock_sounds() -> Vec<Sound> {
         vec![
@@ -281,16 +284,21 @@ mod w3s_test {
         ]
     }
 
+    fn get_path(path_resource: &str) -> String {
+        let base_path = get_resources_path();
+        format!("{base_path}/{path_resource}")
+    }
+
     #[test]
     fn no_failure() {
-        let mut w3s = File::open("../resources/Scenario/Sandbox_roc/war3map.w3s").unwrap();
+        let mut w3s = File::open(get_path("resources/Scenario/Sandbox_roc/war3map.w3s")).unwrap();
         let mut reader = BinaryReader::from(&mut w3s);
         let _sound_file = reader.read::<SoundFile>();
     }
 
     #[test]
     fn check_values() {
-        let mut w3s = File::open("../resources/Scenario/Sandbox_roc/war3map.w3s").unwrap();
+        let mut w3s = File::open(get_path("resources/Scenario/Sandbox_roc/war3map.w3s")).unwrap();
         let mut reader = BinaryReader::from(&mut w3s);
         let sound_file = reader.read::<SoundFile>().unwrap();
         let mock = mock_sounds();

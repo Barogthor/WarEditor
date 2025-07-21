@@ -734,6 +734,7 @@ mod w3i_tests {
     use wce_formats::binary_reader::BinaryReader;
     use wce_formats::GameVersion::{RoC, TFT};
 
+    use crate::get_resources_path;
     use crate::w3i_file::{
         ForceData, ForceFlags, HeaderFlags, PlayerData, RandomItemSet, RandomItemTable,
         RandomTablePositionType, RandomUnitSet, RandomUnitTable, W3iFile,
@@ -945,9 +946,14 @@ mod w3i_tests {
         }
     }
 
+    fn get_path(path_resource: &str) -> String {
+        let base_path = get_resources_path();
+        format!("{base_path}/{path_resource}")
+    }
+
     #[test]
     fn w3i_roc_test() {
-        let mut w3i = File::open("../resources/Scenario/Sandbox_roc/war3map.w3i").unwrap();
+        let mut w3i = File::open(get_path("resources/Scenario/Sandbox_roc/war3map.w3i")).unwrap();
         let mut reader = BinaryReader::from(&mut w3i);
         let w3i = reader.read::<W3iFile>().unwrap();
         let mock_w3i = get_roc_mock();
@@ -955,7 +961,7 @@ mod w3i_tests {
     }
     #[test]
     fn w3i_tft_test() {
-        let mut w3i = File::open("../resources/Scenario/Sandbox_tft/war3map.w3i").unwrap();
+        let mut w3i = File::open(get_path("resources/Scenario/Sandbox_tft/war3map.w3i")).unwrap();
         let mut reader = BinaryReader::from(&mut w3i);
         let w3i = reader.read::<W3iFile>().unwrap();
         let mock_w3i = get_tft_mock();

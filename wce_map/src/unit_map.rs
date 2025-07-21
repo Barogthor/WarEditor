@@ -350,6 +350,7 @@ mod unitmap_tests {
     use wce_formats::binary_reader::BinaryReader;
     use wce_formats::GameVersion::RoC;
 
+    use crate::get_resources_path;
     use crate::unit_map::RandomUnitItemFlag::{
         Neutral, RandomFromCustomTable, RandomFromTableGroup,
     };
@@ -569,10 +570,15 @@ mod unitmap_tests {
         ]
     }
 
+    fn get_path(path_resource: &str) -> String {
+        let base_path = get_resources_path();
+        format!("{base_path}/{path_resource}")
+    }
+
     #[test]
     fn no_failure_roc() {
         let mut unititem_file =
-            File::open("../resources/Scenario/Sandbox_roc/war3mapUnits.doo").unwrap();
+            File::open(get_path("resources/Scenario/Sandbox_roc/war3mapUnits.doo")).unwrap();
         let mut reader = BinaryReader::from(&mut unititem_file);
         let _unititem_map = reader.read::<UnitItemMap>();
     }
@@ -580,7 +586,7 @@ mod unitmap_tests {
     #[test]
     fn check_roc() {
         let mut unititem_file =
-            File::open("../resources/Scenario/Sandbox_roc/war3mapUnits.doo").unwrap();
+            File::open(get_path("resources/Scenario/Sandbox_roc/war3mapUnits.doo")).unwrap();
         let mut reader = BinaryReader::from(&mut unititem_file);
         let unititem_map = reader.read::<UnitItemMap>().unwrap();
         assert_eq!(unititem_map.id, "W3do".to_string());

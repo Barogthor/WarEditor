@@ -119,6 +119,16 @@ impl GameData {
     }
 }
 
+#[cfg(test)]
+fn get_resources_path() -> String {
+    // Utilise CARGO_MANIFEST_DIR pour obtenir le répertoire racine du workspace
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let workspace_root = std::path::Path::new(manifest_dir)
+        .parent()
+        .expect("Should have parent directory");
+    format!("{}/", workspace_root.to_string_lossy())
+}
+
 pub mod camera_file;
 pub mod custom_datas;
 pub mod data_ini;

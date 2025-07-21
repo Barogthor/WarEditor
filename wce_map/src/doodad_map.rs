@@ -214,12 +214,15 @@ fn to_game_version(value: u32) -> GameVersion {
 
 #[cfg(test)]
 mod doodads_test {
-    use std::fs::File;
+    use std::{fmt::format, fs::File};
 
     use wce_formats::binary_reader::BinaryReader;
     use wce_formats::GameVersion::RoC;
 
-    use crate::doodad_map::{Destructable, DoodadMap, Drops};
+    use crate::{
+        doodad_map::{Destructable, DoodadMap, Drops},
+        get_resources_path,
+    };
 
     fn mock_destructable_roc() -> Vec<Destructable> {
         vec![
@@ -271,16 +274,23 @@ mod doodads_test {
         ]
     }
 
+    fn get_path(path_resource: &str) -> String {
+        let base_path = get_resources_path();
+        format!("{base_path}/{path_resource}")
+    }
+
     #[test]
     fn no_failure_roc() {
-        let mut doodad_file = File::open("../resources/Scenario/Sandbox_roc/war3map.doo").unwrap();
+        let mut doodad_file =
+            File::open(get_path("resources/Scenario/Sandbox_roc/war3map.doo")).unwrap();
         let mut reader = BinaryReader::from(&mut doodad_file);
         let _doodad_map = reader.read::<DoodadMap>();
     }
 
     #[test]
     fn check_roc() {
-        let mut doodad_file = File::open("../resources/Scenario/Sandbox_roc/war3map.doo").unwrap();
+        let mut doodad_file =
+            File::open(get_path("resources/Scenario/Sandbox_roc/war3map.doo")).unwrap();
         let mut reader = BinaryReader::from(&mut doodad_file);
         let doodad_map = reader.read::<DoodadMap>().unwrap();
         let mock_destructables = mock_destructable_roc();
@@ -299,7 +309,8 @@ mod doodads_test {
 
     #[test]
     fn no_failure_tft() {
-        let mut doodad_file = File::open("../resources/Scenario/Sandbox_tft/war3map.doo").unwrap();
+        let mut doodad_file =
+            File::open(get_path("resources/Scenario/Sandbox_tft/war3map.doo")).unwrap();
         let mut reader = BinaryReader::from(&mut doodad_file);
         let _doodad_map = reader.read::<DoodadMap>();
     }

@@ -106,7 +106,10 @@ mod w3c_test {
 
     use wce_formats::binary_reader::BinaryReader;
 
-    use crate::camera_file::{Camera, CameraFile};
+    use crate::{
+        camera_file::{Camera, CameraFile},
+        get_resources_path,
+    };
 
     fn mock_cameras() -> Vec<Camera> {
         vec![Camera {
@@ -124,16 +127,21 @@ mod w3c_test {
         }]
     }
 
+    fn get_path(path_resource: &str) -> String {
+        let base_path = get_resources_path();
+        format!("{base_path}/{path_resource}")
+    }
+
     #[test]
     fn no_failure() {
-        let mut w3c = File::open("../resources/Scenario/Sandbox_roc/war3map.w3c").unwrap();
+        let mut w3c = File::open(get_path("resources/Scenario/Sandbox_roc/war3map.w3c")).unwrap();
         let mut reader = BinaryReader::from(&mut w3c);
         reader.read::<CameraFile>().unwrap();
     }
 
     #[test]
     fn check_values() {
-        let mut w3c = File::open("../resources/Scenario/Sandbox_roc/war3map.w3c").unwrap();
+        let mut w3c = File::open(get_path("resources/Scenario/Sandbox_roc/war3map.w3c")).unwrap();
         let mut reader = BinaryReader::from(&mut w3c);
         let camera_file = reader.read::<CameraFile>().unwrap();
         let mock_cameras = mock_cameras();

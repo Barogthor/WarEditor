@@ -91,10 +91,10 @@ impl TriggersFile {
     pub fn read_file(map: &mut MapArchive, trigger_data: &DataIni) -> Result<Self, OpeningError> {
         let file = map
             .open_file(MAP_TRIGGERS)
-            .map_err(|e| OpeningError::Triggers(format!("{e}")))?;
+            .map_err(|e| OpeningError::Triggers(format!("{e:?}")))?;
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
         file.read(map, &mut buffer)
-            .map_err(|e| OpeningError::Triggers(format!("{e}")))?;
+            .map_err(|e| OpeningError::Triggers(format!("{e:?}")))?;
         let mut reader = BinaryReader::new(buffer);
         let res = Self::from(&mut reader, trigger_data).map_err(OpeningError::from)?;
         Ok(res)

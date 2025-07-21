@@ -106,7 +106,10 @@ mod w3r_test {
 
     use wce_formats::binary_reader::BinaryReader;
 
-    use crate::region_file::{Region, RegionFile};
+    use crate::{
+        get_resources_path,
+        region_file::{Region, RegionFile},
+    };
 
     fn mock_regions() -> Vec<Region> {
         vec![
@@ -149,16 +152,21 @@ mod w3r_test {
         ]
     }
 
+    fn get_path(path_resource: &str) -> String {
+        let base_path = get_resources_path();
+        format!("{base_path}/{path_resource}")
+    }
+
     #[test]
     fn no_failure() {
-        let mut w3r = File::open("../resources/Scenario/Sandbox_roc/war3map.w3r").unwrap();
+        let mut w3r = File::open(get_path("resources/Scenario/Sandbox_roc/war3map.w3r")).unwrap();
         let mut reader = BinaryReader::from(&mut w3r);
         reader.read::<RegionFile>().unwrap();
     }
 
     #[test]
     fn check_values() {
-        let mut w3r = File::open("../resources/Scenario/Sandbox_roc/war3map.w3r").unwrap();
+        let mut w3r = File::open(get_path("resources/Scenario/Sandbox_roc/war3map.w3r")).unwrap();
         let mut reader = BinaryReader::from(&mut w3r);
         let region_file = reader.read::<RegionFile>().unwrap();
         let mock_regions = mock_regions();
