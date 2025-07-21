@@ -2,6 +2,7 @@ use std::fmt::Debug;
 use std::io::Error;
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
+use std::string::FromUtf8Error;
 
 use mpq::Archive;
 
@@ -136,4 +137,10 @@ pub enum ReadError {
     NullCString(u64, usize),
     Other(Error),
     Reason(String),
+}
+
+impl From<FromUtf8Error> for ReadError {
+    fn from(value: FromUtf8Error) -> Self {
+        ReadError::Reason(format!("{value:?}"))
+    }
 }

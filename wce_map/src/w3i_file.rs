@@ -4,6 +4,28 @@ use std::fmt::Debug;
 #[cfg(test)]
 use pretty_assertions::assert_eq;
 
+macro_rules! flag_accessors {
+    ($($name:ident, $bit:expr $(, $doc:literal)?),* $(,)?) => {
+        $(
+            $(#[doc = $doc])?
+            pub fn $name(&self) -> bool {
+                self.raw_value & $bit == $bit
+            }
+
+            paste::paste! {
+                $(#[doc = $doc])?
+                pub fn [<set_ $name>](&mut self, value: bool) {
+                    if value {
+                        self.raw_value |= $bit;
+                    } else {
+                        self.raw_value &= !$bit;
+                    }
+                }
+            }
+        )*
+    };
+}
+
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{Reforged, RoC, TFT};
@@ -31,202 +53,23 @@ impl HeaderFlags {
         Self { raw_value: flags }
     }
 
-    pub fn hide_minimap_preview(&self) -> bool {
-        self.raw_value & 0x0001 == 0x0001
-    }
-
-    pub fn modify_ally_priorities(&self) -> bool {
-        self.raw_value & 0x0002 == 0x0002
-    }
-
-    pub fn is_melee(&self) -> bool {
-        self.raw_value & 0x0004 == 0x0004
-    }
-
-    pub fn unknown(&self) -> bool {
-        self.raw_value & 0x0008 == 0x0008
-    }
-
-    pub fn mask_partial_vision(&self) -> bool {
-        self.raw_value & 0x0010 == 0x0010
-    }
-
-    pub fn fixed_custom_player_force(&self) -> bool {
-        self.raw_value & 0x0020 == 0x0020
-    }
-
-    pub fn use_custom_force(&self) -> bool {
-        self.raw_value & 0x0040 == 0x0040
-    }
-
-    pub fn use_custom_tree(&self) -> bool {
-        self.raw_value & 0x0080 == 0x0080
-    }
-
-    pub fn use_custom_abilities(&self) -> bool {
-        self.raw_value & 0x0100 == 0x0100
-    }
-
-    pub fn use_custom_upgrades(&self) -> bool {
-        self.raw_value & 0x0200 == 0x0200
-    }
-
-    pub fn unknown_2(&self) -> bool {
-        self.raw_value & 0x0400 == 0x0400
-    }
-
-    pub fn show_waves_cliff_shores(&self) -> bool {
-        self.raw_value & 0x0800 == 0x0800
-    }
-
-    pub fn show_waves_rolling_shores(&self) -> bool {
-        self.raw_value & 0x1000 == 0x1000
-    }
-
-    /// TFT flag
-    pub fn unknown_3(&self) -> bool {
-        self.raw_value & 0x2000 == 0x2000
-    }
-
-    /// TFT flag
-    pub fn unknown_4(&self) -> bool {
-        self.raw_value & 0x4000 == 0x4000
-    }
-
-    /// TFT flag
-    pub fn unknown_5(&self) -> bool {
-        self.raw_value & 0x8000 == 0x8000
-    }
-
-    pub fn set_hide_minimap_preview(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0001;
-        } else {
-            self.raw_value &= !0x0001;
-        }
-    }
-
-    pub fn set_modify_ally_priorities(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0002;
-        } else {
-            self.raw_value &= !0x0002;
-        }
-    }
-
-    pub fn set_is_melee(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0004;
-        } else {
-            self.raw_value &= !0x0004;
-        }
-    }
-
-    pub fn set_unknown(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0008;
-        } else {
-            self.raw_value &= !0x0008;
-        }
-    }
-
-    pub fn set_mask_partial_vision(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0010;
-        } else {
-            self.raw_value &= !0x0010;
-        }
-    }
-
-    pub fn set_fixed_custom_player_force(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0020;
-        } else {
-            self.raw_value &= !0x0020;
-        }
-    }
-
-    pub fn set_use_custom_force(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0040;
-        } else {
-            self.raw_value &= !0x0040;
-        }
-    }
-
-    pub fn set_use_custom_tree(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0080;
-        } else {
-            self.raw_value &= !0x0080;
-        }
-    }
-
-    pub fn set_use_custom_abilities(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0100;
-        } else {
-            self.raw_value &= !0x0100;
-        }
-    }
-
-    pub fn set_use_custom_upgrades(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0200;
-        } else {
-            self.raw_value &= !0x0200;
-        }
-    }
-
-    pub fn set_unknown_2(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0400;
-        } else {
-            self.raw_value &= !0x0400;
-        }
-    }
-
-    pub fn set_show_waves_cliff_shores(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0800;
-        } else {
-            self.raw_value &= !0x0800;
-        }
-    }
-
-    pub fn set_show_waves_rolling_shores(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x1000;
-        } else {
-            self.raw_value &= !0x1000;
-        }
-    }
-
-    /// TFT flag
-    pub fn set_unknown_3(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x2000;
-        } else {
-            self.raw_value &= !0x2000;
-        }
-    }
-
-    /// TFT flag
-    pub fn set_unknown_4(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x4000;
-        } else {
-            self.raw_value &= !0x4000;
-        }
-    }
-
-    /// TFT flag
-    pub fn set_unknown_5(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x8000;
-        } else {
-            self.raw_value &= !0x8000;
-        }
+    flag_accessors! {
+        hide_minimap_preview, 0x0001,
+        modify_ally_priorities, 0x0002,
+        is_melee, 0x0004,
+        unknown, 0x0008,
+        mask_partial_vision, 0x0010,
+        fixed_custom_player_force, 0x0020,
+        use_custom_force, 0x0040,
+        use_custom_tree, 0x0080,
+        use_custom_abilities, 0x0100,
+        use_custom_upgrades, 0x0200,
+        unknown_2, 0x0400,
+        show_waves_cliff_shores, 0x0800,
+        show_waves_rolling_shores, 0x1000,
+        unknown_3, 0x2000, "TFT flag",
+        unknown_4, 0x4000, "TFT flag",
+        unknown_5, 0x8000, "TFT flag",
     }
 
     pub fn raw_value(&self) -> i32 {
@@ -244,64 +87,12 @@ impl ForceFlags {
         Self { raw_value: flags }
     }
 
-    pub fn allied(&self) -> bool {
-        self.raw_value & 0x0001 == 0x0001
-    }
-
-    pub fn shared_victory(&self) -> bool {
-        self.raw_value & 0x0002 == 0x0002
-    }
-
-    pub fn shared_vision(&self) -> bool {
-        self.raw_value & 0x0004 == 0x0004
-    }
-
-    pub fn shared_unit_control(&self) -> bool {
-        self.raw_value & 0x0010 == 0x0010
-    }
-
-    pub fn shared_advanced_unit_control(&self) -> bool {
-        self.raw_value & 0x0020 == 0x0020
-    }
-
-    pub fn set_allied(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0001;
-        } else {
-            self.raw_value &= !0x0001;
-        }
-    }
-
-    pub fn set_shared_victory(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0002;
-        } else {
-            self.raw_value &= !0x0002;
-        }
-    }
-
-    pub fn set_shared_vision(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0004;
-        } else {
-            self.raw_value &= !0x0004;
-        }
-    }
-
-    pub fn set_shared_unit_control(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0010;
-        } else {
-            self.raw_value &= !0x0010;
-        }
-    }
-
-    pub fn set_shared_advanced_unit_control(&mut self, value: bool) {
-        if value {
-            self.raw_value |= 0x0020;
-        } else {
-            self.raw_value &= !0x0020;
-        }
+    flag_accessors! {
+        allied, 0x0001,
+        shared_victory, 0x0002,
+        shared_vision, 0x0004,
+        shared_unit_control, 0x0010,
+        shared_advanced_unit_control, 0x0020,
     }
 
     pub fn raw_value(&self) -> i32 {
@@ -387,7 +178,7 @@ struct UpgradeAvailability {
 impl BinaryConverter for UpgradeAvailability {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
         let player_availability = reader.read_i32()?;
-        let upgrade_id = String::from_utf8(reader.read_bytes(4)?).unwrap();
+        let upgrade_id = String::from_utf8(reader.read_bytes(4)?)?;
         let upgrade_level = reader.read_i32()?;
         let availability = reader.read_i32()?;
         Ok(UpgradeAvailability {
@@ -412,7 +203,7 @@ struct TechAvailability {
 impl BinaryConverter for TechAvailability {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
         let player_availability = reader.read_i32()?;
-        let tech_id = String::from_utf8(reader.read_bytes(4)?).unwrap();
+        let tech_id = String::from_utf8(reader.read_bytes(4)?)?;
         Ok(TechAvailability {
             player_availability,
             tech_id,
@@ -438,12 +229,12 @@ pub enum RandomTablePositionType {
 }
 
 impl RandomTablePositionType {
-    pub fn from(n: u32) -> Result<Self, String> {
+    pub fn from(n: u32) -> Result<Self, ReadError> {
         match n {
             0 => Ok(RandomTablePositionType::Unit),
             1 => Ok(RandomTablePositionType::Building),
             2 => Ok(RandomTablePositionType::Item),
-            _ => Err(format!("Unknown position type: {n}")),
+            _ => Err(ReadError::Reason(format!("Unknown position type: {n}"))),
         }
     }
 }
@@ -463,7 +254,7 @@ impl BinaryConverter for RandomUnitTable {
         let count_pos = reader.read_i32()? as usize;
         let mut position_types = vec![];
         for _ in 0..count_pos {
-            position_types.push(RandomTablePositionType::from(reader.read_u32()?).unwrap())
+            position_types.push(RandomTablePositionType::from(reader.read_u32()?)?)
         }
         let mut sets = vec![];
         let count_lines = reader.read_u32()?;
@@ -499,7 +290,7 @@ impl BinaryConverter for RandomItemSet {
         let mut items = vec![];
         for _ in 0..count_items {
             let chance = reader.read_u32()?;
-            let id = String::from_utf8(reader.read_bytes(4)?).unwrap();
+            let id = String::from_utf8(reader.read_bytes(4)?)?;
             items.push((chance, id));
         }
         Ok(RandomItemSet { items })
@@ -966,5 +757,57 @@ mod w3i_tests {
         let w3i = reader.read::<W3iFile>().unwrap();
         let mock_w3i = get_tft_mock();
         assert_eq!(w3i, mock_w3i);
+    }
+
+    #[test]
+    fn test_header_flags_macro() {
+        let mut flags = HeaderFlags::new(0);
+
+        // Test initial state
+        assert!(!flags.is_melee());
+        assert!(!flags.use_custom_abilities());
+
+        // Test setters
+        flags.set_is_melee(true);
+        flags.set_use_custom_abilities(true);
+        flags.set_unknown_3(true); // TFT flag
+
+        // Test getters
+        assert!(flags.is_melee());
+        assert!(flags.use_custom_abilities());
+        assert!(flags.unknown_3());
+
+        // Test raw value
+        let expected = 0x0004 | 0x0100 | 0x2000; // is_melee + use_custom_abilities + unknown_3
+        assert_eq!(flags.raw_value(), expected);
+
+        // Test unsetting
+        flags.set_is_melee(false);
+        assert!(!flags.is_melee());
+        assert!(flags.use_custom_abilities()); // Should still be true
+    }
+
+    #[test]
+    fn test_force_flags_macro() {
+        let mut flags = ForceFlags::new(0);
+
+        // Test initial state
+        assert!(!flags.allied());
+        assert!(!flags.shared_victory());
+
+        // Test setters
+        flags.set_allied(true);
+        flags.set_shared_victory(true);
+        flags.set_shared_unit_control(true);
+
+        // Test getters
+        assert!(flags.allied());
+        assert!(flags.shared_victory());
+        assert!(flags.shared_unit_control());
+        assert!(!flags.shared_vision()); // Should still be false
+
+        // Test raw value
+        let expected = 0x0001 | 0x0002 | 0x0010; // allied + shared_victory + shared_unit_control
+        assert_eq!(flags.raw_value(), expected);
     }
 }
