@@ -41,7 +41,7 @@ impl BinaryConverter for Camera {
         camera.fov = reader.read_f32()?;
         camera.far_clip = reader.read_f32()?;
         camera.unknown = reader.read_f32()?;
-        camera.name = reader.read_c_string()?.into_string().unwrap();
+        camera.name = reader.read_c_string_converted()?;
         Ok(camera)
     }
 

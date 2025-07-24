@@ -103,17 +103,33 @@ impl BinaryReader {
             .read_until(b'\0', &mut result_buf)
             .map_err(|e| to_read_error(self, e))?;
         result_buf.pop();
-        Ok(CString::new(result_buf).unwrap())
+        let size = result_buf.len();
+        CString::new(result_buf).map_err(|_| cstring_null(self, size))
     }
-    pub fn read_c_string_sized(&mut self, size: usize) -> ReadResult<CString> {
-        let v = self.read_bytes(size)?;
-        //        println!("pos: {}",self.pos());
-        CString::new(v).map_err(|_| cstring_null(self, size))
+
+    pub fn read_c_string_converted(&mut self) -> ReadResult<String> {
+        let mut result_buf: Vec<u8> = Vec::new();
+        self.buffer
+            .read_until(b'\0', &mut result_buf)
+            .map_err(|e| to_read_error(self, e))?;
+        result_buf.pop();
+        let size = result_buf.len();
+        CString::new(result_buf)
+            .map_err(|_| cstring_null(self, size))?
+            .into_string()
+            .map_err(|e| ReadError::CStringConversionFailure(self.pos(), e))
     }
 
     pub fn read_string_utf8(&mut self, bytes_to_read: usize) -> ReadResult<String> {
         let v = self.read_bytes(bytes_to_read)?;
         Ok(String::from_utf8_lossy(&v).to_string())
+    }
+
+    pub fn read_string_utf8_safe(&mut self, bytes_to_read: usize) -> ReadResult<String> {
+        let v = self.read_bytes(bytes_to_read)?;
+        let s =
+            String::from_utf8(v).map_err(|e| ReadError::Utf8Error(self.pos(), self.size(), e))?;
+        Ok(s)
     }
 
     pub fn read_chars(&mut self, size: usize) -> ReadResult<Vec<char>> {
@@ -194,10 +210,10 @@ impl BinaryReader {
     }
 
     pub fn read_bytes(&mut self, size: usize) -> ReadResult<Vec<u8>> {
-        let mut vec: Vec<u8> = vec![];
-        for _i in 0..size {
-            vec.push(self.read_u8()?);
-        }
+        let mut vec: Vec<u8> = vec![0; size];
+        self.buffer
+            .read_exact(&mut vec)
+            .map_err(|e| to_read_error(self, e))?;
         Ok(vec)
     }
     pub fn seek_begin(&mut self) {

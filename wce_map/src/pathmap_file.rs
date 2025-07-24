@@ -72,7 +72,7 @@ impl PathMapFile {
 
 impl BinaryConverter for PathMapFile {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
-        let id = String::from_utf8(reader.read_bytes(4)?).unwrap();
+        let id = reader.read_string_utf8_safe(4)?;
         let version = reader.read_u32()?;
         let pathmap_width = reader.read_u32()?;
         let pathmap_height = reader.read_u32()?;

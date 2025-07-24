@@ -124,7 +124,7 @@ impl TerrainFile {
 
 impl BinaryConverter for TerrainFile {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
-        let id = String::from_utf8(reader.read_bytes(4)?).unwrap();
+        let id = reader.read_string_utf8_safe(4)?;
         let version = reader.read_u32()?;
         let main_tileset = reader.read_u8()?;
         let custom_tileset = reader.read_u32()? == 1;
@@ -132,12 +132,12 @@ impl BinaryConverter for TerrainFile {
         let count_ground_tiles = reader.read_u32()?; //TODO Warning for > 16
         let mut ground_tilesets: Vec<String> = Vec::new();
         for _i in 0..count_ground_tiles {
-            ground_tilesets.push(String::from_utf8(reader.read_bytes(4)?).unwrap())
+            ground_tilesets.push(reader.read_string_utf8_safe(4)?)
         }
         let count_cliff_tiles = reader.read_u32()?; //TODO Warning for > 16
         let mut cliff_tilesets: Vec<String> = Vec::new();
         for _i in 0..count_cliff_tiles {
-            cliff_tilesets.push(String::from_utf8(reader.read_bytes(4)?).unwrap())
+            cliff_tilesets.push(reader.read_string_utf8_safe(4)?);
         }
 
         let my_height = reader.read_u32()?;

@@ -4,8 +4,8 @@ use pretty_assertions::assert_eq;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{self, RoC, TFT};
-use wce_formats::MapArchive;
 use wce_formats::{BinaryConverter, BinaryConverterVersion};
+use wce_formats::{MapArchive, ReadError};
 
 use crate::doodad_map::Radian;
 use crate::globals::MAP_TERRAIN_UNITS;
@@ -310,7 +310,7 @@ impl BinaryConverter for UnitItemMap {
         //        let id = String::from_utf8(reader.read_bytes(4)).unwrap();
         //        let id = reader.read_u32();
         let version = reader.read_u32()?;
-        let version = to_game_version(version);
+        let version = to_game_version(version).map_err(ReadError::Reason)?;
         let subversion = reader.read_u32()?;
         let count_units_items = reader.read_u32()?;
         let units_items =
@@ -335,11 +335,11 @@ impl BinaryConverter for UnitItemMap {
     }
 }
 
-fn to_game_version(value: u32) -> GameVersion {
+fn to_game_version(value: u32) -> Result<GameVersion, String> {
     match value {
-        7 => RoC,
-        8 => TFT,
-        _ => panic!("Unknown or unsupported game version '{}'", value),
+        7 => Ok(RoC),
+        8 => Ok(TFT),
+        _ => Err(format!("Unknown or unsupported game version '{}'", value)),
     }
 }
 

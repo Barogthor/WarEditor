@@ -1,8 +1,8 @@
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{RoC, TFT};
-use wce_formats::MapArchive;
 use wce_formats::{BinaryConverter, GameVersion};
+use wce_formats::{MapArchive, ReadError};
 
 use crate::globals::MAP_TRIGGERS_SCRIPT;
 use crate::OpeningError;
@@ -40,14 +40,14 @@ impl TriggerJassFile {
 impl BinaryConverter for TriggerJassFile {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
         let version = reader.read_u32()?;
-        let version = to_game_version(version);
+        let version = to_game_version(version).map_err(ReadError::Reason)?;
         let mut global_comment: String = Default::default();
         let mut global_script: String = Default::default();
         let mut text_triggers: Vec<TextScript> = Vec::new();
         match version {
             RoC => (),
             _ => {
-                global_comment = reader.read_c_string()?.into_string().unwrap();
+                global_comment = reader.read_c_string_converted()?;
                 let s = reader.read_u32()? as usize;
                 global_script = reader.read_string_utf8(s)?;
             }
@@ -81,10 +81,10 @@ impl BinaryConverter for TriggerJassFile {
     }
 }
 
-fn to_game_version(value: u32) -> GameVersion {
+fn to_game_version(value: u32) -> Result<GameVersion, String> {
     match value {
-        0 => RoC,
-        1 => TFT,
-        _ => panic!("Unknown or unsupported game version '{}'", value),
+        0 => Ok(RoC),
+        1 => Ok(TFT),
+        _ => Err(format!("Unknown or unsupported game version '{}'", value)),
     }
 }

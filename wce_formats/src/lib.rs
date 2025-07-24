@@ -1,3 +1,4 @@
+use std::ffi::IntoStringError;
 use std::fmt::Debug;
 use std::io::Error;
 use std::ops::{Deref, DerefMut};
@@ -77,6 +78,7 @@ impl GameDataVersionDescriptorT for GameDataReforgedDescriptor {}
 pub enum MpqError {
     IoError(std::io::Error),
     NotMapArchive,
+    Reason(String),
 }
 // #[derive(Deref, DerefMut)]
 pub struct MapArchive(Archive);
@@ -86,7 +88,8 @@ impl MapArchive {
         let path = Path::new(&path);
         let ext = path
             .extension()
-            .unwrap_or_else(|| panic!("No extension for path '{:?}'", path));
+            .ok_or(format!("No extension for path '{path:?}'"))
+            .map_err(MpqError::Reason)?;
 
         if ext == "w3m" || ext == "w3x" {
             let archive = Archive::open(path);
@@ -134,7 +137,9 @@ impl DerefMut for GameMpq {
 pub enum ReadError {
     EOF(u64, usize),
     InvalidCString(String),
+    CStringConversionFailure(u64, IntoStringError),
     NullCString(u64, usize),
+    Utf8Error(u64, usize, FromUtf8Error),
     Other(Error),
     Reason(String),
 }

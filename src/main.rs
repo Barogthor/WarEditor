@@ -129,14 +129,7 @@ fn main() {
             error!("Error on map '{path}' : {err:?}");
         }
     }
-    //    println!("size rgba: {}",size_of_val(&vec![0u8,0u8,0u8,0u8][0..]));
-    //    println!("{:X}, {:X}", true as u8, false as u8);
-    //    let rgba = RGBA::by_value(0xFF5C15FF);
-    //    rgba.debug();
-    //    println!("{:X} {:X} {:X}", rgba.red(),rgba.green(), rgba.blue());
-
     elapsed_time(&now);
-    //    sleep(time::Duration::from_secs(10));
 }
 
 pub fn is_blizzard_maps(path: &PathBuf) -> bool {
@@ -201,19 +194,14 @@ mod tests_maps {
         for map in maps {
             let path = map.into_os_string().into_string().unwrap();
 
-            // Ignore the problematic BomberCommand map
-            // if path.contains("(6)BomberCommand.w3x") {
-            // continue;
-            // }
-
             let map_res = Map::open(path.clone(), game_data);
             if let Err(err) = map_res {
                 println!("Error on map '{path}' : {err:?}");
                 on_error = true;
             }
-            // if on_error {
-            //     panic!("Check this test logs");
-            // }
+            if on_error {
+                panic!("Check this test logs");
+            }
         }
     }
 
@@ -226,6 +214,7 @@ mod tests_maps {
         let maps = paths_custom_maps(Path::new(&format!("{old_dir_w3}\\Maps")));
         for map in maps {
             let path = map.into_os_string().into_string().unwrap();
+            println!("Opening map '{path}'");
             let _map_res = Map::open(path.clone(), game_data);
         }
     }

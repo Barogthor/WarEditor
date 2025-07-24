@@ -35,10 +35,6 @@ use wce_formats::{BinaryConverter, GameVersion, ReadError};
 use crate::globals::MAP_INFOS;
 use crate::OpeningError;
 
-pub enum MapInfoError {
-    ReadError(ReadError),
-}
-
 /// TFT flags:
 /// - Unknown 3
 /// - Unknown 4
@@ -178,7 +174,7 @@ struct UpgradeAvailability {
 impl BinaryConverter for UpgradeAvailability {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
         let player_availability = reader.read_i32()?;
-        let upgrade_id = String::from_utf8(reader.read_bytes(4)?)?;
+        let upgrade_id = reader.read_string_utf8_safe(4)?;
         let upgrade_level = reader.read_i32()?;
         let availability = reader.read_i32()?;
         Ok(UpgradeAvailability {
@@ -203,7 +199,7 @@ struct TechAvailability {
 impl BinaryConverter for TechAvailability {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
         let player_availability = reader.read_i32()?;
-        let tech_id = String::from_utf8(reader.read_bytes(4)?)?;
+        let tech_id = reader.read_string_utf8_safe(4)?;
         Ok(TechAvailability {
             player_availability,
             tech_id,
@@ -290,7 +286,7 @@ impl BinaryConverter for RandomItemSet {
         let mut items = vec![];
         for _ in 0..count_items {
             let chance = reader.read_u32()?;
-            let id = String::from_utf8(reader.read_bytes(4)?)?;
+            let id = reader.read_string_utf8_safe(4)?;
             items.push((chance, id));
         }
         Ok(RandomItemSet { items })
@@ -410,7 +406,6 @@ impl W3iFile {
     }
 }
 
-/// Helper function to read a C string and convert to String with proper error handling
 fn read_c_string_safe(reader: &mut BinaryReader) -> Result<String, ReadError> {
     reader.read_c_string()?.into_string().map_err(|e| {
         ReadError::InvalidCString(format!(
@@ -426,7 +421,7 @@ impl BinaryConverter for W3iFile {
         let mut w3i = W3iFile::default();
 
         let version = reader.read_u32()?;
-        w3i.version = to_game_version(version);
+        w3i.version = to_game_version(version).map_err(ReadError::Reason)?;
         w3i.count_saves = reader.read_i32()?;
         w3i.editor_version = reader.read_i32()?;
         w3i.map_name = read_c_string_safe(reader)?;
@@ -509,12 +504,12 @@ impl BinaryConverter for W3iFile {
     }
 }
 
-fn to_game_version(value: u32) -> GameVersion {
+fn to_game_version(value: u32) -> Result<GameVersion, String> {
     match value {
-        18 => RoC,
-        25 => TFT,
-        28 => Reforged,
-        _ => panic!("Unknown or unsupported game version '{}'", value),
+        18 => Ok(RoC),
+        25 => Ok(TFT),
+        28 => Ok(Reforged),
+        _ => Err(format!("Unknown or unsupported game version '{}'", value)),
     }
 }
 

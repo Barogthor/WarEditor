@@ -35,15 +35,11 @@ impl TriggerDefinition {
         trigger_data: &DataIni,
     ) -> Result<Self, WtgError> {
         let name = reader
-            .read_c_string()
-            .map_err(WtgError::ErrorReader)?
-            .into_string()
-            .unwrap();
+            .read_c_string_converted()
+            .map_err(WtgError::ErrorReader)?;
         let description = reader
-            .read_c_string()
-            .map_err(WtgError::ErrorReader)?
-            .into_string()
-            .unwrap();
+            .read_c_string_converted()
+            .map_err(WtgError::ErrorReader)?;
         let is_comment = match game_version {
             RoC => None,
             _ => Some(reader.read_u32().map_err(WtgError::ErrorReader)? != 0),
@@ -101,7 +97,9 @@ impl TriggersFile {
     }
 
     fn from(reader: &mut BinaryReader, trigger_data: &DataIni) -> Result<Self, WtgError> {
-        let id = String::from_utf8(reader.read_bytes(4).map_err(WtgError::ErrorReader)?).unwrap();
+        let id = reader
+            .read_string_utf8_safe(4)
+            .map_err(WtgError::ErrorReader)?;
         let version = reader.read_u32().map_err(WtgError::ErrorReader)?;
         let version = to_game_version(version)?;
         let count_categories = reader.read_u32().map_err(WtgError::ErrorReader)?;

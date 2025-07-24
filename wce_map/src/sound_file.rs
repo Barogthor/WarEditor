@@ -50,9 +50,9 @@ pub struct Sound {
 impl BinaryConverter for Sound {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
         let mut sound: Sound = Default::default();
-        sound.id = reader.read_c_string()?.into_string().unwrap();
-        sound.file = reader.read_c_string()?.into_string().unwrap();
-        sound.effect = reader.read_c_string()?.into_string().unwrap();
+        sound.id = reader.read_c_string_converted()?;
+        sound.file = reader.read_c_string_converted()?;
+        sound.effect = reader.read_c_string_converted()?;
         sound.flags = reader.read_i32()?;
         sound.looping = sound.flags & 0x00000001 == 1;
         sound.sound_3d = sound.flags & 0x00000002 == 2;

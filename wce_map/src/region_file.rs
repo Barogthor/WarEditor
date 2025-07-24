@@ -31,7 +31,7 @@ impl BinaryConverter for Region {
         region.bottom = reader.read_f32()?;
         region.right = reader.read_f32()?;
         region.top = reader.read_f32()?;
-        region.name = reader.read_c_string()?.into_string().unwrap();
+        region.name = reader.read_c_string_converted()?;
         region.index = reader.read_u32()?;
         //        let effect_id = reader.read_bytes(4);
         //        region.weather_effect = String::from_utf8(effect_id).unwrap();
@@ -39,7 +39,7 @@ impl BinaryConverter for Region {
         if region.weather_effect.as_bytes() == [0u8; 4] {
             region.weather_enabled = false;
         }
-        region.ambient_sound = reader.read_c_string()?.into_string().unwrap();
+        region.ambient_sound = reader.read_c_string_converted()?;
         region.color = reader.read_bytes(3)?;
         reader.skip(1);
         Ok(region)

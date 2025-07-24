@@ -1,8 +1,8 @@
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{self, RoC, TFT};
-use wce_formats::MapArchive;
 use wce_formats::{BinaryConverter, BinaryConverterVersion};
+use wce_formats::{MapArchive, ReadError};
 
 use crate::doodad_map::DestructableFlag::{InvisibleNonSolid, VisibleNonSolid, VisibleSolid};
 use crate::globals::MAP_TERRAIN_DOODADS;
@@ -13,18 +13,18 @@ pub type Radian = f32;
 
 #[derive(PartialOrd, PartialEq, Clone, Debug)]
 pub enum DestructableFlag {
-    InvisibleNonSolid,
-    VisibleNonSolid,
-    VisibleSolid,
+    InvisibleNonSolid = 0,
+    VisibleNonSolid = 1,
+    VisibleSolid = 2,
 }
 
 impl DestructableFlag {
-    pub fn from(value: u8) -> Self {
+    pub fn from(value: u8) -> Result<Self, String> {
         match value {
-            0 => InvisibleNonSolid,
-            1 => VisibleNonSolid,
-            2 => VisibleSolid,
-            _ => panic!("Unknown destructable flag {}", value),
+            0 => Ok(InvisibleNonSolid),
+            1 => Ok(VisibleNonSolid),
+            2 => Ok(VisibleSolid),
+            _ => Err(format!("Unknown destructable flag {value}")),
         }
     }
 }
@@ -48,7 +48,7 @@ struct Destructable {
 
 impl BinaryConverterVersion for Destructable {
     fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self> {
-        let model_id = String::from_utf8(reader.read_bytes(4)?).unwrap();
+        let model_id = reader.read_string_utf8_safe(4)?;
         let variation = reader.read_u32()?;
         let coord_x = reader.read_f32()?;
         let coord_y = reader.read_f32()?;
@@ -58,6 +58,7 @@ impl BinaryConverterVersion for Destructable {
         let scale_y = reader.read_f32()?;
         let scale_z = reader.read_f32()?;
         let flags = reader.read_u8()?;
+        // let flags = DestructableFlag::from(flags).map_err(ReadError::Reason)?;
         let life = reader.read_u8()?;
         let drops = Self::load_drops(reader, game_version)?;
 
@@ -141,7 +142,6 @@ impl BinaryConverter for SpecialDoodad {
 #[derive(Debug, Derivative)]
 #[derivative(PartialEq)]
 pub struct DoodadMap {
-    //    id: u32,
     id: String,
     version: GameVersion,
     #[derivative(PartialEq = "ignore")]
@@ -171,10 +171,8 @@ impl DoodadMap {
 impl BinaryConverter for DoodadMap {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
         let id = reader.read_string_utf8(4)?;
-        //        let id = String::from_utf8(reader.read_bytes(4)).unwrap();
-        //        let id = reader.read_u32();
         let version = reader.read_u32()?;
-        let version = to_game_version(version);
+        let version = to_game_version(version).map_err(ReadError::Reason)?;
         let subversion = reader.read_u32()?;
         let count_destructables = reader.read_u32()?;
         let destructables =
@@ -204,11 +202,11 @@ impl BinaryConverter for DoodadMap {
     }
 }
 
-fn to_game_version(value: u32) -> GameVersion {
+fn to_game_version(value: u32) -> Result<GameVersion, String> {
     match value {
-        7 => RoC,
-        8 => TFT,
-        _ => panic!("Unknown or unsupported game version '{}'", value),
+        7 => Ok(RoC),
+        8 => Ok(TFT),
+        _ => Err(format!("Unknown or unsupported game version '{}'", value)),
     }
 }
 

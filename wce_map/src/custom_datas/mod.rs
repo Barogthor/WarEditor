@@ -2,7 +2,7 @@ use std::ffi::CString;
 use std::fmt::Debug;
 
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
-use wce_formats::GameVersion;
+use wce_formats::{GameVersion, ReadError};
 
 pub mod ability;
 pub mod buff;
@@ -105,11 +105,17 @@ impl ObjectDefinition {
     }
 }
 
-fn cstring_to_string_meta(cstr: CString, id: &ObjectId, meta_id: &[u8; 4]) -> String {
-    cstr.into_string().expect(&format!(
-        "Failed to read cstring for object '{id:?}' of meta '{}'",
-        String::from_utf8_lossy(meta_id)
-    ))
+fn cstring_to_string_meta(
+    cstr: ReadResult<CString>,
+    id: &ObjectId,
+    meta_id: &[u8; 4],
+) -> ReadResult<String> {
+    cstr?.into_string().map_err(|e| {
+        wce_formats::ReadError::InvalidCString(format!(
+            "Failed to read cstring for object '{id:?}' of meta '{}'. Reason '{e}",
+            String::from_utf8_lossy(meta_id)
+        ))
+    })
 }
 
 fn read_meta_no_opts(
@@ -122,103 +128,101 @@ fn read_meta_no_opts(
     let vtype = reader.read_i32()?;
 
     let value = match (game_version, vtype) {
-        (_, 0) => VariableValue::Integer(reader.read_i32()?),
-        (_, 1) => VariableValue::Real(reader.read_f32()?),
-        (_, 2) => VariableValue::Unreal(reader.read_f32()?),
-        (_, 3) => VariableValue::String(cstring_to_string_meta(
-            reader.read_c_string()?,
+        (_, 0) => Ok(VariableValue::Integer(reader.read_i32()?)),
+        (_, 1) => Ok(VariableValue::Real(reader.read_f32()?)),
+        (_, 2) => Ok(VariableValue::Unreal(reader.read_f32()?)),
+        (_, 3) => Ok(VariableValue::String(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        (GameVersion::RoC, 4) => VariableValue::Bool(reader.read_u8()? == 1),
-        (GameVersion::RoC, 5) => VariableValue::Char(reader.read_char()?),
-        (GameVersion::RoC, 6) => VariableValue::UnitList(cstring_to_string_meta(
-            reader.read_c_string()?,
+        )?)),
+        (GameVersion::RoC, 4) => Ok(VariableValue::Bool(reader.read_u8()? == 1)),
+        (GameVersion::RoC, 5) => Ok(VariableValue::Char(reader.read_char()?)),
+        (GameVersion::RoC, 6) => Ok(VariableValue::UnitList(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        (GameVersion::RoC, 7) => VariableValue::ItemList(cstring_to_string_meta(
-            reader.read_c_string()?,
+        )?)),
+        (GameVersion::RoC, 7) => Ok(VariableValue::ItemList(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        (GameVersion::RoC, 8) => VariableValue::RegenType(cstring_to_string_meta(
-            reader.read_c_string()?,
+        )?)),
+        (GameVersion::RoC, 8) => Ok(VariableValue::RegenType(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        (GameVersion::RoC, 9) => VariableValue::AttackType(cstring_to_string_meta(
-            reader.read_c_string()?,
+        )?)),
+        (GameVersion::RoC, 9) => Ok(VariableValue::AttackType(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        (GameVersion::RoC, 10) => VariableValue::WeaponType(cstring_to_string_meta(
-            reader.read_c_string()?,
+        )?)),
+        (GameVersion::RoC, 10) => Ok(VariableValue::WeaponType(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        (GameVersion::RoC, 11) => VariableValue::TargetType(cstring_to_string_meta(
-            reader.read_c_string()?,
+        )?)),
+        (GameVersion::RoC, 11) => Ok(VariableValue::TargetType(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        (GameVersion::RoC, 12) => VariableValue::MoveType(cstring_to_string_meta(
-            reader.read_c_string()?,
+        )?)),
+        (GameVersion::RoC, 12) => Ok(VariableValue::MoveType(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        (GameVersion::RoC, 13) => VariableValue::DefenseType(cstring_to_string_meta(
-            reader.read_c_string()?,
+        )?)),
+        (GameVersion::RoC, 13) => Ok(VariableValue::DefenseType(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        (GameVersion::RoC, 14) => VariableValue::PathingTexture(cstring_to_string_meta(
-            reader.read_c_string()?,
+        )?)),
+        (GameVersion::RoC, 14) => Ok(VariableValue::PathingTexture(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        (GameVersion::RoC, 15) => VariableValue::UpgradeList(cstring_to_string_meta(
-            reader.read_c_string()?,
+        )?)),
+        (GameVersion::RoC, 15) => Ok(VariableValue::UpgradeList(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        (GameVersion::RoC, 16) => VariableValue::StringList(cstring_to_string_meta(
-            reader.read_c_string()?,
+        )?)),
+        (GameVersion::RoC, 16) => Ok(VariableValue::StringList(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        (GameVersion::RoC, 17) => VariableValue::AbilityList(cstring_to_string_meta(
-            reader.read_c_string()?,
+        )?)),
+        (GameVersion::RoC, 17) => Ok(VariableValue::AbilityList(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        (GameVersion::RoC, 18) => VariableValue::HeroAbilityList(cstring_to_string_meta(
-            reader.read_c_string()?,
+        )?)),
+        (GameVersion::RoC, 18) => Ok(VariableValue::HeroAbilityList(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        (GameVersion::RoC, 19) => VariableValue::MissileArt(cstring_to_string_meta(
-            reader.read_c_string()?,
+        )?)),
+        (GameVersion::RoC, 19) => Ok(VariableValue::MissileArt(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        (GameVersion::RoC, 20) => VariableValue::AttributeType(cstring_to_string_meta(
-            reader.read_c_string()?,
+        )?)),
+        (GameVersion::RoC, 20) => Ok(VariableValue::AttributeType(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        (GameVersion::RoC, 21) => VariableValue::AttackBits(cstring_to_string_meta(
-            reader.read_c_string()?,
+        )?)),
+        (GameVersion::RoC, 21) => Ok(VariableValue::AttackBits(cstring_to_string_meta(
+            reader.read_c_string(),
             id,
             &meta_id,
-        )),
-        _ => panic!(
-            "Unsupported vtype '{}' for object {:?} on meta '{}'",
-            vtype,
-            id,
+        )?)),
+        _ => Err(ReadError::Reason(format!(
+            "Unsupported vtype '{vtype}' for object {id:?} on meta '{}'",
             String::from_utf8_lossy(&meta_id)
-        ),
-    };
+        ))),
+    }?;
     reader.skip(4);
     Ok(MetaModification {
         id: MetaId(meta_id),
@@ -235,22 +239,23 @@ fn read_meta_opts(reader: &mut BinaryReader, id: &ObjectId) -> ReadResult<MetaMo
     let level = reader.read_i32()?;
     let data_pointer = reader.read_i32()?;
     let value = match vtype {
-        0 => VariableValue::Integer(reader.read_i32()?),
-        1 => VariableValue::Real(reader.read_f32()?),
-        2 => VariableValue::Unreal(reader.read_f32()?),
-        3 => VariableValue::String(reader.read_c_string()?.into_string().expect(&format!(
-            "Failed to read cstring for object '{id:?}' of meta '{}' (byte position {})",
-            String::from_utf8_lossy(&meta_id),
-            reader.pos()
+        0 => Ok(VariableValue::Integer(reader.read_i32()?)),
+        1 => Ok(VariableValue::Real(reader.read_f32()?)),
+        2 => Ok(VariableValue::Unreal(reader.read_f32()?)),
+        3 => Ok(VariableValue::String(
+            reader.read_c_string()?.into_string().map_err(|_| {
+                ReadError::Reason(format!(
+                    "Failed to read cstring for object '{id:?}' of meta '{}' (byte position {})",
+                    String::from_utf8_lossy(&meta_id),
+                    reader.pos()
+                ))
+            })?,
+        )),
+        _ => Err(ReadError::Reason(format!(
+            "Unsupported vtype '{vtype}' for object {id:?} on meta '{}'",
+            String::from_utf8_lossy(&meta_id)
         ))),
-        _ => panic!(
-            "Unsupported vtype '{}' for object {:?} on meta '{}' (byte position {})",
-            vtype,
-            id,
-            String::from_utf8_lossy(&meta_id),
-            reader.pos()
-        ),
-    };
+    }?;
     reader.skip(4);
     Ok(MetaModification {
         id: MetaId(meta_id),

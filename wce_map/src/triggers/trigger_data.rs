@@ -34,10 +34,8 @@ impl ECADefinition {
             }
         };
         let name = reader
-            .read_c_string()
-            .map_err(WtgError::ErrorReader)?
-            .into_string()
-            .unwrap();
+            .read_c_string_converted()
+            .map_err(WtgError::ErrorReader)?;
         let eca_info = trigger_data
             .get_prop(ftype.get_sector(), &name)
             .ok_or_else(|| UnknownProp(format!("ECA Prop isnt known: [{name}]")))?;
@@ -97,10 +95,8 @@ impl Parameter {
         let ptype = reader.read_i32().map_err(WtgError::ErrorReader)?;
         let ptype = ParameterType::from(ptype, reader.pos())?;
         let value = reader
-            .read_c_string()
-            .map_err(WtgError::ErrorReader)?
-            .into_string()
-            .unwrap();
+            .read_c_string_converted()
+            .map_err(WtgError::ErrorReader)?;
         let has_sub_parameters = reader.read_u32().map_err(WtgError::ErrorReader)? == 1;
         let sub_parameters = match has_sub_parameters {
             false => None,
@@ -155,10 +151,8 @@ impl SubParameters {
         let ptype = reader.read_u32().map_err(WtgError::ErrorReader)?;
         let ptype = SubParameterType::from(ptype)?;
         let name = reader
-            .read_c_string()
-            .map_err(WtgError::ErrorReader)?
-            .into_string()
-            .unwrap();
+            .read_c_string_converted()
+            .map_err(WtgError::ErrorReader)?;
         let info_parameters = trigger_data
             .get_prop(ptype.get_sector(), &name)
             .ok_or_else(|| UnknownProp(format!("Sub parameter prop isnt known: [{name}]")))?;

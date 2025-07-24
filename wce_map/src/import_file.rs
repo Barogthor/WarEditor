@@ -42,7 +42,7 @@ impl ImportFile {
 
 impl BinaryConverter for ImportFile {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
-        let version = to_game_version(reader.read_u32()?);
+        let version = to_game_version(reader.read_u32()?).map_err(ReadError::Reason)?;
         let count = reader.read_u32()?;
         let mut files: ImportPath = vec![];
         for _ in 0..count {
@@ -93,10 +93,10 @@ impl ImportPathType {
     }
 }
 
-fn to_game_version(value: u32) -> GameVersion {
+fn to_game_version(value: u32) -> Result<GameVersion, String> {
     match value {
-        0 => RoC,
-        1 => TFT,
-        _ => panic!("Unknown or unsupported game version '{}'", value),
+        0 => Ok(RoC),
+        1 => Ok(TFT),
+        _ => Err(format!("Unknown or unsupported game version '{}'", value)),
     }
 }
