@@ -739,7 +739,8 @@ mod w3i_tests {
 
     #[test]
     fn w3i_roc_test() {
-        let mut w3i = File::open(get_path("resources/Scenario/Sandbox_roc/war3map.w3i")).unwrap();
+        let mut w3i = File::open(get_path("Scenario/Sandbox_roc/war3map.w3i"))
+            .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut w3i);
         let w3i = reader.read::<W3iFile>().unwrap();
         let mock_w3i = get_roc_mock();
@@ -747,7 +748,8 @@ mod w3i_tests {
     }
     #[test]
     fn w3i_tft_test() {
-        let mut w3i = File::open(get_path("resources/Scenario/Sandbox_tft/war3map.w3i")).unwrap();
+        let mut w3i = File::open(get_path("Scenario/Sandbox_tft/war3map.w3i"))
+            .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut w3i);
         let w3i = reader.read::<W3iFile>().unwrap();
         let mock_w3i = get_tft_mock();

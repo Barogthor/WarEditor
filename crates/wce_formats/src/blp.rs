@@ -213,10 +213,16 @@ mod blp_parse {
 
     use crate::binary_reader::BinaryReader;
     use crate::blp::BLP;
+    use crate::get_resources_path;
+
+    fn get_path(path: &str) -> String {
+        let prefix = get_resources_path();
+        format!("{prefix}/{path}")
+    }
 
     #[test]
     fn open_local_blp_palette() {
-        let mut file = File::open("../resources/blp/BTNDeathBomb.blp").unwrap();
+        let mut file = File::open(get_path("blp/BTNDeathBomb.blp")).unwrap();
         let mut buffer: Vec<u8> = Vec::with_capacity(2000);
         file.read_to_end(&mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer.to_owned());
@@ -226,7 +232,7 @@ mod blp_parse {
 
     #[test]
     fn open_local_blp_jpeg_map() -> Result<(), io::Error> {
-        let mut file = File::open("../resources/sample_2/war3mapMap.blp")?;
+        let mut file = File::open(get_path("sample_2/war3mapMap.blp"))?;
         let mut buffer: Vec<u8> = Vec::with_capacity(2000);
         file.read_to_end(&mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer.to_owned());
@@ -243,13 +249,13 @@ mod blp_parse {
 
     #[test]
     fn open_local_blp_jpeg_texture() -> Result<(), io::Error> {
-        let mut file = File::open("../resources/blp/FrostmourneNew.blp")?;
+        let mut file = File::open(get_path("blp/FrostmourneNew.blp"))?;
         let mut buffer: Vec<u8> = Vec::with_capacity(2000);
         file.read_to_end(&mut buffer).unwrap();
         let mut reader = BinaryReader::new(buffer.to_owned());
         let blp = BLP::from(&mut reader).unwrap();
         let mmap1 = &blp.get_jpeg_mipmaps()[3];
-        println!("{:?}", mmap1);
+        println!("{mmap1:?}");
         // println!("{:#?}", mmap1[0..mmap1.len()/100]);
         // for i in 0..3{
         //     let name = format!("resources/FrostmourneNew_mmap{}.jpg", i);
@@ -262,13 +268,13 @@ mod blp_parse {
 
     // #[test]
     fn open_local_jpeg_mipmap() -> Result<(), ()> {
-        let file = File::open("../resources/FrostmourneNew_mmap2.jpg").unwrap();
+        let file = File::open(get_path("FrostmourneNew_mmap2.jpg")).unwrap();
         let buffer = BufReader::new(file);
 
         let mut decoder = Decoder::new(buffer);
         decoder.read_info().unwrap();
         let info = decoder.info();
-        println!("{:#?}", info);
+        println!("{info:#?}");
         decoder.decode().expect("error while decoding");
         Ok(())
     }

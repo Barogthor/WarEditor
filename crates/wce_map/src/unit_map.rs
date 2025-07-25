@@ -577,16 +577,16 @@ mod unitmap_tests {
 
     #[test]
     fn no_failure_roc() {
-        let mut unititem_file =
-            File::open(get_path("resources/Scenario/Sandbox_roc/war3mapUnits.doo")).unwrap();
+        let mut unititem_file = File::open(get_path("Scenario/Sandbox_roc/war3mapUnits.doo"))
+            .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut unititem_file);
         let _unititem_map = reader.read::<UnitItemMap>();
     }
 
     #[test]
     fn check_roc() {
-        let mut unititem_file =
-            File::open(get_path("resources/Scenario/Sandbox_roc/war3mapUnits.doo")).unwrap();
+        let mut unititem_file = File::open(get_path("Scenario/Sandbox_roc/war3mapUnits.doo"))
+            .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut unititem_file);
         let unititem_map = reader.read::<UnitItemMap>().unwrap();
         assert_eq!(unititem_map.id, "W3do".to_string());
@@ -605,8 +605,8 @@ mod unitmap_tests {
 
     #[test]
     fn no_failure_tft() {
-        let mut unititem_file =
-            File::open("../resources/Scenario/Sandbox_tft/war3mapUnits.doo").unwrap();
+        let mut unititem_file = File::open(get_path("Scenario/Sandbox_tft/war3mapUnits.doo"))
+            .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut unititem_file);
         let _unititem_map = reader.read::<UnitItemMap>();
     }

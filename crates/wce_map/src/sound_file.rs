@@ -291,14 +291,16 @@ mod w3s_test {
 
     #[test]
     fn no_failure() {
-        let mut w3s = File::open(get_path("resources/Scenario/Sandbox_roc/war3map.w3s")).unwrap();
+        let mut w3s = File::open(get_path("Scenario/Sandbox_roc/war3map.w3s"))
+            .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut w3s);
         let _sound_file = reader.read::<SoundFile>();
     }
 
     #[test]
     fn check_values() {
-        let mut w3s = File::open(get_path("resources/Scenario/Sandbox_roc/war3map.w3s")).unwrap();
+        let mut w3s = File::open(get_path("Scenario/Sandbox_roc/war3map.w3s"))
+            .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut w3s);
         let sound_file = reader.read::<SoundFile>().unwrap();
         let mock = mock_sounds();

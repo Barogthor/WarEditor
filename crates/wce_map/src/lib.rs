@@ -47,10 +47,10 @@ pub enum OpeningError {
 }
 
 pub fn path_to_data(prefix: &str, path: &str) -> String {
-    format!("{prefix}resources/datas/{path}")
+    format!("{prefix}datas/{path}")
 }
 pub fn path_to_slk(prefix: &str, path: &str) -> String {
-    format!("{prefix}resources/slk/{path}")
+    format!("{prefix}slk/{path}")
 }
 
 pub struct GameData {
@@ -122,11 +122,14 @@ impl GameData {
 #[cfg(test)]
 fn get_resources_path() -> String {
     // Utilise CARGO_MANIFEST_DIR pour obtenir le répertoire racine du workspace
+
+    use std::path::Path;
     let manifest_dir = env!("CARGO_MANIFEST_DIR");
     let workspace_root = std::path::Path::new(manifest_dir)
         .parent()
+        .and_then(Path::parent)
         .expect("Should have parent directory");
-    format!("{}/", workspace_root.to_string_lossy())
+    format!("{}/resources/", workspace_root.to_string_lossy())
 }
 
 pub mod camera_file;

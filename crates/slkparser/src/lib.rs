@@ -88,12 +88,13 @@ mod big_sample {
 
     use crate::document::Document;
     use crate::elapsed_time;
+    use crate::get_resources_path;
     use crate::SLKScanner;
 
     #[test]
     fn test_ability_data() {
         let now = Instant::now();
-        let slk_reader = SLKScanner::open("../resources/slk/AbilityData.slk");
+        let slk_reader = SLKScanner::open(&format!("{}/slk/AbilityData.slk", get_resources_path()));
         let mut document = Document::default();
         document.load(slk_reader);
         elapsed_time(&now);
@@ -109,7 +110,20 @@ fn elapsed_time(instant: &std::time::Instant) {
     let seconds = (elasped / 1000) % 60;
     let mins = elasped / 60000;
     let hours = elasped / 3600000;
-    println!("Elapsed time: {}:{}:{}::{}", hours, mins, seconds, millis);
+    println!("Elapsed time: {hours}:{mins}:{seconds}::{millis}");
+}
+
+#[cfg(test)]
+fn get_resources_path() -> String {
+    // Utilise CARGO_MANIFEST_DIR pour obtenir le répertoire racine du workspace
+
+    use std::path::Path;
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let workspace_root = std::path::Path::new(manifest_dir)
+        .parent()
+        .and_then(Path::parent)
+        .expect("Should have parent directory");
+    format!("{}/resources/", workspace_root.to_string_lossy())
 }
 
 #[cfg(test)]
@@ -117,22 +131,29 @@ mod sample {
     use crate::document::Document;
     use crate::record::cell::Cell;
     use crate::slk_type::Record;
-    use crate::SLKScanner;
+    use crate::{get_resources_path, SLKScanner};
+
+    fn get_path(path: &str) -> String {
+        let prefix = get_resources_path();
+        format!("{prefix}/slk/{path}")
+    }
 
     #[test]
     fn test_open() {
-        SLKScanner::open("resources/sample_1.slk");
+        SLKScanner::open(&get_path("sample_1.slk"));
     }
 
     #[test]
     fn parse_record_one_by_one() {
         let to_s = |s: &str| String::from(s);
-        let mut slk_reader = SLKScanner::open("resources/sample_1.slk");
+        let mut slk_reader = SLKScanner::open(&get_path("sample_1.slk"));
         let fetch = slk_reader.parse_record();
         assert_eq!(fetch, Ok(Record::Header));
 
+        while let Ok(Record::CellFormat) = slk_reader.parse_record() {}
         let fetch = slk_reader.parse_record();
         assert_eq!(fetch, Ok(Record::Info(3, 4)));
+        assert_eq!(slk_reader.parse_record(), Ok(Record::Options));
 
         let fetch = slk_reader.parse_record();
         let cell = Cell::new(1u32, Some(1u32), Some(to_s("a")));
@@ -149,18 +170,18 @@ mod sample {
 
     #[test]
     fn parse_iterator() {
-        let slk_reader = SLKScanner::open("resources/sample_1.slk");
+        let slk_reader = SLKScanner::open(&get_path("sample_1.slk"));
         let mut count = 0;
         for record in slk_reader {
-            println!("{:?}", record);
+            println!("{record:?}");
             count += 1;
         }
-        assert_eq!(count, 14);
+        assert_eq!(count, 92);
     }
 
     #[test]
     fn document_test() {
-        let slk_reader = SLKScanner::open("resources/sample_1.slk");
+        let slk_reader = SLKScanner::open(&get_path("sample_1.slk"));
         let mut document = Document::default();
         document.load(slk_reader);
         document.debug();
@@ -168,14 +189,14 @@ mod sample {
 
     #[test]
     fn test_to_string() {
-        let slk_reader = SLKScanner::open("resources/sample_1.slk");
+        let slk_reader = SLKScanner::open(&get_path("sample_1.slk"));
         let mut document = Document::default();
         document.load(slk_reader);
         let cells = document.get_contents();
         let cell1 = &cells[0].get_value().unwrap();
         let cell6 = &cells[6].get_value().unwrap();
 
-        println!("{:?}", cell1);
-        println!("{:?}", cell6);
+        println!("{cell1:?}");
+        println!("{cell6:?}");
     }
 }

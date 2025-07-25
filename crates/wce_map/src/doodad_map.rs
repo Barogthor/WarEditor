@@ -206,13 +206,13 @@ fn to_game_version(value: u32) -> Result<GameVersion, String> {
     match value {
         7 => Ok(RoC),
         8 => Ok(TFT),
-        _ => Err(format!("Unknown or unsupported game version '{}'", value)),
+        _ => Err(format!("Unknown or unsupported game version '{value}'")),
     }
 }
 
 #[cfg(test)]
 mod doodads_test {
-    use std::{fmt::format, fs::File};
+    use std::fs::File;
 
     use wce_formats::binary_reader::BinaryReader;
     use wce_formats::GameVersion::RoC;
@@ -279,16 +279,16 @@ mod doodads_test {
 
     #[test]
     fn no_failure_roc() {
-        let mut doodad_file =
-            File::open(get_path("resources/Scenario/Sandbox_roc/war3map.doo")).unwrap();
+        let mut doodad_file = File::open(get_path("Scenario/Sandbox_roc/war3map.doo"))
+            .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut doodad_file);
         let _doodad_map = reader.read::<DoodadMap>();
     }
 
     #[test]
     fn check_roc() {
-        let mut doodad_file =
-            File::open(get_path("resources/Scenario/Sandbox_roc/war3map.doo")).unwrap();
+        let mut doodad_file = File::open(get_path("Scenario/Sandbox_roc/war3map.doo"))
+            .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut doodad_file);
         let doodad_map = reader.read::<DoodadMap>().unwrap();
         let mock_destructables = mock_destructable_roc();
@@ -307,8 +307,8 @@ mod doodads_test {
 
     #[test]
     fn no_failure_tft() {
-        let mut doodad_file =
-            File::open(get_path("resources/Scenario/Sandbox_tft/war3map.doo")).unwrap();
+        let mut doodad_file = File::open(get_path("Scenario/Sandbox_tft/war3map.doo"))
+            .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut doodad_file);
         let _doodad_map = reader.read::<DoodadMap>();
     }

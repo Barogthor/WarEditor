@@ -5,7 +5,7 @@ use std::time::Instant;
 use dotenv::dotenv;
 use log::{debug, error, info, trace, warn};
 
-use war_editor::init_logging;
+use editor_runner::init_logging;
 use wce_map::data_ini::DataIni;
 use wce_map::globals::*;
 use wce_map::map::Map;
@@ -18,6 +18,18 @@ fn elapsed_time(instant: &Instant) {
     let mins = elasped / 60000;
     let hours = elasped / 3600000;
     println!("Elapsed time: {hours:02}:{mins:02}:{seconds:02}::{millis:03}");
+}
+
+fn get_resources_path() -> String {
+    // Utilise CARGO_MANIFEST_DIR pour obtenir le répertoire racine du workspace
+
+    use std::path::Path;
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let workspace_root = std::path::Path::new(manifest_dir)
+        .parent()
+        .and_then(Path::parent)
+        .expect("Should have parent directory");
+    format!("{}/resources/", workspace_root.to_string_lossy())
 }
 
 fn main() {
@@ -33,43 +45,44 @@ fn main() {
     // }
     let now = Instant::now();
 
-    let local_game_data = &GameData::new("");
+    let prefix: &str = &get_resources_path();
+    let local_game_data = &GameData::new(prefix);
     // let mut trigger_data = DataIni::new();
     // trigger_data.merge(PROFILE_TRIGGER_DATA);
     // // trigger_datas.debug();
 
     let mut ini = DataIni::new();
 
-    ini.merge(&path_to_data("", PROFILE_ITEM_FUNC));
-    ini.merge(&path_to_data("", PROFILE_HUMAN_ABILITY_FUNC));
-    ini.merge(&path_to_data("", PROFILE_ORC_ABILITY_FUNC));
-    ini.merge(&path_to_data("", PROFILE_UNDEAD_ABILITY_FUNC));
-    ini.merge(&path_to_data("", PROFILE_NIGHT_ELF_ABILITY_FUNC));
-    ini.merge(&path_to_data("", PROFILE_NEUTRAL_ABILITY_FUNC));
-    ini.merge(&path_to_data("", PROFILE_COMMON_ABILITY_FUNC));
-    ini.merge(&path_to_data("", PROFILE_CAMPAIGN_ABILITY_FUNC));
-    ini.merge(&path_to_data("", PROFILE_ITEM_ABILITY_FUNC));
-    ini.merge(&path_to_data("", PROFILE_HUMAN_UNIT_FUNC));
-    ini.merge(&path_to_data("", PROFILE_ORC_UNIT_FUNC));
-    ini.merge(&path_to_data("", PROFILE_UNDEAD_UNIT_FUNC));
-    ini.merge(&path_to_data("", PROFILE_NIGHT_ELF_UNIT_FUNC));
-    ini.merge(&path_to_data("", PROFILE_NEUTRAL_UNIT_FUNC));
-    ini.merge(&path_to_data("", PROFILE_CAMPAIGN_UNIT_FUNC));
-    ini.merge(&path_to_data("", PROFILE_ITEM_FUNC));
-    ini.merge(&path_to_data("", PROFILE_HUMAN_UPGRADE_FUNC));
-    ini.merge(&path_to_data("", PROFILE_ORC_UPGRADE_FUNC));
-    ini.merge(&path_to_data("", PROFILE_UNDEAD_UPGRADE_FUNC));
-    ini.merge(&path_to_data("", PROFILE_NIGHT_ELF_UPGRADE_FUNC));
-    ini.merge(&path_to_data("", PROFILE_NEUTRAL_UPGRADE_FUNC));
-    ini.merge(&path_to_data("", PROFILE_CAMPAIGN_UPGRADE_FUNC));
-    ini.merge(&path_to_data("", PROFILE_UNIT_EDITOR_DATA));
-    ini.merge(&path_to_data("", PROFILE_WORLD_EDIT_STRINGS));
-    ini.merge(&path_to_data("", PROFILE_WORLD_EDIT_LAYOUT));
-    ini.merge(&path_to_data("", PROFILE_WORLD_EDIT_DATA));
-    ini.merge(&path_to_data("", PROFILE_WORLD_EDIT_GAME_STRINGS));
-    ini.merge(&path_to_data("", PROFILE_WAR3SKINS));
-    ini.merge(&path_to_data("", PROFILE_MISC_DATA));
-    ini.merge(&path_to_data("", PROFILE_AIEDITOR_DATA));
+    ini.merge(&path_to_data(prefix, PROFILE_ITEM_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_HUMAN_ABILITY_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_ORC_ABILITY_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_UNDEAD_ABILITY_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_NIGHT_ELF_ABILITY_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_NEUTRAL_ABILITY_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_COMMON_ABILITY_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_CAMPAIGN_ABILITY_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_ITEM_ABILITY_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_HUMAN_UNIT_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_ORC_UNIT_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_UNDEAD_UNIT_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_NIGHT_ELF_UNIT_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_NEUTRAL_UNIT_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_CAMPAIGN_UNIT_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_ITEM_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_HUMAN_UPGRADE_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_ORC_UPGRADE_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_UNDEAD_UPGRADE_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_NIGHT_ELF_UPGRADE_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_NEUTRAL_UPGRADE_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_CAMPAIGN_UPGRADE_FUNC));
+    ini.merge(&path_to_data(prefix, PROFILE_UNIT_EDITOR_DATA));
+    ini.merge(&path_to_data(prefix, PROFILE_WORLD_EDIT_STRINGS));
+    ini.merge(&path_to_data(prefix, PROFILE_WORLD_EDIT_LAYOUT));
+    ini.merge(&path_to_data(prefix, PROFILE_WORLD_EDIT_DATA));
+    ini.merge(&path_to_data(prefix, PROFILE_WORLD_EDIT_GAME_STRINGS));
+    ini.merge(&path_to_data(prefix, PROFILE_WAR3SKINS));
+    ini.merge(&path_to_data(prefix, PROFILE_MISC_DATA));
+    ini.merge(&path_to_data(prefix, PROFILE_AIEDITOR_DATA));
     ini.fit();
     // ini.debug();
     // let unit_meta = SLKData::load(&format_slk("", SLK_UNIT_META_DATA));
@@ -189,7 +202,7 @@ mod tests_maps {
         let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
         let mut on_error = false;
 
-        let game_data = &GameData::new("");
+        let game_data = &GameData::new("../../resources/");
         let maps = paths_blizzard_maps(Path::new(&format!("{old_dir_w3}\\Maps")));
         for map in maps {
             let path = map.into_os_string().into_string().unwrap();
@@ -210,7 +223,7 @@ mod tests_maps {
         dotenv().unwrap();
         let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
 
-        let game_data = &GameData::new("");
+        let game_data = &GameData::new("../../resources/");
         let maps = paths_custom_maps(Path::new(&format!("{old_dir_w3}\\Maps")));
         for map in maps {
             let path = map.into_os_string().into_string().unwrap();

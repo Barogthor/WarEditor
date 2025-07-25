@@ -1,32 +1,12 @@
-[package]
-name = "war_editor"
-version = "0.1.0"
-authors = ["Barogthor"]
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dev-dependencies]
-pretty_assertions = { workspace = true }
-
-[dependencies]
-rand = "0.8.5"
-#getset = "0.0.7"
-#vec_map = "0.8.1"
-rust-ini = "0.19.0"
-#num-derive = "0.2.5"
-#num = "0.2.0"
-fern = { version = "0.6.0", features = ["colored"] }
-log = {workspace = true}
-wce_map = { path = "wce_map" }
-#mozjpeg = { version = "0.8.16"}
-#strum = "0.18.0"
-dotenv = "0.15.0"
-
 [workspace]
+resolver = "2"
+default-members = ["crates/editor-runner"]
 
 members = [
-    "wce_formats", "wce_map", "slkparser"
+    "crates/wce_formats", 
+    "crates/wce_map", 
+    "crates/slkparser",
+    "crates/editor-runner"
 ]
 
 [workspace.dependencies]

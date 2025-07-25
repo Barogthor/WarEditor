@@ -11,6 +11,17 @@ use crate::binary_reader::{BinaryReader, ReadResult};
 use crate::binary_writer::BinaryWriter;
 use crate::MpqError::IoError;
 
+#[cfg(test)]
+fn get_resources_path() -> String {
+    // Utilise CARGO_MANIFEST_DIR pour obtenir le répertoire racine du workspace
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let workspace_root = std::path::Path::new(manifest_dir)
+        .parent()
+        .and_then(Path::parent)
+        .expect("Should have parent directory");
+    format!("{}/resources/", workspace_root.to_string_lossy())
+}
+
 #[derive(Debug, PartialOrd, PartialEq, Clone, Copy, Default)]
 pub enum GameVersion {
     RoC,

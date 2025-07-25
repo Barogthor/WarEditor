@@ -1,0 +1,10 @@
+[package]
+name = "editor-runner"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dotenv = "0.15.0"
+log = "0.4"
+fern = { version = "0.6", features = ["colored"] }
+wce_map = { path = "../wce_map" }

@@ -159,14 +159,16 @@ mod w3r_test {
 
     #[test]
     fn no_failure() {
-        let mut w3r = File::open(get_path("resources/Scenario/Sandbox_roc/war3map.w3r")).unwrap();
+        let mut w3r = File::open(get_path("Scenario/Sandbox_roc/war3map.w3r"))
+            .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut w3r);
         reader.read::<RegionFile>().unwrap();
     }
 
     #[test]
     fn check_values() {
-        let mut w3r = File::open(get_path("resources/Scenario/Sandbox_roc/war3map.w3r")).unwrap();
+        let mut w3r = File::open(get_path("Scenario/Sandbox_roc/war3map.w3r"))
+            .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut w3r);
         let region_file = reader.read::<RegionFile>().unwrap();
         let mock_regions = mock_regions();

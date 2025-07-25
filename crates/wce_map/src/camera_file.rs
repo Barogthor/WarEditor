@@ -134,14 +134,16 @@ mod w3c_test {
 
     #[test]
     fn no_failure() {
-        let mut w3c = File::open(get_path("resources/Scenario/Sandbox_roc/war3map.w3c")).unwrap();
+        let mut w3c = File::open(get_path("Scenario/Sandbox_roc/war3map.w3c"))
+            .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut w3c);
         reader.read::<CameraFile>().unwrap();
     }
 
     #[test]
     fn check_values() {
-        let mut w3c = File::open(get_path("resources/Scenario/Sandbox_roc/war3map.w3c")).unwrap();
+        let mut w3c = File::open(get_path("Scenario/Sandbox_roc/war3map.w3c"))
+            .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut w3c);
         let camera_file = reader.read::<CameraFile>().unwrap();
         let mock_cameras = mock_cameras();
