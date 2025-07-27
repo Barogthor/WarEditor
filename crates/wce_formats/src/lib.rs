@@ -1,7 +1,6 @@
 use std::ffi::IntoStringError;
 use std::fmt::Debug;
-use std::io::{self, Bytes, Cursor, Error, Read};
-use std::ops::{Deref, DerefMut};
+use std::io::{self, Error};
 use std::path::Path;
 use std::string::FromUtf8Error;
 
@@ -11,7 +10,6 @@ use mpq::Archive;
 
 use crate::binary_reader::{BinaryReader, ReadResult};
 use crate::binary_writer::BinaryWriter;
-use crate::MpqError::IoError;
 
 #[cfg(test)]
 fn get_resources_path() -> String {

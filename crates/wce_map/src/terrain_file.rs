@@ -59,7 +59,7 @@ impl TilePoint {
     }
 
     pub fn cliff_texture(&self) -> u8 {
-        self.cliff_texture_and_layer_height & 0x00FF
+        self.cliff_texture_and_layer_height
     }
 
     pub fn layer_height(&self) -> u8 {

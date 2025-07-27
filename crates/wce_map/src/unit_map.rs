@@ -1,5 +1,4 @@
 use std::convert::TryFrom;
-use std::io;
 
 #[cfg(test)]
 use pretty_assertions::assert_eq;
@@ -352,7 +351,7 @@ fn to_game_version(value: u32) -> Result<GameVersion, String> {
     match value {
         7 => Ok(RoC),
         8 => Ok(TFT),
-        _ => Err(format!("Unknown or unsupported game version '{}'", value)),
+        _ => Err(format!("Unknown or unsupported game version '{value}'")),
     }
 }
 

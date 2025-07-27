@@ -1,5 +1,4 @@
 use std::convert::TryFrom;
-use std::io;
 
 use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
@@ -88,7 +87,7 @@ impl CustomUpgradeFile {
 
 fn read_object(
     reader: &mut BinaryReader,
-    game_version: &GameVersion,
+    _game_version: &GameVersion,
 ) -> ReadResult<ObjectDefinition> {
     let original_id = reader.read_bytes(4)?;
     let original_id = [

@@ -1,5 +1,4 @@
 use std::convert::TryFrom;
-use std::io;
 
 #[cfg(test)]
 use pretty_assertions::assert_eq;

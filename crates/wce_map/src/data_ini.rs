@@ -44,6 +44,12 @@ pub struct DataIni {
     datas: HashMap<String, HashMap<String, String>>,
 }
 
+impl Default for DataIni {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DataIni {
     pub fn new() -> Self {
         Self {

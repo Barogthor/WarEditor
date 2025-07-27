@@ -109,6 +109,12 @@ fn process_cells(
     (headers, lines)
 }
 
+impl Default for SLKData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SLKData {
     pub fn new() -> Self {
         Self {

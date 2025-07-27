@@ -1,5 +1,4 @@
 use std::convert::TryFrom;
-use std::io;
 
 use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
@@ -100,6 +99,6 @@ fn to_game_version(value: u32) -> Result<GameVersion, String> {
     match value {
         0 => Ok(RoC),
         1 => Ok(TFT),
-        _ => Err(format!("Unknown or unsupported game version '{}'", value)),
+        _ => Err(format!("Unknown or unsupported game version '{value}'")),
     }
 }

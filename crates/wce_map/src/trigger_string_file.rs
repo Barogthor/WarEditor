@@ -1,4 +1,4 @@
-use std::{collections::HashMap, convert::TryFrom, io};
+use std::{collections::HashMap, convert::TryFrom};
 
 use regex::Regex;
 use thiserror::Error;

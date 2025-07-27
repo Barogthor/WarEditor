@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use std::ffi::CString;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Cursor, Error, Read, Seek, SeekFrom};
+use std::io::{BufRead, Cursor, Error, Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 
@@ -238,8 +238,8 @@ impl BinaryReader {
 }
 
 fn to_read_error(reader: &BinaryReader, error: Error) -> ReadError {
-    let pos = reader.pos();
-    let size = reader.size;
+    let _pos = reader.pos();
+    let _size = reader.size;
     match error.kind() {
         std::io::ErrorKind::UnexpectedEof => ReadError::EOF,
         _ => ReadError::Other(error),

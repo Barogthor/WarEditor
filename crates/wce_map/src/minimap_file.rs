@@ -1,5 +1,4 @@
 use std::convert::TryFrom;
-use std::io::{self, BufReader};
 
 use thiserror::Error;
 use wce_formats::binary_reader::BinaryReader;

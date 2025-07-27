@@ -1,7 +1,6 @@
 use derivative::Derivative;
 use std::convert::TryFrom;
 use std::fmt::Debug;
-use std::io;
 use thiserror::Error;
 
 #[cfg(test)]
@@ -514,7 +513,7 @@ fn to_game_version(value: u32) -> Result<GameVersion, String> {
         18 => Ok(RoC),
         25 => Ok(TFT),
         28 => Ok(Reforged),
-        _ => Err(format!("Unknown or unsupported game version '{}'", value)),
+        _ => Err(format!("Unknown or unsupported game version '{value}'")),
     }
 }
 
