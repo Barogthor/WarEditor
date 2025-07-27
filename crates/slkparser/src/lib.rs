@@ -2,6 +2,7 @@ use std::num::ParseIntError;
 use std::{fs::File, io};
 // #[warn(unused_variables)]
 use std::io::Read;
+use thiserror::Error;
 
 use crate::slk_type::{Record, RecordType};
 
@@ -14,12 +15,21 @@ pub const END_RECORD: &str = "\n";
 pub const END_RECORD: &str = "\r\n";
 pub const FIELD_SEPARATOR: &str = ";";
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum SLKError {
-    IoError(io::Error),
-    InvalidType(String),
+    #[error("I/O error: {0}")]
+    IoError(#[from] io::Error),
+    #[error("Invalid SLK record type: '{record_type}'")]
+    InvalidType { record_type: String },
+    #[error("Unexpected end of file while parsing SLK")]
     Eof,
-    Parsing(RecordType, String, ParseIntError),
+    #[error("Failed to parse {record_type:?} record '{content}': {source}")]
+    Parsing {
+        record_type: RecordType,
+        content: String,
+        #[source]
+        source: ParseIntError,
+    },
 }
 
 pub struct SLKScanner {

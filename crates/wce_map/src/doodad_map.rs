@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 use std::io;
 
+use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{self, RoC, TFT};
@@ -14,10 +15,13 @@ use crate::OpeningError;
 
 pub type Radian = f32;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum DoodadError {
+    #[error("MPQ opening failure. {0}")]
     MpqError(MpqError),
+    #[error("Failed to initialize binary reader. {0}")]
     InitReader(ReadError),
+    #[error("Failed to parse doodads datas. {0}")]
     Parsing(ReadError),
 }
 impl From<DoodadError> for OpeningError {

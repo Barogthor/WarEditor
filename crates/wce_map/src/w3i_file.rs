@@ -2,6 +2,7 @@ use derivative::Derivative;
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::io;
+use thiserror::Error;
 
 #[cfg(test)]
 use pretty_assertions::assert_eq;
@@ -37,10 +38,13 @@ use wce_formats::{BinaryConverter, GameVersion, MpqError, ReadError};
 use crate::globals::MAP_INFOS;
 use crate::OpeningError;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum InfoError {
+    #[error("MPQ opening failure. {0}")]
     MpqError(MpqError),
+    #[error("Failed to initialize binary reader. {0}")]
     InitReader(ReadError),
+    #[error("Failed to parse infos datas. {0}")]
     Parsing(ReadError),
 }
 impl From<InfoError> for OpeningError {
@@ -410,7 +414,7 @@ impl W3iFile {
 fn read_c_string_safe(reader: &mut BinaryReader) -> Result<String, ReadError> {
     reader.read_c_string()?.into_string().map_err(|e| {
         ReadError::InvalidCString(format!(
-            "Failed to convert C String to UTF-8 at position {}/{}. Reason `{e}`",
+            "Occured at {}/{}. Reason `{e}`",
             reader.pos(),
             reader.size()
         ))

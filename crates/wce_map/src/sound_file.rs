@@ -4,6 +4,7 @@ use std::io;
 #[cfg(test)]
 use pretty_assertions::assert_eq;
 
+use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::MapArchive;
@@ -14,10 +15,13 @@ use crate::OpeningError;
 
 const DEFAULT_FLOAT: f32 = 4.294_967_3e9;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum SoundError {
+    #[error("MPQ opening failure. {0}")]
     MpqError(MpqError),
+    #[error("Failed to initialize binary reader. {0}")]
     InitReader(ReadError),
+    #[error("Failed to parse sounds datas. {0}")]
     Parsing(ReadError),
 }
 impl From<SoundError> for OpeningError {

@@ -139,7 +139,7 @@ fn main() {
         println!("{path:?}");
         let map_res = Map::open(path.clone(), local_game_data);
         if let Err(err) = map_res {
-            error!("Error on map '{path}' : {err:?}");
+            error!("Error on map '{path}' : {err}");
         }
     }
     elapsed_time(&now);
@@ -194,7 +194,7 @@ mod tests_maps {
     use wce_map::map::Map;
     use wce_map::GameData;
 
-    use crate::{paths_blizzard_maps, paths_custom_maps};
+    use crate::{get_resources_path, paths_blizzard_maps, paths_custom_maps};
 
     #[test]
     fn test_blizzard_maps() {
@@ -202,11 +202,10 @@ mod tests_maps {
         let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
         let mut on_error = false;
 
-        let game_data = &GameData::new("../../resources/").unwrap_or_else(|e| panic!("{e:?}"));
+        let game_data = &GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{e:?}"));
         let maps = paths_blizzard_maps(Path::new(&format!("{old_dir_w3}\\Maps")));
         for map in maps {
             let path = map.into_os_string().into_string().unwrap();
-
             let map_res = Map::open(path.clone(), game_data);
             if let Err(err) = map_res {
                 println!("Error on map '{path}' : {err:?}");
@@ -223,7 +222,7 @@ mod tests_maps {
         dotenv().unwrap();
         let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
 
-        let game_data = &GameData::new("../../resources/").unwrap_or_else(|e| panic!("{e:?}"));
+        let game_data = &GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{e:?}"));
         let maps = paths_custom_maps(Path::new(&format!("{old_dir_w3}\\Maps")));
         for map in maps {
             let path = map.into_os_string().into_string().unwrap();

@@ -1,6 +1,7 @@
 use std::{collections::HashMap, convert::TryFrom, io};
 
 use regex::Regex;
+use thiserror::Error;
 
 use wce_formats::{binary_reader::BinaryReader, MapArchive, MpqError, ReadError};
 
@@ -11,13 +12,19 @@ const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)\s+\{\r\n+([^\}]*)\r\n\}";
 //const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)\s+";
 type TRIGSTR = String;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum MapStringError {
+    #[error("MPQ opening failure. {0}")]
     MpqError(MpqError),
+    #[error("Failed to initialize binary reader. {0}")]
     InitReader(ReadError),
+    #[error("Failed to parse trigger strings. {0}")]
     Parsing(ReadError),
-    Regex(regex::Error),
+    #[error("Regex compilation error. {0}")]
+    Regex(#[from] regex::Error),
+    #[error("Failed to capture string ID from trigger string")]
     CaptureId,
+    #[error("Failed to capture content from trigger string")]
     CaptureContent,
 }
 impl From<MapStringError> for OpeningError {

@@ -1,15 +1,19 @@
 use std::convert::TryFrom;
 use std::io::{self, Read};
 
+use thiserror::Error;
 use wce_formats::{MapArchive, MpqError, ReadError};
 
 use crate::globals::MAP_SHADERS;
 use crate::OpeningError;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ShadowMapError {
+    #[error("MPQ opening failure. {0}")]
     MpqError(MpqError),
-    IoError(io::Error),
+    #[error("I/O error while reading shadow data. {0}")]
+    IoError(#[from] io::Error),
+    #[error("Failed to parse shadow value: {0}")]
     Parsing(ReadError),
 }
 impl From<ShadowMapError> for OpeningError {

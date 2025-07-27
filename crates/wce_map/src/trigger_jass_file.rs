@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 use std::io;
 
+use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{RoC, TFT};
@@ -12,10 +13,13 @@ use crate::OpeningError;
 
 type TextScript = String;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum TriggerJassError {
+    #[error("MPQ opening failure. {0}")]
     MpqError(MpqError),
+    #[error("Failed to initialize binary reader. {0}")]
     InitReader(ReadError),
+    #[error("Failed to parse custom triggers content. {0}")]
     Parsing(ReadError),
 }
 impl From<TriggerJassError> for OpeningError {

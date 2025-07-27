@@ -83,16 +83,51 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in library 'war_editor'",
+            "name": "Debug executable 'editor-runner'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=editor-runner",
+                    "--package=editor-runner"
+                ],
+                "filter": {
+                    "name": "editor-runner",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'editor-runner'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--lib",
-                    "--package=war_editor"
+                    "--bin=editor-runner",
+                    "--package=editor-runner"
                 ],
                 "filter": {
-                    "name": "war_editor",
+                    "name": "editor-runner",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug workspace tests",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--workspace"
+                ],
+                "filter": {
                     "kind": "lib"
                 }
             },
@@ -102,39 +137,22 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'war_editor'",
+            "name": "Run editor-runner",
             "cargo": {
                 "args": [
-                    "build",
-                    "--bin=war_editor",
-                    "--package=war_editor"
+                    "run",
+                    "--package=editor-runner"
                 ],
                 "filter": {
-                    "name": "war_editor",
+                    "name": "editor-runner",
                     "kind": "bin"
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in executable 'war_editor'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--bin=war_editor",
-                    "--package=war_editor"
-                ],
-                "filter": {
-                    "name": "war_editor",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "RUST_LOG": "debug"
+            }
         }
     ]
 }

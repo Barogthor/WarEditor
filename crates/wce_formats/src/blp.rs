@@ -4,6 +4,7 @@ use std::io::Cursor;
 
 use jpeg_decoder::Decoder;
 use rgb::{RGB8, RGBA8};
+use thiserror::Error;
 
 use crate::binary_reader::BinaryReader;
 use crate::ReadError;
@@ -15,11 +16,15 @@ pub const JPG_BLP: bool = false;
 pub const PALETTED_BLP: bool = true;
 pub const MAX_MIPMAP: usize = 16;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum BLPError {
+    #[error("Error while reading BLP buffer. {0}")]
     Read(ReadError),
-    Decoding(jpeg_decoder::Error),
+    #[error("Decoding JPEG failure. {0}")]
+    Decoding(#[from] jpeg_decoder::Error),
+    #[error("Unknown BLP type '{0}'.")]
     UnknownType(u32),
+    #[error("Unknown BLP flag '{0}'.")]
     UnknownFlag(u32),
 }
 impl From<ReadError> for BLPError {

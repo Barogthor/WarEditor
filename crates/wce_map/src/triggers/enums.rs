@@ -1,3 +1,4 @@
+use thiserror::Error;
 use wce_formats::ReadError;
 
 use crate::triggers::enums::WtgError::{
@@ -5,15 +6,23 @@ use crate::triggers::enums::WtgError::{
     SubParameterConversionError,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum WtgError {
-    ParameterConversionError(String),
-    SubParameterConversionError(String),
-    ECAConversionError(String),
-    ConditionConversionError(String),
-    WtgParsingIsntCompleteError(String),
+    #[error("Unknown parameter '{kind}' at {position}.")]
+    ParameterConversionError { position: u64, kind: i32 },
+    #[error("Unknown sub parameter type: '{0}'")]
+    SubParameterConversionError(u32),
+    #[error("Unknown function type: '{0}'")]
+    ECAConversionError(u32),
+    #[error("Unknown condition type: {0}")]
+    ConditionConversionError(u32),
+    #[error("Unknown ECA property: [{0}]")]
     UnknownProp(String),
-    UnknownGameVersion(String),
+    #[error("Unknown sub-parameter property: [{0}]")]
+    UnknownSubProp(String),
+    #[error("Unknown game version: '{0}'")]
+    UnknownGameVersion(u32),
+    #[error("Binary reader error : {0}")]
     ErrorReader(ReadError),
 }
 impl From<ReadError> for WtgError {
@@ -39,9 +48,10 @@ impl ParameterType {
             2 => Ok(ParameterType::Function),
             3 => Ok(ParameterType::String),
             -1 => Ok(ParameterType::Invalid),
-            _ => Err(ParameterConversionError(format!(
-                "Failure on byte '{bin_pos}' : Unknown Parameter type {n} was found"
-            ))),
+            _ => Err(ParameterConversionError {
+                position: bin_pos,
+                kind: n,
+            }),
         }
     }
 }
@@ -58,7 +68,7 @@ impl ECAType {
             0 => Ok(ECAType::Event),
             1 => Ok(ECAType::Condition),
             2 => Ok(ECAType::Action),
-            _ => Err(ECAConversionError(format!("Unknown function type {n}"))),
+            _ => Err(ECAConversionError(n)),
         }
     }
     pub fn get_sector(&self) -> &str {
@@ -83,9 +93,7 @@ impl SubParameterType {
             1 => Ok(SubParameterType::Condition),
             2 => Ok(SubParameterType::Action),
             3 => Ok(SubParameterType::Call),
-            _ => Err(SubParameterConversionError(format!(
-                "Unknown sub parameter type {n}"
-            ))),
+            _ => Err(SubParameterConversionError(n)),
         }
     }
     pub fn get_sector(&self) -> &str {
@@ -110,9 +118,7 @@ impl ConditionType {
             0 => Ok(ConditionType::Condition),
             1 => Ok(ConditionType::Then),
             2 => Ok(ConditionType::Else),
-            _ => Err(ConditionConversionError(format!(
-                "Unknown Condition type {n}"
-            ))),
+            _ => Err(ConditionConversionError(n)),
         }
     }
 }

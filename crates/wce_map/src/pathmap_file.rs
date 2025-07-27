@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 use std::io;
 
+use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::{BinaryConverter, ReadError};
@@ -9,10 +10,13 @@ use wce_formats::{MapArchive, MpqError};
 use crate::globals::MAP_PATH_MAP;
 use crate::OpeningError;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum PathmapError {
+    #[error("MPQ opening failure. {0}")]
     MpqError(MpqError),
+    #[error("Failed to initialize binary reader. {0}")]
     InitReader(ReadError),
+    #[error("Failed to parse pathmap datas. {0}")]
     Parsing(ReadError),
 }
 impl From<PathmapError> for OpeningError {

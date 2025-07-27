@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 use std::io;
 
+use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::MapArchive;
 use wce_formats::{GameVersion, MpqError, ReadError};
@@ -11,10 +12,13 @@ use crate::OpeningError;
 
 use super::ObjectId;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum CustomAbilityError {
+    #[error("MPQ opening failure. {0}")]
     MpqError(MpqError),
+    #[error("Failed to initialize binary reader. {0}")]
     InitReader(ReadError),
+    #[error("Failed to parse custom abilities datas. {0}")]
     Parsing(ReadError),
 }
 impl From<CustomAbilityError> for OpeningError {

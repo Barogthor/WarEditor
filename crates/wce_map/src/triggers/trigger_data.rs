@@ -38,7 +38,7 @@ impl ECADefinition {
             .map_err(WtgError::ErrorReader)?;
         let eca_info = trigger_data
             .get_prop(ftype.get_sector(), &name)
-            .ok_or(UnknownProp(format!("ECA Prop isnt known: [{name}]")))?;
+            .ok_or(UnknownProp(name.clone()))?;
         let info_split = eca_info.split(",").collect::<Vec<&str>>();
         // println!("{} : {}, split : {:?}", name, eca_info, info_split);
         let count_parameters = match info_split.get(1) {
@@ -155,7 +155,7 @@ impl SubParameters {
             .map_err(WtgError::ErrorReader)?;
         let info_parameters = trigger_data
             .get_prop(ptype.get_sector(), &name)
-            .ok_or_else(|| UnknownProp(format!("Sub parameter prop isnt known: [{name}]")))?;
+            .ok_or(WtgError::UnknownSubProp(name.clone()))?;
 
         let substract = match ptype {
             SubParameterType::Call => 3,

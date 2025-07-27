@@ -110,9 +110,10 @@ fn cstring_to_string_meta(
     id: &ObjectId,
     meta_id: &[u8; 4],
 ) -> ReadResult<String> {
-    cstr?.into_string().map_err(|e| {
-        wce_formats::ReadError::InvalidCString(format!(
-            "Failed to read cstring for object '{id:?}' of meta '{}'. Reason '{e}",
+    let cstr = cstr?;
+    cstr.into_string().map_err(|e| {
+        ReadError::InvalidCString(format!(
+            "Invalid object '{id:?}' of meta '{}'. Reason '{e}",
             String::from_utf8_lossy(meta_id)
         ))
     })

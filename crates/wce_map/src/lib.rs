@@ -8,6 +8,8 @@ extern crate derivative;
 extern crate lazy_static;
 
 use slkparser::SLKError;
+use thiserror::Error;
+use wce_formats::MpqError;
 
 use crate::camera_file::CameraError;
 use crate::custom_datas::ability::CustomAbilityError;
@@ -35,30 +37,53 @@ use crate::triggers::TriggersError;
 use crate::unit_map::UnitMapError;
 use crate::w3i_file::InfoError;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum OpeningError {
-    Protected(String),
+    #[error("Map is likely protecte. {0}")]
+    Protected(MpqError),
+    #[error("Failed to load terrain environment. {0}")]
     Environment(TerrainError),
+    #[error("Failed to load custom text triggers. {0}")]
     CustomTextTrigger(TriggerJassError),
+    #[error("Failed to load trigger data. {0}")]
     Triggers(TriggersError),
+    #[error("Failed to load import file list. {0}")]
     Import(ImportError),
+    #[error("Failed to load minimap. {0}")]
     Minimap(MinimapError),
+    #[error("Failed to load menu minimap. {0}")]
     MenuMinimap(MenuMinimapError),
+    #[error("Failed to load pathing map. {0}")]
     PathingMap(PathmapError),
+    #[error("Failed to load regions. {0}")]
     Region(RegionError),
+    #[error("Failed to load shadow map. {0}")]
     ShadowMap(ShadowMapError),
+    #[error("Failed to load doodads. {0}")]
     Doodad(DoodadError),
+    #[error("Failed to load cameras. {0}")]
     Camera(CameraError),
+    #[error("Failed to load units and items. {0}")]
     UnitItem(UnitMapError),
+    #[error("Failed to load sounds. {0}")]
     Sound(SoundError),
+    #[error("Failed to load map strings. {0}")]
     MapStrings(MapStringError),
+    #[error("Failed to load map info. {0}")]
     Info(InfoError),
+    #[error("Failed to load custom units. {0}")]
     CustomUnit(CustomUnitError),
+    #[error("Failed to load custom items. {0}")]
     CustomItem(CustomItemError),
+    #[error("Failed to load custom abilities. {0}")]
     CustomAbility(CustomAbilityError),
+    #[error("Failed to load custom buffs. {0}")]
     CustomBuff(CustomBuffError),
+    #[error("Failed to load custom upgrades. {0}")]
     CustomUpgrade(CustomUpgradeError),
+    #[error("Failed to load custom doodads. {0}")]
     CustomDoodad(CustomDoodadError),
+    #[error("Failed to load custom destructables. {0}")]
     CustomDestructable(CustomDestructableError),
 }
 

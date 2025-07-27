@@ -53,8 +53,7 @@ pub struct Map<'a> {
 
 impl<'a> Map<'a> {
     pub fn open(path: String, game_data: &'a GameData) -> Result<Self, OpeningError> {
-        let mut map = MapArchive::open(path.to_owned())
-            .map_err(|e| OpeningError::Protected(format!("{e:?}")))?;
+        let mut map = MapArchive::open(path.to_owned()).map_err(OpeningError::Protected)?;
 
         let w3i = W3iFile::read_file(&mut map)?;
         let game_version = w3i.game_version();

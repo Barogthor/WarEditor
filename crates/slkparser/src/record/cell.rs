@@ -73,13 +73,21 @@ impl Cell {
                 "Y" => {
                     cell.row =
                         Some(field_content.parse::<u32>().map_err(|e| {
-                            SLKError::Parsing(RecordType::CellContent, "Y".into(), e)
+                            SLKError::Parsing {
+                                record_type: RecordType::CellContent,
+                                content: "Y".into(),
+                                source: e,
+                            }
                         })?)
                 }
                 "X" => {
                     cell.column = field_content
                         .parse::<u32>()
-                        .map_err(|e| SLKError::Parsing(RecordType::CellContent, "X".into(), e))?
+                        .map_err(|e| SLKError::Parsing {
+                            record_type: RecordType::CellContent,
+                            content: "X".into(),
+                            source: e,
+                        })?
                 }
                 "K" => {
                     if field_content.starts_with("\"") {

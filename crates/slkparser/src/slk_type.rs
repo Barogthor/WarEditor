@@ -32,12 +32,20 @@ impl Record {
                         "Y" => {
                             rows = field_content
                                 .parse::<u32>()
-                                .map_err(|e| SLKError::Parsing(record_type, "Y".into(), e))?
+                                .map_err(|e| SLKError::Parsing {
+                                    record_type,
+                                    content: "Y".into(),
+                                    source: e,
+                                })?
                         }
                         "X" => {
                             columns = field_content
                                 .parse::<u32>()
-                                .map_err(|e| SLKError::Parsing(record_type, "X".into(), e))?
+                                .map_err(|e| SLKError::Parsing {
+                                    record_type,
+                                    content: "X".into(),
+                                    source: e,
+                                })?
                         }
                         _ => (),
                     }
@@ -92,7 +100,9 @@ impl RecordType {
             "W" => Ok(RecordType::WindowDefinitions),
             "NL" => Ok(RecordType::ChartExtLink),
             "E" => Ok(RecordType::EOF),
-            _ => Err(SLKError::InvalidType(format!("Unknown record {id}"))),
+            _ => Err(SLKError::InvalidType {
+                record_type: format!("Unknown record {id}"),
+            }),
         }
     }
 }

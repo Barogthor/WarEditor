@@ -4,6 +4,7 @@ use std::io;
 #[cfg(test)]
 use pretty_assertions::assert_eq;
 
+use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{self, RoC, TFT};
@@ -22,10 +23,13 @@ const RANDOM_UNIT_ID: &str = "uDNR";
 
 pub type TablePointer = i32;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum UnitMapError {
+    #[error("MPQ opening failure. {0}")]
     MpqError(MpqError),
+    #[error("Failed to initialize binary reader. {0}")]
     InitReader(ReadError),
+    #[error("Failed to parse units map datas. {0}")]
     Parsing(ReadError),
 }
 impl From<UnitMapError> for OpeningError {

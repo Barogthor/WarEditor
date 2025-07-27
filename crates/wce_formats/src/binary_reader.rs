@@ -118,7 +118,10 @@ impl BinaryReader {
         CString::new(result_buf)
             .map_err(|_| cstring_null(self, size))?
             .into_string()
-            .map_err(|e| ReadError::CStringConversionFailure(self.pos(), e))
+            .map_err(|e| ReadError::CStringConversionFailure {
+                position: self.pos() - size as u64,
+                source: e,
+            })
     }
 
     pub fn read_string_utf8(&mut self, bytes_to_read: usize) -> ReadResult<String> {
@@ -128,8 +131,11 @@ impl BinaryReader {
 
     pub fn read_string_utf8_safe(&mut self, bytes_to_read: usize) -> ReadResult<String> {
         let v = self.read_bytes(bytes_to_read)?;
-        let s =
-            String::from_utf8(v).map_err(|e| ReadError::Utf8Error(self.pos(), self.size(), e))?;
+        let s = String::from_utf8(v).map_err(|e| ReadError::Utf8Error {
+            position: self.pos(),
+            length: self.size(),
+            source: e,
+        })?;
         Ok(s)
     }
 
@@ -235,14 +241,17 @@ fn to_read_error(reader: &BinaryReader, error: Error) -> ReadError {
     let pos = reader.pos();
     let size = reader.size;
     match error.kind() {
-        std::io::ErrorKind::UnexpectedEof => ReadError::EOF(pos, size),
+        std::io::ErrorKind::UnexpectedEof => ReadError::EOF,
         _ => ReadError::Other(error),
     }
 }
 
 fn cstring_null(reader: &BinaryReader, string_size: usize) -> ReadError {
     let pos = reader.pos() - string_size as u64;
-    ReadError::NullCString(pos, string_size)
+    ReadError::NullCString {
+        position: pos,
+        length: string_size,
+    }
 }
 
 impl TryFrom<MpqFileBuffer> for BinaryReader {

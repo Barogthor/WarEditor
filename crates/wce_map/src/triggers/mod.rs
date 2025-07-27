@@ -1,10 +1,11 @@
 use std::convert::TryFrom;
 use std::io;
 
+use thiserror::Error;
 use wce_formats::binary_reader::BinaryReader;
 use wce_formats::GameVersion::{self, RoC, TFT};
 // use log::{debug, error, info, trace, warn};
-use wce_formats::{MapArchive, MpqError};
+use wce_formats::{MapArchive, MpqError, ReadError};
 
 use crate::data_ini::DataIni;
 use crate::globals::MAP_TRIGGERS;
@@ -18,11 +19,14 @@ mod misc;
 mod trigger_data;
 mod wtg_tests;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum TriggersError {
-    MpqError(MpqError),
-    InitReader(wce_formats::ReadError),
-    Parsing(WtgError),
+    #[error("MPQ opening failure. {0}")]
+    MpqError(#[from] MpqError),
+    #[error("Failed to initialize binary reader. {0}")]
+    InitReader(#[from] ReadError),
+    #[error("Failed to parse trigger data. {0}")]
+    Parsing(#[from] WtgError),
 }
 impl From<TriggersError> for OpeningError {
     fn from(value: TriggersError) -> Self {
@@ -158,8 +162,6 @@ fn to_game_version(value: u32) -> Result<GameVersion, WtgError> {
     match value {
         4 => Ok(RoC),
         7 => Ok(TFT),
-        _ => Err(UnknownGameVersion(format!(
-            "Unknown or unsupported game version '{value}'"
-        ))),
+        _ => Err(UnknownGameVersion(value)),
     }
 }

@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 use std::io::{self, BufReader};
 
+use thiserror::Error;
 use wce_formats::binary_reader::BinaryReader;
 use wce_formats::blp::{BLPError, BLP};
 use wce_formats::{MapArchive, MpqError, ReadError};
@@ -8,12 +9,16 @@ use wce_formats::{MapArchive, MpqError, ReadError};
 use crate::globals::MAP_MINIMAP;
 use crate::OpeningError;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum MinimapError {
+    #[error("MPQ opening failure. {0}")]
     MpqError(MpqError),
+    #[error("Failed to initialize binary reader. {0}")]
     InitReader(ReadError),
+    #[error("Failed to parse minimap image. {0}")]
     Blp(BLPError),
 }
+
 impl From<MinimapError> for OpeningError {
     fn from(value: MinimapError) -> Self {
         OpeningError::Minimap(value)

@@ -5,6 +5,8 @@ use std::ops::{Deref, DerefMut};
 use std::path::Path;
 use std::string::FromUtf8Error;
 
+use thiserror::Error;
+
 use mpq::Archive;
 
 use crate::binary_reader::{BinaryReader, ReadResult};
@@ -85,10 +87,13 @@ impl GameDataVersionDescriptorT for GameDataTftDescriptor {}
 pub struct GameDataReforgedDescriptor;
 impl GameDataVersionDescriptorT for GameDataReforgedDescriptor {}
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum MpqError {
-    IoError(std::io::Error),
+    #[error("I/O error: {0}")]
+    IoError(#[from] std::io::Error),
+    #[error("File is not a valid map archive")]
     NotMapArchive,
+    #[error("Reason {0}")]
     Reason(String),
 }
 
@@ -146,16 +151,33 @@ impl GameMpq {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ReadError {
-    EOF(u64, usize),
+    #[error("Unexpected end of file while parsing.")]
+    EOF,
+    #[error("Invalid C string: {0}")]
     InvalidCString(String),
-    CStringConversionFailure(u64, IntoStringError),
-    NullCString(u64, usize),
-    Utf8Error(u64, usize, FromUtf8Error),
+    #[error("C string conversion failure at position {position}: {source}")]
+    CStringConversionFailure {
+        position: u64,
+        #[source]
+        source: IntoStringError,
+    },
+    #[error("Null C string at position {position}, length {length}")]
+    NullCString { position: u64, length: usize },
+    #[error("UTF-8 error at position {position}, length {length}: {source}")]
+    Utf8Error {
+        position: u64,
+        length: usize,
+        #[source]
+        source: FromUtf8Error,
+    },
+    #[error("I/O error: {0}")]
     Other(Error),
+    #[error("Read error: {0}")]
     Reason(String),
-    IoError(io::Error),
+    #[error("I/O error: {0}")]
+    IoError(#[from] io::Error),
 }
 
 impl From<FromUtf8Error> for ReadError {

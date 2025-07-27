@@ -16,3 +16,4 @@ jpeg-decoder = { git = "https://github.com/Barogthor/jpeg-decoder.git" }
 rgb = "0.8.52"
 mpq = "0.7.0"
 bencher = {workspace = true}
+thiserror = {workspace = true}
