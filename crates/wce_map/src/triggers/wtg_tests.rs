@@ -116,7 +116,7 @@ mod trigger_file_tests {
 
     #[test]
     fn parse_event_trigger() {
-        let game_data = GameData::new(&get_resources_path());
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
         let buffer = TFT_TRIGGER_EVENT.to_vec();
         let mut reader = BinaryReader::new(buffer);
         let _trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
@@ -125,7 +125,7 @@ mod trigger_file_tests {
 
     #[test]
     fn parse_condition_trigger() {
-        let game_data = GameData::new(&get_resources_path());
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
         let buffer = TFT_TRIGGER_CONDITION.to_vec();
         let mut reader = BinaryReader::new(buffer);
         let _trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
@@ -135,7 +135,7 @@ mod trigger_file_tests {
 
     #[test]
     fn parse_action_trigger() {
-        let game_data = GameData::new(&get_resources_path());
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
         let buffer = TFT_TRIGGER_ACTION.to_vec();
         let mut reader = BinaryReader::new(buffer);
         let _trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
@@ -144,7 +144,7 @@ mod trigger_file_tests {
 
     #[test]
     fn parse_disabled_trigger() {
-        let game_data = GameData::new(&get_resources_path());
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
         let buffer = TFT_TRIGGER_DISABLED.to_vec();
         let mut reader = BinaryReader::new(buffer);
         let _trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
@@ -153,7 +153,7 @@ mod trigger_file_tests {
 
     #[test]
     fn parse_disabled_not_on_trigger() {
-        let game_data = GameData::new(&get_resources_path());
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
         let buffer = TFT_TRIGGER_DISABLED_BUT_ON.to_vec();
         let mut reader = BinaryReader::new(buffer);
         let _trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
@@ -162,7 +162,7 @@ mod trigger_file_tests {
 
     #[test]
     fn parse_if_then_else_trigger() {
-        let game_data = GameData::new(&get_resources_path());
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
         let buffer = TFT_TRIGGER_IF_THEN_ELSE.to_vec();
         let mut reader = BinaryReader::new(buffer);
         let _trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
@@ -171,7 +171,7 @@ mod trigger_file_tests {
 
     #[test]
     fn parse_loop_a_trigger() {
-        let game_data = GameData::new(&get_resources_path());
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
         let buffer = TFT_TRIGGER_FOR_LOOP_A.to_vec();
         let mut reader = BinaryReader::new(buffer);
         let _trigger = TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data());
@@ -180,7 +180,7 @@ mod trigger_file_tests {
 
     #[test]
     fn parse_bomber_command_trigger() {
-        let game_data = GameData::new(&get_resources_path());
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
         let buffer = include_bytes!("trigger_fail_bombercommand.bin").to_vec();
         let mut reader = BinaryReader::new(buffer);
         let _trigger =

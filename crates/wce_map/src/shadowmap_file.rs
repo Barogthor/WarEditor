@@ -1,9 +1,21 @@
 use std::convert::TryFrom;
+use std::io;
 
 use wce_formats::{MapArchive, ReadError};
 
 use crate::globals::MAP_SHADERS;
 use crate::OpeningError;
+
+#[derive(Debug)]
+pub enum ShadowMapError {
+    IoError(io::Error),
+    Parsing(ReadError),
+}
+impl From<ShadowMapError> for OpeningError {
+    fn from(value: ShadowMapError) -> Self {
+        OpeningError::ShadowMap(value)
+    }
+}
 
 #[derive(Debug)]
 pub enum ShadowType {
@@ -32,16 +44,14 @@ impl ShadowMapFile {
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
         let file = map
             .open_file(MAP_SHADERS)
-            .map_err(|e| OpeningError::ShadowMap(format!("{e}")))?;
+            .map_err(ShadowMapError::IoError)?;
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
         file.read(map, &mut buffer)
-            .map_err(|e| OpeningError::ShadowMap(format!("{e}")))?;
+            .map_err(ShadowMapError::IoError)?;
         let shaders = buffer
             .into_iter()
-            .map(|byte| {
-                ShadowType::try_from(byte).map_err(|e| OpeningError::ShadowMap(format!("{e:?}")))
-            })
+            .map(|byte| ShadowType::try_from(byte).map_err(ShadowMapError::Parsing))
             .collect::<Result<Vec<_>, _>>()?;
         Ok(Self { shaders })
     }

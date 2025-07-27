@@ -1,3 +1,5 @@
+use std::io;
+
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{self, RoC, TFT};
@@ -10,6 +12,17 @@ use crate::unit_map::{DropItem, DropItemSet, Drops};
 use crate::OpeningError;
 
 pub type Radian = f32;
+
+#[derive(Debug)]
+pub enum DoodadError {
+    IoError(io::Error),
+    Parsing(ReadError),
+}
+impl From<DoodadError> for OpeningError {
+    fn from(value: DoodadError) -> Self {
+        OpeningError::Doodad(value)
+    }
+}
 
 #[derive(PartialOrd, PartialEq, Clone, Debug)]
 pub enum DestructableFlag {
@@ -155,15 +168,12 @@ impl DoodadMap {
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
         let file = map
             .open_file(MAP_TERRAIN_DOODADS)
-            .map_err(|e| OpeningError::Doodad(format!("{e}")))?;
+            .map_err(DoodadError::IoError)?;
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-        file.read(map, &mut buffer)
-            .map_err(|e| OpeningError::Doodad(format!("{e}")))?;
+        file.read(map, &mut buffer).map_err(DoodadError::IoError)?;
         let mut reader = BinaryReader::new(buffer);
-        let doodads = reader
-            .read::<DoodadMap>()
-            .map_err(|e| OpeningError::Doodad(format!("{e:?}")))?;
+        let doodads = reader.read::<DoodadMap>().map_err(DoodadError::Parsing)?;
         Ok(doodads)
     }
 }

@@ -1,13 +1,26 @@
+use std::io;
+
 #[cfg(test)]
 use pretty_assertions::assert_eq;
 
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
-use wce_formats::BinaryConverter;
 use wce_formats::MapArchive;
+use wce_formats::{BinaryConverter, ReadError};
 
 use crate::globals::MAP_REGIONS;
 use crate::OpeningError;
+
+#[derive(Debug)]
+pub enum RegionError {
+    IoError(io::Error),
+    Parsing(ReadError),
+}
+impl From<RegionError> for OpeningError {
+    fn from(value: RegionError) -> Self {
+        OpeningError::Region(value)
+    }
+}
 
 #[derive(Debug, Derivative)]
 #[derivative(Default, PartialEq)]
@@ -64,12 +77,9 @@ impl RegionFile {
             Ok(file) => {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-                file.read(map, &mut buffer)
-                    .map_err(|e| OpeningError::Region(format!("{e}")))?;
+                file.read(map, &mut buffer).map_err(RegionError::IoError)?;
                 let mut reader = BinaryReader::new(buffer);
-                let region = reader
-                    .read::<RegionFile>()
-                    .map_err(|e| OpeningError::Region(format!("{e:?}")))?;
+                let region = reader.read::<RegionFile>().map_err(RegionError::Parsing)?;
                 Ok(Some(region))
             }
             _ => Ok(None),

@@ -14,7 +14,8 @@ lazy_static! {
 fn parse_ini(path: &str) -> HashMap<String, HashMap<String, String>> {
     let mut f = File::open(path).unwrap_or_else(|_| panic!("Unknown file: {}.", path));
     let mut buffer = String::new();
-    f.read_to_string(&mut buffer).unwrap();
+    f.read_to_string(&mut buffer)
+        .unwrap_or_else(|e| panic!("{}", e));
     let buffer: Vec<&str> = buffer.split(EOL).collect();
 
     let mut map: HashMap<String, HashMap<String, String>> = HashMap::new();

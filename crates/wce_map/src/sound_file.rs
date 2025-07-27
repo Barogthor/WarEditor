@@ -1,15 +1,28 @@
+use std::io;
+
 #[cfg(test)]
 use pretty_assertions::assert_eq;
 
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
-use wce_formats::BinaryConverter;
 use wce_formats::MapArchive;
+use wce_formats::{BinaryConverter, ReadError};
 
 use crate::globals::MAP_SOUNDS;
 use crate::OpeningError;
 
 const DEFAULT_FLOAT: f32 = 4.294_967_3e9;
+
+#[derive(Debug)]
+pub enum SoundError {
+    IoError(io::Error),
+    Parsing(ReadError),
+}
+impl From<SoundError> for OpeningError {
+    fn from(value: SoundError) -> Self {
+        OpeningError::Sound(value)
+    }
+}
 
 #[derive(Debug, Derivative)]
 #[derivative(Default(new = "true"), PartialEq)]
@@ -97,12 +110,9 @@ impl SoundFile {
             Ok(file) => {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-                file.read(map, &mut buffer)
-                    .map_err(|e| OpeningError::Sound(format!("{e}")))?;
+                file.read(map, &mut buffer).map_err(SoundError::IoError)?;
                 let mut reader = BinaryReader::new(buffer);
-                let sounds = reader
-                    .read::<SoundFile>()
-                    .map_err(|e| OpeningError::Sound(format!("{e:?}")))?;
+                let sounds = reader.read::<SoundFile>().map_err(SoundError::Parsing)?;
                 Ok(Some(sounds))
             }
             _ => Ok(None),

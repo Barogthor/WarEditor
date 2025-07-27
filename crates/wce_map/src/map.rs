@@ -18,7 +18,7 @@ use crate::shadowmap_file::ShadowMapFile;
 use crate::sound_file::SoundFile;
 use crate::terrain_file::TerrainFile;
 use crate::trigger_jass_file::TriggerJassFile;
-use crate::trigger_string_file::TriggerStringFile;
+use crate::trigger_string_file::MapStringFile;
 use crate::triggers::TriggersFile;
 use crate::unit_map::UnitItemMap;
 use crate::w3i_file::W3iFile;
@@ -36,7 +36,7 @@ pub struct Map<'a> {
     menu_minimap: MMPFile,
     shaders: ShadowMapFile,
     sounds: Option<SoundFile>,
-    strings: TriggerStringFile,
+    strings: MapStringFile,
     custom_scripts: TriggerJassFile,
     doodad_map: DoodadMap,
     unit_item_map: UnitItemMap,
@@ -77,7 +77,7 @@ impl<'a> Map<'a> {
         //        environment.debug();
         let minimap = MinimapFile::read_file(&mut map)?;
         //        mmap.debug();
-        let trigstrs = TriggerStringFile::read_file(&mut map)?;
+        let trigstrs = MapStringFile::read_file(&mut map)?;
         //        trigstrs.debug();
         let triggers_ct = TriggerJassFile::read_file(&mut map)?;
         //        triggers_ct.debug();

@@ -1,12 +1,24 @@
+use std::io;
+
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
-use wce_formats::BinaryConverter;
 use wce_formats::MapArchive;
+use wce_formats::{BinaryConverter, ReadError};
 
 use crate::globals::MAP_MENU_MINIMAP;
 use crate::OpeningError;
 
 type RGBA = Vec<u8>;
+#[derive(Debug)]
+pub enum MenuMinimapError {
+    IoError(io::Error),
+    Parsing(ReadError),
+}
+impl From<MenuMinimapError> for OpeningError {
+    fn from(value: MenuMinimapError) -> Self {
+        OpeningError::MenuMinimap(value)
+    }
+}
 
 #[derive(Debug)]
 pub struct MMPDataset {
@@ -57,15 +69,15 @@ impl MMPFile {
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
         let file = map
             .open_file(MAP_MENU_MINIMAP)
-            .map_err(|e| OpeningError::MenuMinimap(format!("{e}")))?;
+            .map_err(MenuMinimapError::IoError)?;
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
         file.read(map, &mut buffer)
-            .map_err(|e| OpeningError::MenuMinimap(format!("{e}")))?;
+            .map_err(MenuMinimapError::IoError)?;
         let mut reader = BinaryReader::new(buffer);
         let mmp = reader
             .read::<MMPFile>()
-            .map_err(|e| OpeningError::MenuMinimap(format!("{e:?}")))?;
+            .map_err(MenuMinimapError::Parsing)?;
         Ok(mmp)
     }
 

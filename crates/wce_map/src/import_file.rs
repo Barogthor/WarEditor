@@ -1,4 +1,5 @@
 use std::ffi::CString;
+use std::io;
 
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
@@ -10,6 +11,18 @@ use crate::globals::MAP_IMPORT_LIST;
 use crate::OpeningError;
 
 type ImportPath = Vec<(ImportPathType, CString)>;
+
+#[derive(Debug)]
+pub enum ImportError {
+    IoError(io::Error),
+    Parsing(ReadError),
+}
+
+impl From<ImportError> for OpeningError {
+    fn from(value: ImportError) -> Self {
+        OpeningError::Import(value)
+    }
+}
 
 #[derive(Debug)]
 pub struct ImportFile {
@@ -24,12 +37,9 @@ impl ImportFile {
             Ok(file) => {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-                file.read(map, &mut buffer)
-                    .map_err(|e| OpeningError::Import(format!("{e}")))?;
+                file.read(map, &mut buffer).map_err(ImportError::IoError)?;
                 let mut reader = BinaryReader::new(buffer);
-                let v = reader
-                    .read::<ImportFile>()
-                    .map_err(|e| OpeningError::Import(format!("{e:?}")))?;
+                let v = reader.read::<ImportFile>().map_err(ImportError::Parsing)?;
                 Ok(Some(v))
             }
             _ => Ok(None),

@@ -1,6 +1,6 @@
 use std::ffi::CString;
 use std::fs::File;
-use std::io::{BufRead, Cursor, Error, Read, Seek, SeekFrom};
+use std::io::{BufRead, BufReader, Cursor, Error, Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 

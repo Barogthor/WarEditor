@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 
-use slkparser::record::cell::Cell;
+use slkparser::{record::cell::Cell, SLKError};
 
 use crate::slk_datas::adapter::{DocumentAdapter, ScannerAdapter};
 
@@ -12,17 +12,17 @@ mod adapter {
     use slkparser::document::Document;
     use slkparser::record::cell::Cell;
     use slkparser::slk_type::Record;
-    use slkparser::SLKScanner;
+    use slkparser::{SLKError, SLKScanner};
 
     pub struct ScannerAdapter {
         scanner: SLKScanner,
     }
 
     impl ScannerAdapter {
-        pub fn open(path: &str) -> ScannerAdapter {
-            ScannerAdapter {
-                scanner: SLKScanner::open(path),
-            }
+        pub fn open(path: &str) -> Result<Self, SLKError> {
+            Ok(ScannerAdapter {
+                scanner: SLKScanner::open(path)?,
+            })
         }
     }
     impl Iterator for ScannerAdapter {
@@ -54,6 +54,10 @@ mod adapter {
             self.document.column_count()
         }
     }
+}
+
+pub enum SLKDataError {
+    SLKParsing(SLKError),
 }
 
 #[derive(Debug)]
@@ -112,20 +116,20 @@ impl SLKData {
             lines: Default::default(),
         }
     }
-    pub fn load(path: &str) -> Self {
+    pub fn load(path: &str) -> Result<Self, SLKError> {
         // println!("========== Parse file: {}",path);
-        let scanner = ScannerAdapter::open(path);
+        let scanner = ScannerAdapter::open(path)?;
         let document = DocumentAdapter::load(scanner);
         let cells = document.get_contents();
 
         let (headers, lines) = process_cells(cells);
 
-        SLKData { headers, lines }
+        Ok(SLKData { headers, lines })
     }
 
-    pub fn merge(&mut self, path: &str) {
+    pub fn merge(&mut self, path: &str) -> Result<(), SLKError> {
         // println!("========== Merge file: {}",path);
-        let scanner = ScannerAdapter::open(path);
+        let scanner = ScannerAdapter::open(path)?;
         let document = DocumentAdapter::load(scanner);
         let cells = document.get_contents();
         let (headers, lines) = process_cells(cells);
@@ -147,6 +151,7 @@ impl SLKData {
         for (column, label) in headers {
             self.headers.insert(headers_count + column, label);
         }
+        Ok(())
     }
 
     // pub fn debug(&self){
@@ -175,7 +180,7 @@ impl SLKData {
             let key = if key.is_none() {
                 format!("Unknown{counter}")
             } else {
-                key.unwrap().to_string()
+                key.map(String::to_string).unwrap()
             };
             res.insert(key.clone(), value.clone());
         }

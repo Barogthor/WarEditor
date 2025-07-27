@@ -1,5 +1,6 @@
 use derivative::Derivative;
 use std::fmt::Debug;
+use std::io;
 
 #[cfg(test)]
 use pretty_assertions::assert_eq;
@@ -34,6 +35,17 @@ use wce_formats::{BinaryConverter, GameVersion, ReadError};
 
 use crate::globals::MAP_INFOS;
 use crate::OpeningError;
+
+#[derive(Debug)]
+pub enum InfoError {
+    IoError(io::Error),
+    Parsing(ReadError),
+}
+impl From<InfoError> for OpeningError {
+    fn from(value: InfoError) -> Self {
+        OpeningError::Info(value)
+    }
+}
 
 /// TFT flags:
 /// - Unknown 3
@@ -376,29 +388,19 @@ pub struct W3iFile {
 
 impl W3iFile {
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
-        let file = map
-            .open_file(MAP_INFOS)
-            .map_err(|e| OpeningError::Info(format!("{e}")))?;
+        let file = map.open_file(MAP_INFOS).map_err(InfoError::IoError)?;
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-        file.read(map, &mut buffer)
-            .map_err(|e| OpeningError::Info(format!("{e}")))?;
+        file.read(map, &mut buffer).map_err(InfoError::IoError)?;
         let mut reader = BinaryReader::new(buffer);
         reader
             .read::<W3iFile>()
-            .map_err(|e| OpeningError::Info(format!("{e:?}")))
+            .map_err(InfoError::Parsing)
+            .map_err(From::from)
     }
 
     pub fn game_version(&self) -> GameVersion {
         self.version
-    }
-
-    pub fn header_flags(&self) -> &HeaderFlags {
-        &self.header_flags
-    }
-
-    pub fn header_flags_mut(&mut self) -> &mut HeaderFlags {
-        &mut self.header_flags
     }
 
     pub fn debug(&self) {

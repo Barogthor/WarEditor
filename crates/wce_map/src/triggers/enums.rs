@@ -4,7 +4,6 @@ use crate::triggers::enums::WtgError::{
     ConditionConversionError, ECAConversionError, ParameterConversionError,
     SubParameterConversionError,
 };
-use crate::OpeningError;
 
 #[derive(Debug)]
 pub enum WtgError {
@@ -20,12 +19,6 @@ pub enum WtgError {
 impl From<ReadError> for WtgError {
     fn from(value: ReadError) -> Self {
         Self::ErrorReader(value)
-    }
-}
-
-impl From<WtgError> for OpeningError {
-    fn from(val: WtgError) -> Self {
-        OpeningError::Triggers(format!("{val:?}"))
     }
 }
 

@@ -46,7 +46,7 @@ fn main() {
     let now = Instant::now();
 
     let prefix: &str = &get_resources_path();
-    let local_game_data = &GameData::new(prefix);
+    let local_game_data = &GameData::new(prefix).unwrap_or_else(|e| panic!("{e:?}"));
     // let mut trigger_data = DataIni::new();
     // trigger_data.merge(PROFILE_TRIGGER_DATA);
     // // trigger_datas.debug();
@@ -202,7 +202,7 @@ mod tests_maps {
         let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
         let mut on_error = false;
 
-        let game_data = &GameData::new("../../resources/");
+        let game_data = &GameData::new("../../resources/").unwrap_or_else(|e| panic!("{e:?}"));
         let maps = paths_blizzard_maps(Path::new(&format!("{old_dir_w3}\\Maps")));
         for map in maps {
             let path = map.into_os_string().into_string().unwrap();
@@ -223,7 +223,7 @@ mod tests_maps {
         dotenv().unwrap();
         let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
 
-        let game_data = &GameData::new("../../resources/");
+        let game_data = &GameData::new("../../resources/").unwrap_or_else(|e| panic!("{e:?}"));
         let maps = paths_custom_maps(Path::new(&format!("{old_dir_w3}\\Maps")));
         for map in maps {
             let path = map.into_os_string().into_string().unwrap();

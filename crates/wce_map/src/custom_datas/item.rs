@@ -1,12 +1,25 @@
+use std::io;
+
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
-use wce_formats::GameVersion;
 use wce_formats::MapArchive;
+use wce_formats::{GameVersion, ReadError};
 
 use crate::custom_datas::ObjectDefinition;
 use crate::globals::MAP_CUSTOM_ITEMS;
 use crate::OpeningError;
 
 use super::ObjectId;
+
+#[derive(Debug)]
+pub enum CustomItemError {
+    IoError(io::Error),
+    Parsing(ReadError),
+}
+impl From<CustomItemError> for OpeningError {
+    fn from(value: CustomItemError) -> Self {
+        OpeningError::CustomItem(value)
+    }
+}
 
 #[derive(Debug)]
 pub struct CustomItemFile {
@@ -26,10 +39,10 @@ impl CustomItemFile {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
                 file.read(map, &mut buffer)
-                    .map_err(|e| OpeningError::CustomItem(format!("{e}")))?;
+                    .map_err(CustomItemError::IoError)?;
                 let mut reader = BinaryReader::new(buffer);
-                let custom_item = Self::from(&mut reader, game_version)
-                    .map_err(|e| OpeningError::CustomItem(format!("{e:?}")))?;
+                let custom_item =
+                    Self::from(&mut reader, game_version).map_err(CustomItemError::Parsing)?;
                 Ok(Some(custom_item))
             }
             _ => Ok(None),

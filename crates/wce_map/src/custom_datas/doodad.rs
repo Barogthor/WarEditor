@@ -1,5 +1,7 @@
+use std::io;
+
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
-use wce_formats::GameVersion;
+use wce_formats::{GameVersion, ReadError};
 use wce_formats::MapArchive;
 
 use crate::custom_datas::ObjectDefinition;
@@ -7,6 +9,17 @@ use crate::globals::MAP_CUSTOM_DOODADS;
 use crate::OpeningError;
 
 use super::ObjectId;
+
+#[derive(Debug)]
+pub enum CustomDoodadError {
+    IoError(io::Error),
+    Parsing(ReadError),
+}
+impl From<CustomDoodadError> for OpeningError {
+    fn from(value: CustomDoodadError) -> Self {
+        OpeningError::CustomDoodad(value)
+    }
+}
 
 #[derive(Debug)]
 pub struct CustomDoodadFile {
@@ -26,10 +39,10 @@ impl CustomDoodadFile {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
                 file.read(map, &mut buffer)
-                    .map_err(|e| OpeningError::CustomDoodad(format!("{e}")))?;
+                    .map_err(CustomDoodadError::IoError)?;
                 let mut reader = BinaryReader::new(buffer);
                 let custom_doodad = Self::from(&mut reader, game_version)
-                    .map_err(|e| OpeningError::CustomDoodad(format!("{e:?}")))?;
+                    .map_err(CustomDoodadError::Parsing)?;
                 Ok(Some(custom_doodad))
             }
             _ => Ok(None),

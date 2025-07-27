@@ -7,43 +7,59 @@ extern crate derivative;
 #[macro_use]
 extern crate lazy_static;
 
+use slkparser::SLKError;
+
+use crate::camera_file::CameraError;
+use crate::custom_datas::ability::CustomAbilityError;
+use crate::custom_datas::buff::CustomBuffError;
+use crate::custom_datas::destructable::CustomDestructableError;
+use crate::custom_datas::doodad::CustomDoodadError;
+use crate::custom_datas::item::CustomItemError;
+use crate::custom_datas::unit::CustomUnitError;
+use crate::custom_datas::upgrade::CustomUpgradeError;
 use crate::data_ini::DataIni;
+use crate::doodad_map::DoodadError;
 use crate::globals::*;
+use crate::import_file::ImportError;
+use crate::minimap_file::MinimapError;
+use crate::mmp_file::MenuMinimapError;
+use crate::pathmap_file::PathmapError;
+use crate::region_file::RegionError;
+use crate::shadowmap_file::ShadowMapError;
 use crate::slk_datas::SLKData;
+use crate::sound_file::SoundError;
+use crate::terrain_file::TerrainError;
+use crate::trigger_jass_file::TriggerJassError;
+use crate::trigger_string_file::MapStringError;
+use crate::triggers::TriggersError;
+use crate::unit_map::UnitMapError;
+use crate::w3i_file::InfoError;
 
-pub const PREFIX_SAMPLE_PATH: &str = "resources/sample_1";
-pub const PREFIX_MDL_PATH: &str = "resources/blp";
-pub const PREFIX_BLP_PATH: &str = "resources/mdl";
-
-pub fn concat_path(path: &str) -> String {
-    format!("{PREFIX_SAMPLE_PATH}/{path}")
-}
-
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug)]
 pub enum OpeningError {
     Protected(String),
-    Environment(String),
-    CustomTextTrigger(String),
-    Triggers(String),
-    Import(String),
-    Minimap(String),
-    MenuMinimap(String),
-    PathingMap(String),
-    Region(String),
-    ShadowMap(String),
-    Doodad(String),
-    Camera(String),
-    UnitItem(String),
-    Sound(String),
-    MapStrings(String),
-    Info(String),
-    CustomUnit(String),
-    CustomItem(String),
-    CustomAbility(String),
-    CustomBuff(String),
-    CustomUpgrade(String),
-    CustomDoodad(String),
-    CustomDestructable(String),
+    Environment(TerrainError),
+    CustomTextTrigger(TriggerJassError),
+    Triggers(TriggersError),
+    Import(ImportError),
+    Minimap(MinimapError),
+    MenuMinimap(MenuMinimapError),
+    PathingMap(PathmapError),
+    Region(RegionError),
+    ShadowMap(ShadowMapError),
+    Doodad(DoodadError),
+    Camera(CameraError),
+    UnitItem(UnitMapError),
+    Sound(SoundError),
+    MapStrings(MapStringError),
+    Info(InfoError),
+    CustomUnit(CustomUnitError),
+    CustomItem(CustomItemError),
+    CustomAbility(CustomAbilityError),
+    CustomBuff(CustomBuffError),
+    CustomUpgrade(CustomUpgradeError),
+    CustomDoodad(CustomDoodadError),
+    CustomDestructable(CustomDestructableError),
 }
 
 pub fn path_to_data(prefix: &str, path: &str) -> String {
@@ -72,30 +88,31 @@ pub struct GameData {
 }
 
 impl GameData {
-    pub fn new(prefix: &str) -> Self {
+    pub fn new(prefix: &str) -> Result<Self, SLKError> {
         let mut trigger_data = DataIni::new();
         trigger_data.merge(&path_to_data(prefix, PROFILE_TRIGGER_DATA));
-        let unit_meta = SLKData::load(&path_to_slk(prefix, SLK_UNIT_META_DATA));
+        let unit_meta = SLKData::load(&path_to_slk(prefix, SLK_UNIT_META_DATA))?;
 
-        let doodad_meta = SLKData::load(&path_to_slk(prefix, SLK_DOODAD_META_DATA));
-        let destructable_meta = SLKData::load(&path_to_slk(prefix, SLK_DESTRUCTABLE_META_DATA));
-        let abilty_meta = SLKData::load(&path_to_slk(prefix, SLK_ABILITY_META_DATA));
-        let upgrade_meta = SLKData::load(&path_to_slk(prefix, SLK_UPGRADE_META_DATA));
-        let upgrade_effect_meta = SLKData::load(&path_to_slk(prefix, SLK_UPGRADE_EFFECT_META_DATA));
-        let const_meta = SLKData::load(&path_to_slk(prefix, SLK_MISC_META_DATA));
-        let ui_const_meta = SLKData::load(&path_to_slk(prefix, SLK_SKIN_META_DATA));
-        let ability_buff_meta = SLKData::load(&path_to_slk(prefix, SLK_ABILITY_BUFF_META_DATA));
+        let doodad_meta = SLKData::load(&path_to_slk(prefix, SLK_DOODAD_META_DATA))?;
+        let destructable_meta = SLKData::load(&path_to_slk(prefix, SLK_DESTRUCTABLE_META_DATA))?;
+        let abilty_meta = SLKData::load(&path_to_slk(prefix, SLK_ABILITY_META_DATA))?;
+        let upgrade_meta = SLKData::load(&path_to_slk(prefix, SLK_UPGRADE_META_DATA))?;
+        let upgrade_effect_meta =
+            SLKData::load(&path_to_slk(prefix, SLK_UPGRADE_EFFECT_META_DATA))?;
+        let const_meta = SLKData::load(&path_to_slk(prefix, SLK_MISC_META_DATA))?;
+        let ui_const_meta = SLKData::load(&path_to_slk(prefix, SLK_SKIN_META_DATA))?;
+        let ability_buff_meta = SLKData::load(&path_to_slk(prefix, SLK_ABILITY_BUFF_META_DATA))?;
         let mut unit_data = SLKData::new();
-        unit_data.merge(&path_to_slk(prefix, SLK_UNIT_DATA));
-        unit_data.merge(&path_to_slk(prefix, SLK_UNIT_BALANCE));
-        unit_data.merge(&path_to_slk(prefix, SLK_UNIT_UI));
-        unit_data.merge(&path_to_slk(prefix, SLK_UNIT_ABILITIES));
-        unit_data.merge(&path_to_slk(prefix, SLK_UNIT_WEAPONS));
-        let ability_data = SLKData::load(&path_to_slk(prefix, SLK_ABILITY_DATA));
-        let upgrade_data = SLKData::load(&path_to_slk(prefix, SLK_UPGRADE_DATA));
-        let doodad_effect_data = SLKData::load(&path_to_slk(prefix, SLK_DOODADS));
-        let destructable_effect_data = SLKData::load(&path_to_slk(prefix, SLK_DESTRUCTABLE_DATA));
-        Self {
+        unit_data.merge(&path_to_slk(prefix, SLK_UNIT_DATA))?;
+        unit_data.merge(&path_to_slk(prefix, SLK_UNIT_BALANCE))?;
+        unit_data.merge(&path_to_slk(prefix, SLK_UNIT_UI))?;
+        unit_data.merge(&path_to_slk(prefix, SLK_UNIT_ABILITIES))?;
+        unit_data.merge(&path_to_slk(prefix, SLK_UNIT_WEAPONS))?;
+        let ability_data = SLKData::load(&path_to_slk(prefix, SLK_ABILITY_DATA))?;
+        let upgrade_data = SLKData::load(&path_to_slk(prefix, SLK_UPGRADE_DATA))?;
+        let doodad_effect_data = SLKData::load(&path_to_slk(prefix, SLK_DOODADS))?;
+        let destructable_effect_data = SLKData::load(&path_to_slk(prefix, SLK_DESTRUCTABLE_DATA))?;
+        Ok(Self {
             trigger_data,
             unit_data,
             unit_meta,
@@ -111,7 +128,7 @@ impl GameData {
             upgrade_data,
             doodad_effect_data,
             destructable_effect_data,
-        }
+        })
     }
 
     pub fn get_trigger_data(&self) -> &DataIni {

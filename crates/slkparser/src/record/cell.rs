@@ -26,6 +26,8 @@
 //    }
 //}
 
+use crate::{slk_type::RecordType, SLKError};
+
 #[derive(Default, Debug, PartialEq, PartialOrd, Clone)]
 pub struct Cell {
     column: u32,
@@ -61,15 +63,24 @@ impl Cell {
         Cell { column, row, value }
     }
 
-    pub fn parse(fields: &[String], _line: Option<u32>) -> Self {
+    pub fn parse(fields: &[String], _line: Option<u32>) -> Result<Self, SLKError> {
         let mut cell = Cell::default();
         for field in fields.iter() {
             let field_id = &field[0..1];
             let field_content = &field[1..];
             //            println!("{:?}",field_content);
             match field_id {
-                "Y" => cell.row = Some(field_content.parse::<u32>().unwrap()),
-                "X" => cell.column = field_content.parse::<u32>().unwrap(),
+                "Y" => {
+                    cell.row =
+                        Some(field_content.parse::<u32>().map_err(|e| {
+                            SLKError::Parsing(RecordType::CellContent, "Y".into(), e)
+                        })?)
+                }
+                "X" => {
+                    cell.column = field_content
+                        .parse::<u32>()
+                        .map_err(|e| SLKError::Parsing(RecordType::CellContent, "X".into(), e))?
+                }
                 "K" => {
                     if field_content.starts_with("\"") {
                         let slice = &field_content[1..field_content.len() - 1];
@@ -81,6 +92,6 @@ impl Cell {
                 _ => (),
             }
         }
-        cell
+        Ok(cell)
     }
 }

@@ -1,3 +1,5 @@
+use std::io;
+
 #[cfg(test)]
 use pretty_assertions::assert_eq;
 
@@ -18,6 +20,17 @@ const RANDOM_ITEM_ID: &str = "iDNR";
 const RANDOM_UNIT_ID: &str = "uDNR";
 
 pub type TablePointer = i32;
+
+#[derive(Debug)]
+pub enum UnitMapError {
+    IoError(io::Error),
+    Parsing(ReadError),
+}
+impl From<UnitMapError> for OpeningError {
+    fn from(value: UnitMapError) -> Self {
+        OpeningError::UnitItem(value)
+    }
+}
 
 #[derive(Debug, PartialOrd, PartialEq)]
 pub enum Drops {
@@ -291,15 +304,12 @@ impl UnitItemMap {
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
         let file = map
             .open_file(MAP_TERRAIN_UNITS)
-            .map_err(|e| OpeningError::UnitItem(format!("{e}")))?;
+            .map_err(UnitMapError::IoError)?;
         let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
-        file.read(map, &mut buffer)
-            .map_err(|e| OpeningError::UnitItem(format!("{e}")))?;
+        file.read(map, &mut buffer).map_err(UnitMapError::IoError)?;
         let mut reader = BinaryReader::new(buffer);
-        let unit_map = reader
-            .read::<Self>()
-            .map_err(|e| OpeningError::UnitItem(format!("{e:?}")))?;
+        let unit_map = reader.read::<Self>().map_err(UnitMapError::Parsing)?;
         Ok(unit_map)
     }
 }

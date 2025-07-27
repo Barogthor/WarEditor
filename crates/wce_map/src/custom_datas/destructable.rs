@@ -1,12 +1,25 @@
+use std::io;
+
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
-use wce_formats::GameVersion;
 use wce_formats::MapArchive;
+use wce_formats::{GameVersion, ReadError};
 
 use crate::custom_datas::ObjectDefinition;
 use crate::globals::MAP_CUSTOM_DESTRUCTABLES;
 use crate::OpeningError;
 
 use super::ObjectId;
+
+#[derive(Debug)]
+pub enum CustomDestructableError {
+    IoError(io::Error),
+    Parsing(ReadError),
+}
+impl From<CustomDestructableError> for OpeningError {
+    fn from(value: CustomDestructableError) -> Self {
+        OpeningError::CustomDestructable(value)
+    }
+}
 
 #[derive(Debug)]
 pub struct CustomDestructableFile {
@@ -26,10 +39,10 @@ impl CustomDestructableFile {
                 let mut buffer: Vec<u8> = vec![0; file.size() as usize];
 
                 file.read(map, &mut buffer)
-                    .map_err(|e| OpeningError::CustomDestructable(format!("{e}")))?;
+                    .map_err(CustomDestructableError::IoError)?;
                 let mut reader = BinaryReader::new(buffer);
                 let custom_destructable = Self::from(&mut reader, game_version)
-                    .map_err(|e| OpeningError::CustomDestructable(format!("{e:?}")))?;
+                    .map_err(CustomDestructableError::Parsing)?;
                 Ok(Some(custom_destructable))
             }
             _ => Ok(None),

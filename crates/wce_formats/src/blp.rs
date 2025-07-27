@@ -15,6 +15,19 @@ pub const JPG_BLP: bool = false;
 pub const PALETTED_BLP: bool = true;
 pub const MAX_MIPMAP: usize = 16;
 
+#[derive(Debug)]
+pub enum BLPError {
+    Read(ReadError),
+    Decoding(jpeg_decoder::Error),
+    UnknownType(u32),
+    UnknownFlag(u32),
+}
+impl From<ReadError> for BLPError {
+    fn from(value: ReadError) -> Self {
+        Self::Read(value)
+    }
+}
+
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub enum BlpFlag {
     RGB,
@@ -23,12 +36,12 @@ pub enum BlpFlag {
 }
 
 impl BlpFlag {
-    pub fn from(n: u32) -> Result<Self, String> {
+    pub fn from(n: u32) -> Result<Self, BLPError> {
         match n {
             //TODO faire conversion slim (regarder jpeg_decoder marker)
             3 | 4 => Ok(BlpFlag::RGBA),
             flag if flag >= 5 => Ok(BlpFlag::RGB),
-            _ => Err("Unknown or unsupported blp flag".to_string()),
+            _ => Err(BLPError::UnknownFlag(n)),
         }
     }
 }
@@ -46,12 +59,12 @@ pub enum Compression {
 }
 
 impl Compression {
-    pub fn from(n: u32) -> Result<Self, String> {
+    pub fn from(n: u32) -> Result<Self, BLPError> {
         match n {
             //TODO faire conversion slim (regarder jpeg_decoder marker)
             0 => Ok(Compression::JPEG),
             1 => Ok(Compression::PALETTE),
-            _ => Err("Unknown BLP type".to_string()),
+            _ => Err(BLPError::UnknownType(n)),
         }
     }
 }
@@ -77,7 +90,7 @@ pub struct BLP {
 }
 
 impl BLP {
-    fn parse_jpeg_mipmaps(&mut self, reader: &mut BinaryReader) -> Result<(), ReadError> {
+    fn parse_jpeg_mipmaps(&mut self, reader: &mut BinaryReader) -> Result<(), BLPError> {
         self.jpeg_header_size = reader.read_u32()?;
         self.jpeg_header = reader.read_bytes(self.jpeg_header_size as usize)?;
         for i in 0..MAX_MIPMAP {
@@ -95,7 +108,7 @@ impl BLP {
 
             let reader = Cursor::new(jpeg_buffer);
             let mut decoder = Decoder::new(reader);
-            let mut res = decoder.decode().expect("error while decoding");
+            let mut res = decoder.decode().map_err(BLPError::Decoding)?;
             let pixels: Vec<RGB8> = res.chunks_mut(4).map(cmyk_to_rgb).collect();
             self.jpeg_mipmaps.push(pixels);
         }
@@ -137,15 +150,15 @@ impl BLP {
         &self.jpeg_mipmaps
     }
 
-    pub fn from(reader: &mut BinaryReader) -> Result<Self, ReadError> {
-        let magic_num = String::from_utf8(reader.read_bytes(4)?).unwrap();
+    pub fn from(reader: &mut BinaryReader) -> Result<Self, BLPError> {
+        let magic_num = reader.read_string_utf8_safe(4)?;
         let compression = reader.read_u32()?;
-        let compression = Compression::from(compression).unwrap();
+        let compression = Compression::from(compression)?;
         let has_alpha = reader.read_u32()? == 0x0000_0008;
         let width = reader.read_u32()?;
         let height = reader.read_u32()?;
         let flag = reader.read_u32()?;
-        let flag = BlpFlag::from(flag).unwrap();
+        let flag = BlpFlag::from(flag)?;
         let smooth = reader.read_u32()? == 1;
         let mipmap_offsets = reader.read_vec_u32(MAX_MIPMAP)?;
         let mipmap_sizes = reader.read_vec_u32(MAX_MIPMAP)?;
@@ -206,7 +219,6 @@ fn cmyk_to_rgb(cmyk: &mut [u8]) -> RGB8 {
 #[cfg(test)]
 mod blp_parse {
     use std::fs::File;
-    use std::io;
     use std::io::{BufReader, Read};
 
     use jpeg_decoder::Decoder;
@@ -222,20 +234,24 @@ mod blp_parse {
 
     #[test]
     fn open_local_blp_palette() {
-        let mut file = File::open(get_path("blp/BTNDeathBomb.blp")).unwrap();
+        let mut file =
+            File::open(get_path("blp/BTNDeathBomb.blp")).unwrap_or_else(|e| panic!("{:?}", e));
         let mut buffer: Vec<u8> = Vec::with_capacity(2000);
-        file.read_to_end(&mut buffer).unwrap();
-        let mut reader = BinaryReader::new(buffer.to_owned());
+        file.read_to_end(&mut buffer)
+            .unwrap_or_else(|e| panic!("{:?}", e));
+        let mut reader = BinaryReader::new(buffer);
         let _blp = BLP::from(&mut reader);
         //        println!("{:?}", s);
     }
 
     #[test]
-    fn open_local_blp_jpeg_map() -> Result<(), io::Error> {
-        let mut file = File::open(get_path("sample_2/war3mapMap.blp"))?;
+    fn open_local_blp_jpeg_map() {
+        let mut file =
+            File::open(get_path("sample_2/war3mapMap.blp")).unwrap_or_else(|e| panic!("{:?}", e));
         let mut buffer: Vec<u8> = Vec::with_capacity(2000);
-        file.read_to_end(&mut buffer).unwrap();
-        let mut reader = BinaryReader::new(buffer.to_owned());
+        file.read_to_end(&mut buffer)
+            .unwrap_or_else(|e| panic!("{:?}", e));
+        let mut reader = BinaryReader::new(buffer);
         let _blp = BLP::from(&mut reader);
         // for i in 0..1{
         //     let name = format!("resources/war3mapMap_mmap{}.jpg", i);
@@ -244,15 +260,16 @@ mod blp_parse {
         //     let mipmap = &blp.get_jpeg_mipmaps()[i];
         //     file.write().unwrap();
         // }
-        Ok(())
     }
 
     #[test]
-    fn open_local_blp_jpeg_texture() -> Result<(), io::Error> {
-        let mut file = File::open(get_path("blp/FrostmourneNew.blp"))?;
+    fn open_local_blp_jpeg_texture() {
+        let mut file =
+            File::open(get_path("blp/FrostmourneNew.blp")).unwrap_or_else(|e| panic!("{:?}", e));
         let mut buffer: Vec<u8> = Vec::with_capacity(2000);
-        file.read_to_end(&mut buffer).unwrap();
-        let mut reader = BinaryReader::new(buffer.to_owned());
+        file.read_to_end(&mut buffer)
+            .unwrap_or_else(|e| panic!("{:?}", e));
+        let mut reader = BinaryReader::new(buffer);
         let blp = BLP::from(&mut reader).unwrap();
         let mmap1 = &blp.get_jpeg_mipmaps()[3];
         println!("{mmap1:?}");
@@ -263,19 +280,18 @@ mod blp_parse {
         //     file.write(blp.get_jpeg_header()).unwrap();
         //     file.write(&blp.get_jpeg_mipmaps()[i]).unwrap();
         // }
-        Ok(())
     }
 
     // #[test]
-    fn open_local_jpeg_mipmap() -> Result<(), ()> {
-        let file = File::open(get_path("FrostmourneNew_mmap2.jpg")).unwrap();
+    fn open_local_jpeg_mipmap() {
+        let file =
+            File::open(get_path("FrostmourneNew_mmap2.jpg")).unwrap_or_else(|e| panic!("{:?}", e));
         let buffer = BufReader::new(file);
 
         let mut decoder = Decoder::new(buffer);
-        decoder.read_info().unwrap();
+        decoder.read_info().unwrap_or_else(|e| panic!("{:?}", e));
         let info = decoder.info();
         println!("{info:#?}");
-        decoder.decode().expect("error while decoding");
-        Ok(())
+        decoder.decode().unwrap_or_else(|e| panic!("{:?}", e));
     }
 }
