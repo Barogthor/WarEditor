@@ -1,10 +1,11 @@
+use std::convert::TryFrom;
 use std::ffi::CString;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Cursor, Error, Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 
-use crate::{BinaryConverter, BinaryConverterVersion, GameVersion, ReadError};
+use crate::{BinaryConverter, BinaryConverterVersion, GameVersion, MpqFileBuffer, ReadError};
 
 pub type ReadResult<T> = Result<T, ReadError>;
 
@@ -242,4 +243,15 @@ fn to_read_error(reader: &BinaryReader, error: Error) -> ReadError {
 fn cstring_null(reader: &BinaryReader, string_size: usize) -> ReadError {
     let pos = reader.pos() - string_size as u64;
     ReadError::NullCString(pos, string_size)
+}
+
+impl TryFrom<MpqFileBuffer> for BinaryReader {
+    type Error = ReadError;
+
+    fn try_from(value: MpqFileBuffer) -> Result<Self, Self::Error> {
+        let size = value.size();
+        let buffer = Cursor::new(value.0);
+
+        Ok(Self { buffer, size })
+    }
 }

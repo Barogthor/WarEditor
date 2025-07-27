@@ -1,9 +1,10 @@
+use std::convert::TryFrom;
 use std::io;
 
 use wce_formats::binary_reader::BinaryReader;
 use wce_formats::GameVersion::{self, RoC, TFT};
 // use log::{debug, error, info, trace, warn};
-use wce_formats::MapArchive;
+use wce_formats::{MapArchive, MpqError};
 
 use crate::data_ini::DataIni;
 use crate::globals::MAP_TRIGGERS;
@@ -19,7 +20,8 @@ mod wtg_tests;
 
 #[derive(Debug)]
 pub enum TriggersError {
-    IoError(io::Error),
+    MpqError(MpqError),
+    InitReader(wce_formats::ReadError),
     Parsing(WtgError),
 }
 impl From<TriggersError> for OpeningError {
@@ -98,13 +100,10 @@ pub struct TriggersFile {
 
 impl TriggersFile {
     pub fn read_file(map: &mut MapArchive, trigger_data: &DataIni) -> Result<Self, OpeningError> {
-        let file = map
-            .open_file(MAP_TRIGGERS)
-            .map_err(TriggersError::IoError)?;
-        let mut buffer: Vec<u8> = vec![0; file.size() as usize];
-        file.read(map, &mut buffer)
-            .map_err(TriggersError::IoError)?;
-        let mut reader = BinaryReader::new(buffer);
+        let buffer = map
+            .read_file(MAP_TRIGGERS)
+            .map_err(TriggersError::MpqError)?;
+        let mut reader = BinaryReader::try_from(buffer).map_err(TriggersError::InitReader)?;
         let res = Self::from(&mut reader, trigger_data).map_err(TriggersError::Parsing)?;
         Ok(res)
     }

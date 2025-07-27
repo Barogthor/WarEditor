@@ -1,8 +1,8 @@
-use std::{collections::HashMap, io};
+use std::{collections::HashMap, convert::TryFrom, io};
 
 use regex::Regex;
 
-use wce_formats::{MapArchive, ReadError};
+use wce_formats::{binary_reader::BinaryReader, MapArchive, MpqError, ReadError};
 
 use crate::{globals::MAP_STRINGS, OpeningError};
 
@@ -13,7 +13,8 @@ type TRIGSTR = String;
 
 #[derive(Debug)]
 pub enum MapStringError {
-    IoError(io::Error),
+    MpqError(MpqError),
+    InitReader(ReadError),
     Parsing(ReadError),
     Regex(regex::Error),
     CaptureId,
@@ -32,12 +33,13 @@ pub struct MapStringFile {
 
 impl MapStringFile {
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
-        let file = map
-            .open_file(MAP_STRINGS)
-            .map_err(MapStringError::IoError)?;
-        let mut buf: Vec<u8> = vec![0; file.size() as usize];
-        file.read(map, &mut buf).map_err(MapStringError::IoError)?;
-        let buffer = String::from_utf8_lossy(&buf).to_string();
+        let buffer = map
+            .read_file(MAP_STRINGS)
+            .map_err(MapStringError::MpqError)?;
+        let mut reader = BinaryReader::try_from(buffer).map_err(MapStringError::InitReader)?;
+        let buffer = reader
+            .read_string_utf8(reader.size())
+            .map_err(MapStringError::Parsing)?;
         // let buffer = unsafe { String::from_utf8_unchecked(buf) };
         let reg: Regex = Regex::new(EXTRACT_DATA).unwrap();
 

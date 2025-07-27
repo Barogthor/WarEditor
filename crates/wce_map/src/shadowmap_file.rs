@@ -1,13 +1,14 @@
 use std::convert::TryFrom;
-use std::io;
+use std::io::{self, Read};
 
-use wce_formats::{MapArchive, ReadError};
+use wce_formats::{MapArchive, MpqError, ReadError};
 
 use crate::globals::MAP_SHADERS;
 use crate::OpeningError;
 
 #[derive(Debug)]
 pub enum ShadowMapError {
+    MpqError(MpqError),
     IoError(io::Error),
     Parsing(ReadError),
 }
@@ -42,16 +43,16 @@ pub struct ShadowMapFile {
 
 impl ShadowMapFile {
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
-        let file = map
-            .open_file(MAP_SHADERS)
-            .map_err(ShadowMapError::IoError)?;
-        let mut buffer: Vec<u8> = vec![0; file.size() as usize];
-
-        file.read(map, &mut buffer)
-            .map_err(ShadowMapError::IoError)?;
+        let buffer = map
+            .read_file(MAP_SHADERS)
+            .map_err(ShadowMapError::MpqError)?;
         let shaders = buffer
-            .into_iter()
-            .map(|byte| ShadowType::try_from(byte).map_err(ShadowMapError::Parsing))
+            .inner()
+            .bytes()
+            .map(|byte| {
+                ShadowType::try_from(byte.map_err(ShadowMapError::IoError)?)
+                    .map_err(ShadowMapError::Parsing)
+            })
             .collect::<Result<Vec<_>, _>>()?;
         Ok(Self { shaders })
     }

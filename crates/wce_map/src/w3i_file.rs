@@ -1,4 +1,5 @@
 use derivative::Derivative;
+use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::io;
 
@@ -31,14 +32,15 @@ use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{Reforged, RoC, TFT};
 use wce_formats::MapArchive;
-use wce_formats::{BinaryConverter, GameVersion, ReadError};
+use wce_formats::{BinaryConverter, GameVersion, MpqError, ReadError};
 
 use crate::globals::MAP_INFOS;
 use crate::OpeningError;
 
 #[derive(Debug)]
 pub enum InfoError {
-    IoError(io::Error),
+    MpqError(MpqError),
+    InitReader(ReadError),
     Parsing(ReadError),
 }
 impl From<InfoError> for OpeningError {
@@ -388,11 +390,8 @@ pub struct W3iFile {
 
 impl W3iFile {
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
-        let file = map.open_file(MAP_INFOS).map_err(InfoError::IoError)?;
-        let mut buffer: Vec<u8> = vec![0; file.size() as usize];
-
-        file.read(map, &mut buffer).map_err(InfoError::IoError)?;
-        let mut reader = BinaryReader::new(buffer);
+        let buffer = map.read_file(MAP_INFOS).map_err(InfoError::MpqError)?;
+        let mut reader = BinaryReader::try_from(buffer).map_err(InfoError::InitReader)?;
         reader
             .read::<W3iFile>()
             .map_err(InfoError::Parsing)

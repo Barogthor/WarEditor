@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::io;
 
 #[cfg(test)]
@@ -6,14 +7,15 @@ use pretty_assertions::assert_eq;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::MapArchive;
-use wce_formats::{BinaryConverter, ReadError};
+use wce_formats::{BinaryConverter, MpqError, ReadError};
 
 use crate::globals::MAP_REGIONS;
 use crate::OpeningError;
 
 #[derive(Debug)]
 pub enum RegionError {
-    IoError(io::Error),
+    MpqError(MpqError),
+    InitReader(ReadError),
     Parsing(ReadError),
 }
 impl From<RegionError> for OpeningError {
@@ -71,14 +73,11 @@ pub struct RegionFile {
 
 impl RegionFile {
     pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, OpeningError> {
-        let file = map.open_file(MAP_REGIONS);
+        let file = map.read_file(MAP_REGIONS);
 
         match file {
-            Ok(file) => {
-                let mut buffer: Vec<u8> = vec![0; file.size() as usize];
-
-                file.read(map, &mut buffer).map_err(RegionError::IoError)?;
-                let mut reader = BinaryReader::new(buffer);
+            Ok(buffer) => {
+                let mut reader = BinaryReader::try_from(buffer).map_err(RegionError::InitReader)?;
                 let region = reader.read::<RegionFile>().map_err(RegionError::Parsing)?;
                 Ok(Some(region))
             }

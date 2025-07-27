@@ -1,16 +1,18 @@
+use std::convert::TryFrom;
 use std::io;
 
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::MapArchive;
-use wce_formats::{BinaryConverter, ReadError};
+use wce_formats::{BinaryConverter, MpqError, ReadError};
 
 use crate::globals::MAP_TERRAIN;
 use crate::OpeningError;
 
 #[derive(Debug)]
 pub enum TerrainError {
-    IoError(io::Error),
+    MpqError(MpqError),
+    InitReader(ReadError),
     Parsing(ReadError),
 }
 impl From<TerrainError> for OpeningError {
@@ -111,16 +113,8 @@ pub struct TerrainFile {
 
 impl TerrainFile {
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
-        let file = map.open_file(MAP_TERRAIN).map_err(TerrainError::IoError)?;
-
-        let mut buffer: Vec<u8> = vec![0; file.size() as usize];
-
-        file.read(map, &mut buffer).map_err(TerrainError::IoError)?;
-        //        let mut f = File::open(concat_path("war3map.w3e")).unwrap();
-        //        let mut buffer: Vec<u8> = Vec::new();
-        //        f.read_to_end(&mut buffer).unwrap();
-        //        let buffer_size = buffer.len();
-        let mut reader = BinaryReader::new(buffer);
+        let buffer = map.read_file(MAP_TERRAIN).map_err(TerrainError::MpqError)?;
+        let mut reader = BinaryReader::try_from(buffer).map_err(TerrainError::InitReader)?;
         let terrain = reader
             .read::<TerrainFile>()
             .map_err(TerrainError::Parsing)?;

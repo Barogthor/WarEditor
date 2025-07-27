@@ -1,8 +1,9 @@
+use std::convert::TryFrom;
 use std::io;
 
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::MapArchive;
-use wce_formats::{GameVersion, ReadError};
+use wce_formats::{GameVersion, MpqError, ReadError};
 
 use crate::custom_datas::ObjectDefinition;
 use crate::globals::MAP_CUSTOM_BUFFS;
@@ -12,7 +13,8 @@ use super::ObjectId;
 
 #[derive(Debug)]
 pub enum CustomBuffError {
-    IoError(io::Error),
+    MpqError(MpqError),
+    InitReader(ReadError),
     Parsing(ReadError),
 }
 impl From<CustomBuffError> for OpeningError {
@@ -33,14 +35,11 @@ impl CustomBuffFile {
         map: &mut MapArchive,
         game_version: &GameVersion,
     ) -> Result<Option<CustomBuffFile>, OpeningError> {
-        let file = map.open_file(MAP_CUSTOM_BUFFS);
+        let file = map.read_file(MAP_CUSTOM_BUFFS);
         match file {
-            Ok(file) => {
-                let mut buffer: Vec<u8> = vec![0; file.size() as usize];
-
-                file.read(map, &mut buffer)
-                    .map_err(CustomBuffError::IoError)?;
-                let mut reader = BinaryReader::new(buffer);
+            Ok(buffer) => {
+                let mut reader =
+                    BinaryReader::try_from(buffer).map_err(CustomBuffError::InitReader)?;
                 let custom_buff =
                     Self::from(&mut reader, game_version).map_err(CustomBuffError::Parsing)?;
                 Ok(Some(custom_buff))

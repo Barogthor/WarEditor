@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::io;
 
 #[cfg(test)]
@@ -6,7 +7,7 @@ use pretty_assertions::assert_eq;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::MapArchive;
-use wce_formats::{BinaryConverter, ReadError};
+use wce_formats::{BinaryConverter, MpqError, ReadError};
 
 use crate::globals::MAP_SOUNDS;
 use crate::OpeningError;
@@ -15,7 +16,8 @@ const DEFAULT_FLOAT: f32 = 4.294_967_3e9;
 
 #[derive(Debug)]
 pub enum SoundError {
-    IoError(io::Error),
+    MpqError(MpqError),
+    InitReader(ReadError),
     Parsing(ReadError),
 }
 impl From<SoundError> for OpeningError {
@@ -104,14 +106,11 @@ pub struct SoundFile {
 
 impl SoundFile {
     pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, OpeningError> {
-        let file = map.open_file(MAP_SOUNDS);
+        let file = map.read_file(MAP_SOUNDS);
 
         match file {
-            Ok(file) => {
-                let mut buffer: Vec<u8> = vec![0; file.size() as usize];
-
-                file.read(map, &mut buffer).map_err(SoundError::IoError)?;
-                let mut reader = BinaryReader::new(buffer);
+            Ok(buffer) => {
+                let mut reader = BinaryReader::try_from(buffer).map_err(SoundError::InitReader)?;
                 let sounds = reader.read::<SoundFile>().map_err(SoundError::Parsing)?;
                 Ok(Some(sounds))
             }

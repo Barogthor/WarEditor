@@ -1,6 +1,6 @@
 use std::ffi::IntoStringError;
 use std::fmt::Debug;
-use std::io::Error;
+use std::io::{self, Bytes, Cursor, Error, Read};
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
 use std::string::FromUtf8Error;
@@ -91,7 +91,19 @@ pub enum MpqError {
     NotMapArchive,
     Reason(String),
 }
-// #[derive(Deref, DerefMut)]
+
+pub struct MpqFileBuffer(Vec<u8>);
+
+impl MpqFileBuffer {
+    pub fn inner(self) -> Vec<u8> {
+        self.0
+    }
+
+    pub fn size(&self) -> usize {
+        self.0.len()
+    }
+}
+
 pub struct MapArchive(Archive);
 
 impl MapArchive {
@@ -103,24 +115,18 @@ impl MapArchive {
             .map_err(MpqError::Reason)?;
 
         if ext == "w3m" || ext == "w3x" {
-            let archive = Archive::open(path);
-            archive.map(Self).map_err(IoError)
+            Archive::open(path).map(Self).map_err(MpqError::IoError)
         } else {
             Err(MpqError::NotMapArchive)
         }
     }
-}
 
-impl Deref for MapArchive {
-    type Target = Archive;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl DerefMut for MapArchive {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    pub fn read_file(&mut self, path: &str) -> Result<MpqFileBuffer, MpqError> {
+        let f = self.0.open_file(path).map_err(MpqError::IoError)?;
+        let mut buffer: Vec<u8> = vec![0; f.size() as usize];
+        f.read(&mut self.0, &mut buffer)
+            .map_err(MpqError::IoError)?;
+        Ok(MpqFileBuffer(buffer))
     }
 }
 
@@ -130,17 +136,13 @@ impl GameMpq {
         let archive = Archive::open(path);
         archive.map(Self)
     }
-}
-impl Deref for GameMpq {
-    type Target = Archive;
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl DerefMut for GameMpq {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    pub fn read_file(&mut self, path: &str) -> Result<MpqFileBuffer, MpqError> {
+        let f = self.0.open_file(path).map_err(MpqError::IoError)?;
+        let mut buffer: Vec<u8> = vec![0; f.size() as usize];
+        f.read(&mut self.0, &mut buffer)
+            .map_err(MpqError::IoError)?;
+        Ok(MpqFileBuffer(buffer))
     }
 }
 
@@ -153,6 +155,7 @@ pub enum ReadError {
     Utf8Error(u64, usize, FromUtf8Error),
     Other(Error),
     Reason(String),
+    IoError(io::Error),
 }
 
 impl From<FromUtf8Error> for ReadError {

@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::io;
 
 #[cfg(test)]
@@ -6,7 +7,7 @@ use pretty_assertions::assert_eq;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::MapArchive;
-use wce_formats::{BinaryConverter, ReadError};
+use wce_formats::{BinaryConverter, MpqError, ReadError};
 
 use crate::globals::MAP_CAMERAS;
 use crate::OpeningError;
@@ -15,7 +16,8 @@ type Degree = f32;
 
 #[derive(Debug)]
 pub enum CameraError {
-    IoError(io::Error),
+    MpqError(MpqError),
+    InitReader(ReadError),
     Parsing(ReadError),
 }
 impl From<CameraError> for OpeningError {
@@ -71,13 +73,10 @@ pub struct CameraFile {
 
 impl CameraFile {
     pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, OpeningError> {
-        let file = map.open_file(MAP_CAMERAS);
+        let file = map.read_file(MAP_CAMERAS);
         match file {
-            Ok(file) => {
-                let mut buffer: Vec<u8> = vec![0; file.size() as usize];
-
-                file.read(map, &mut buffer).map_err(CameraError::IoError)?;
-                let mut reader = BinaryReader::new(buffer);
+            Ok(buffer) => {
+                let mut reader = BinaryReader::try_from(buffer).map_err(CameraError::InitReader)?;
                 let camera = reader.read::<CameraFile>().map_err(CameraError::Parsing)?;
                 Ok(Some(camera))
             }

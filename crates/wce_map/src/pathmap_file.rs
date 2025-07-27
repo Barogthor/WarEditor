@@ -1,16 +1,18 @@
+use std::convert::TryFrom;
 use std::io;
 
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
-use wce_formats::MapArchive;
 use wce_formats::{BinaryConverter, ReadError};
+use wce_formats::{MapArchive, MpqError};
 
 use crate::globals::MAP_PATH_MAP;
 use crate::OpeningError;
 
 #[derive(Debug)]
 pub enum PathmapError {
-    IoError(io::Error),
+    MpqError(MpqError),
+    InitReader(ReadError),
     Parsing(ReadError),
 }
 impl From<PathmapError> for OpeningError {
@@ -60,16 +62,10 @@ pub struct PathMapFile {
 
 impl PathMapFile {
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
-        let file = map.open_file(MAP_PATH_MAP).map_err(PathmapError::IoError)?;
-
-        let mut buffer: Vec<u8> = vec![0; file.size() as usize];
-
-        file.read(map, &mut buffer).map_err(PathmapError::IoError)?;
-        //        let mut f = File::open(concat_path("war3map.wpm")).unwrap();
-        //        let mut buffer: Vec<u8> = Vec::new();
-        //        f.read_to_end(&mut buffer).unwrap();
-        //        let buffer_size = buffer.len();
-        let mut reader = BinaryReader::new(buffer);
+        let buffer = map
+            .read_file(MAP_PATH_MAP)
+            .map_err(PathmapError::MpqError)?;
+        let mut reader = BinaryReader::try_from(buffer).map_err(PathmapError::InitReader)?;
         let pathmaps = reader
             .read::<PathMapFile>()
             .map_err(PathmapError::Parsing)?;

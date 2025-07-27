@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::io;
 
 #[cfg(test)]
@@ -7,7 +8,7 @@ use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{self, RoC, TFT};
 use wce_formats::{BinaryConverter, BinaryConverterVersion};
-use wce_formats::{MapArchive, ReadError};
+use wce_formats::{MapArchive, MpqError, ReadError};
 
 use crate::doodad_map::Radian;
 use crate::globals::MAP_TERRAIN_UNITS;
@@ -23,7 +24,8 @@ pub type TablePointer = i32;
 
 #[derive(Debug)]
 pub enum UnitMapError {
-    IoError(io::Error),
+    MpqError(MpqError),
+    InitReader(ReadError),
     Parsing(ReadError),
 }
 impl From<UnitMapError> for OpeningError {
@@ -302,13 +304,10 @@ pub struct UnitItemMap {
 
 impl UnitItemMap {
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
-        let file = map
-            .open_file(MAP_TERRAIN_UNITS)
-            .map_err(UnitMapError::IoError)?;
-        let mut buffer: Vec<u8> = vec![0; file.size() as usize];
-
-        file.read(map, &mut buffer).map_err(UnitMapError::IoError)?;
-        let mut reader = BinaryReader::new(buffer);
+        let buffer = map
+            .read_file(MAP_TERRAIN_UNITS)
+            .map_err(UnitMapError::MpqError)?;
+        let mut reader = BinaryReader::try_from(buffer).map_err(UnitMapError::InitReader)?;
         let unit_map = reader.read::<Self>().map_err(UnitMapError::Parsing)?;
         Ok(unit_map)
     }

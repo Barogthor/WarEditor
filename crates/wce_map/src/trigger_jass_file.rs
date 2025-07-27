@@ -1,10 +1,11 @@
+use std::convert::TryFrom;
 use std::io;
 
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{RoC, TFT};
 use wce_formats::{BinaryConverter, GameVersion};
-use wce_formats::{MapArchive, ReadError};
+use wce_formats::{MapArchive, MpqError, ReadError};
 
 use crate::globals::MAP_TRIGGERS_SCRIPT;
 use crate::OpeningError;
@@ -13,7 +14,8 @@ type TextScript = String;
 
 #[derive(Debug)]
 pub enum TriggerJassError {
-    IoError(io::Error),
+    MpqError(MpqError),
+    InitReader(ReadError),
     Parsing(ReadError),
 }
 impl From<TriggerJassError> for OpeningError {
@@ -32,14 +34,10 @@ pub struct TriggerJassFile {
 
 impl TriggerJassFile {
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
-        let file = map
-            .open_file(MAP_TRIGGERS_SCRIPT)
-            .map_err(TriggerJassError::IoError)?;
-        let mut buffer: Vec<u8> = vec![0; file.size() as usize];
-
-        file.read(map, &mut buffer)
-            .map_err(TriggerJassError::IoError)?;
-        let mut reader = BinaryReader::new(buffer);
+        let buffer = map
+            .read_file(MAP_TRIGGERS_SCRIPT)
+            .map_err(TriggerJassError::MpqError)?;
+        let mut reader = BinaryReader::try_from(buffer).map_err(TriggerJassError::InitReader)?;
         let jass = reader
             .read::<TriggerJassFile>()
             .map_err(TriggerJassError::Parsing)?;
