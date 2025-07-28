@@ -39,13 +39,14 @@ impl Record {
                                 })?
                         }
                         "X" => {
-                            columns = field_content
-                                .parse::<u32>()
-                                .map_err(|e| SLKError::Parsing {
-                                    record_type,
-                                    content: "X".into(),
-                                    source: e,
-                                })?
+                            columns =
+                                field_content
+                                    .parse::<u32>()
+                                    .map_err(|e| SLKError::Parsing {
+                                        record_type,
+                                        content: "X".into(),
+                                        source: e,
+                                    })?
                         }
                         _ => (),
                     }

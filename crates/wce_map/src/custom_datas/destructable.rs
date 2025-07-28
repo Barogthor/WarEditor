@@ -131,6 +131,7 @@ mod custom_destructable_test {
         let map_path = get_path("Scenario/(8)AzureTowerDefense.w3x");
         let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
         let game_version = GameVersion::TFT;
-        CustomDestructableFile::read_file(&mut map, &game_version).unwrap_or_else(|e| panic!("{}", e));
+        CustomDestructableFile::read_file(&mut map, &game_version)
+            .unwrap_or_else(|e| panic!("{}", e));
     }
 }
