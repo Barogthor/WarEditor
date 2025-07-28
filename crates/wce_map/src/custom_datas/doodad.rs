@@ -106,3 +106,23 @@ fn read_object(
         Ok(ObjectDefinition::with_optional(reader, id)?)
     }
 }
+
+#[cfg(test)]
+mod custom_doodad_test {
+    use wce_formats::{GameVersion, MapArchive};
+
+    use crate::{custom_datas::doodad::CustomDoodadFile, get_resources_path};
+
+    fn get_path(path_resource: &str) -> String {
+        let base_path = get_resources_path();
+        format!("{base_path}/{path_resource}")
+    }
+
+    #[test]
+    fn no_failure() {
+        let map_path = get_path("Scenario/(8)AzureTowerDefense.w3x");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        let game_version = GameVersion::TFT;
+        CustomDoodadFile::read_file(&mut map, &game_version).unwrap_or_else(|e| panic!("{}", e));
+    }
+}

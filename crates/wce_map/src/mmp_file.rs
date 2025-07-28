@@ -86,3 +86,22 @@ impl MMPFile {
         println!("{self:#?}");
     }
 }
+
+#[cfg(test)]
+mod mmp_test {
+    use wce_formats::MapArchive;
+
+    use crate::{get_resources_path, mmp_file::MMPFile};
+
+    fn get_path(path_resource: &str) -> String {
+        let base_path = get_resources_path();
+        format!("{base_path}/{path_resource}")
+    }
+
+    #[test]
+    fn no_failure() {
+        let map_path = get_path("Scenario/Sandbox_1.w3m");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        MMPFile::read_file(&mut map).unwrap_or_else(|e| panic!("{}", e));
+    }
+}

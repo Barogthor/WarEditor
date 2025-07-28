@@ -106,3 +106,31 @@ fn read_object(
         ObjectDefinition::without_optional(reader, id, game_version)
     }
 }
+
+#[cfg(test)]
+mod custom_unit_test {
+    use wce_formats::{GameVersion, MapArchive};
+
+    use crate::{custom_datas::unit::CustomUnitFile, get_resources_path};
+
+    fn get_path(path_resource: &str) -> String {
+        let base_path = get_resources_path();
+        format!("{base_path}/{path_resource}")
+    }
+
+    #[test]
+    fn no_failure_tft() {
+        let map_path = get_path("Scenario/(8)AzureTowerDefense.w3x");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        let game_version = GameVersion::TFT;
+        CustomUnitFile::read_file(&mut map, &game_version).unwrap_or_else(|e| panic!("{}", e));
+    }
+
+    #[test]
+    fn failure_roc() {
+        let map_path = get_path("Scenario/(1)TheDeathSheep.w3m");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        let game_version = GameVersion::RoC;
+        CustomUnitFile::read_file(&mut map, &game_version).unwrap_or_else(|e| panic!("{}", e));
+    }
+}

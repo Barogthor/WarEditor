@@ -112,3 +112,22 @@ impl BinaryConverter for PathMapFile {
         unimplemented!()
     }
 }
+
+#[cfg(test)]
+mod pathmap_test {
+    use wce_formats::MapArchive;
+
+    use crate::{get_resources_path, pathmap_file::PathMapFile};
+
+    fn get_path(path_resource: &str) -> String {
+        let base_path = get_resources_path();
+        format!("{base_path}/{path_resource}")
+    }
+
+    #[test]
+    fn no_failure() {
+        let map_path = get_path("Scenario/Sandbox_1.w3m");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        PathMapFile::read_file(&mut map).unwrap_or_else(|e| panic!("{}", e));
+    }
+}

@@ -102,3 +102,29 @@ fn to_game_version(value: u32) -> Result<GameVersion, String> {
         _ => Err(format!("Unknown or unsupported game version '{value}'")),
     }
 }
+
+#[cfg(test)]
+mod trigger_jass_test {
+    use wce_formats::MapArchive;
+
+    use crate::{get_resources_path, trigger_jass_file::TriggerJassFile};
+
+    fn get_path(path_resource: &str) -> String {
+        let base_path = get_resources_path();
+        format!("{base_path}/{path_resource}")
+    }
+
+    #[test]
+    fn no_failure_sandbox_roc() {
+        let map_path = get_path("Scenario/Sandbox_1.w3m");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        TriggerJassFile::read_file(&mut map).unwrap_or_else(|e| panic!("{}", e));
+    }
+
+    #[test]
+    fn no_failure_sandbox_tft() {
+        let map_path = get_path("Scenario/Sandbox_1.w3x");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        TriggerJassFile::read_file(&mut map).unwrap_or_else(|e| panic!("{}", e));
+    }
+}
