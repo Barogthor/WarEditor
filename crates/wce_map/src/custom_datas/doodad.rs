@@ -120,9 +120,11 @@ mod custom_doodad_test {
 
     #[test]
     fn no_failure() {
-        let map_path = get_path("Scenario/(8)AzureTowerDefense.w3x");
+        let map_path = get_path("sample_2/Remake1 - Copie.w3x");
         let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
         let game_version = GameVersion::TFT;
-        CustomDoodadFile::read_file(&mut map, &game_version).unwrap_or_else(|e| panic!("{}", e));
+        let cdoodad = CustomDoodadFile::read_file(&mut map, &game_version)
+            .unwrap_or_else(|e| panic!("{}", e));
+        assert!(cdoodad.is_some());
     }
 }

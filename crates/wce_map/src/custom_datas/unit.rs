@@ -123,7 +123,9 @@ mod custom_unit_test {
         let map_path = get_path("Scenario/(8)AzureTowerDefense.w3x");
         let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
         let game_version = GameVersion::TFT;
-        CustomUnitFile::read_file(&mut map, &game_version).unwrap_or_else(|e| panic!("{}", e));
+        let cunit =
+            CustomUnitFile::read_file(&mut map, &game_version).unwrap_or_else(|e| panic!("{}", e));
+        assert!(cunit.is_some());
     }
 
     #[test]
@@ -131,6 +133,8 @@ mod custom_unit_test {
         let map_path = get_path("Scenario/(1)TheDeathSheep.w3m");
         let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
         let game_version = GameVersion::RoC;
-        CustomUnitFile::read_file(&mut map, &game_version).unwrap_or_else(|e| panic!("{}", e));
+        let cunit =
+            CustomUnitFile::read_file(&mut map, &game_version).unwrap_or_else(|e| panic!("{}", e));
+        assert!(cunit.is_some());
     }
 }

@@ -131,6 +131,8 @@ mod custom_item_test {
         let map_path = get_path("Scenario/(8)AzureTowerDefense.w3x");
         let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
         let game_version = GameVersion::TFT;
-        CustomItemFile::read_file(&mut map, &game_version).unwrap_or_else(|e| panic!("{}", e));
+        let citem =
+            CustomItemFile::read_file(&mut map, &game_version).unwrap_or_else(|e| panic!("{}", e));
+        assert!(citem.is_some());
     }
 }
