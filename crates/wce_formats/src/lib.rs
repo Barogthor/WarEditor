@@ -135,8 +135,8 @@ impl MapArchive {
 
 pub struct GameMpq(Archive);
 impl GameMpq {
-    pub fn open(path: String) -> Result<Self, std::io::Error> {
-        let archive = Archive::open(path);
+    pub fn open(path: String) -> Result<Self, MpqError> {
+        let archive = Archive::open(path).map_err(MpqError::IoError);
         archive.map(Self)
     }
 
@@ -170,8 +170,6 @@ pub enum ReadError {
         #[source]
         source: FromUtf8Error,
     },
-    #[error("I/O error: {0}")]
-    Other(Error),
     #[error("Read error: {0}")]
     Reason(String),
     #[error("I/O error: {0}")]

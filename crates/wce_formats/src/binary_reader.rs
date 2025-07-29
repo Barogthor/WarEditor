@@ -242,7 +242,7 @@ fn to_read_error(reader: &BinaryReader, error: Error) -> ReadError {
     let _size = reader.size;
     match error.kind() {
         std::io::ErrorKind::UnexpectedEof => ReadError::EOF,
-        _ => ReadError::Other(error),
+        _ => ReadError::IoError(error),
     }
 }
 
