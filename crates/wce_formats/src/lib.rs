@@ -1,6 +1,6 @@
 use std::ffi::IntoStringError;
 use std::fmt::Debug;
-use std::io::{self, Error};
+use std::io;
 use std::path::Path;
 use std::string::FromUtf8Error;
 
@@ -180,4 +180,25 @@ impl From<FromUtf8Error> for ReadError {
     fn from(value: FromUtf8Error) -> Self {
         ReadError::Reason(format!("{value:?}"))
     }
+}
+
+#[derive(Debug, Error)]
+pub enum WriteError {
+    #[error("C string conversion failure at position {position}: {source}")]
+    CStringConversionFailure {
+        position: u64,
+        #[source]
+        source: IntoStringError,
+    },
+    #[error("UTF-8 error at position {position}, length {length}: {source}")]
+    Utf8Error {
+        position: u64,
+        length: usize,
+        #[source]
+        source: FromUtf8Error,
+    },
+    #[error("Write error: {0}")]
+    Reason(String),
+    #[error("I/O error: {0}")]
+    IoError(#[from] io::Error),
 }
