@@ -215,6 +215,14 @@ impl BinaryWriter {
         self.buffer.get_ref().len()
     }
 
+    pub fn get_buffer(&self) -> &[u8] {
+        self.buffer.get_ref()
+    }
+
+    pub fn into_buffer(self) -> Vec<u8> {
+        self.buffer.into_inner()
+    }
+
     pub fn clear(&mut self) {
         self.buffer.get_mut().clear();
         self.seek_begin()
