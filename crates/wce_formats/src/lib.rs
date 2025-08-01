@@ -9,7 +9,7 @@ use thiserror::Error;
 use mpq::Archive;
 
 use crate::binary_reader::{BinaryReader, ReadResult};
-use crate::binary_writer::BinaryWriter;
+use crate::binary_writer::{BinaryWriter, WriteResult};
 
 #[cfg(test)]
 fn get_resources_path() -> String {
@@ -56,14 +56,14 @@ pub trait BinaryConverter {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self>
     where
         Self: Sized;
-    fn write(&self, writer: &mut BinaryWriter);
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()>;
 }
 
 pub trait BinaryConverterVersion {
     fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self>
     where
         Self: Sized;
-    fn write_version(&self, writer: &mut BinaryWriter, game_version: &GameVersion) -> Self;
+    fn write_version(&self, writer: &mut BinaryWriter, game_version: &GameVersion) -> WriteResult<()>;
 }
 
 #[cfg(test)]

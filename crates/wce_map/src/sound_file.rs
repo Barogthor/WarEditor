@@ -5,9 +5,9 @@ use pretty_assertions::assert_eq;
 
 use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
-use wce_formats::binary_writer::BinaryWriter;
+use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::MapArchive;
-use wce_formats::{BinaryConverter, MpqError, ReadError};
+use wce_formats::{BinaryConverter, BinaryConverterVersion, GameVersion, MpqError, ReadError};
 
 use crate::globals::MAP_SOUNDS;
 use crate::OpeningError;
@@ -96,8 +96,47 @@ impl BinaryConverter for Sound {
         Ok(sound)
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
-        unimplemented!()
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_c_string_converted(&self.id)?;
+        writer.write_c_string_converted(&self.file)?;
+        writer.write_c_string_converted(&self.effect)?;
+
+        // Reconstruct flags from boolean fields
+        let mut flags = 0i32;
+        if self.looping {
+            flags |= 0x00000001;
+        }
+        if self.sound_3d {
+            flags |= 0x00000002;
+        }
+        if self.stop_oof {
+            flags |= 0x00000004;
+        }
+        if self.music {
+            flags |= 0x00000008;
+        }
+        if self.unknown_flag {
+            flags |= 0x00000010;
+        }
+
+        writer.write_i32(flags)?;
+        writer.write_i32(self.fadein)?;
+        writer.write_i32(self.fadeout)?;
+        writer.write_i32(self.volume)?;
+        writer.write_f32(self.pitch)?;
+        writer.write_f32(self.unknown1)?;
+        writer.write_i32(self.unknown2)?;
+        writer.write_i32(self.channel)?;
+        writer.write_f32(self.min_dist)?;
+        writer.write_f32(self.max_dist)?;
+        writer.write_f32(self.dist_cutoff)?;
+        writer.write_f32(self.unknown3)?;
+        writer.write_f32(self.unknown4)?;
+        writer.write_i32(self.unknown5)?;
+        writer.write_f32(self.unknown6)?;
+        writer.write_f32(self.unknown7)?;
+        writer.write_f32(self.unknown8)?;
+        Ok(())
     }
 }
 
@@ -140,8 +179,13 @@ impl BinaryConverter for SoundFile {
         Ok(SoundFile { version, sounds })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
-        unimplemented!()
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_u32(self.version)?;
+        writer.write_u32(self.sounds.len() as u32)?;
+        for sound in &self.sounds {
+            sound.write(writer)?;
+        }
+        Ok(())
     }
 }
 

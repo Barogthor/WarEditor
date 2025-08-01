@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
-use wce_formats::binary_writer::BinaryWriter;
+use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::GameVersion::{self, RoC, TFT};
 use wce_formats::{BinaryConverter, BinaryConverterVersion};
 use wce_formats::{MapArchive, MpqError, ReadError};
@@ -98,7 +98,7 @@ impl BinaryConverterVersion for Destructable {
         })
     }
 
-    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
+    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -152,7 +152,7 @@ impl BinaryConverter for SpecialDoodad {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -209,7 +209,7 @@ impl BinaryConverter for DoodadMap {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
         unimplemented!()
     }
 }

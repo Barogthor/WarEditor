@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
-use wce_formats::binary_writer::BinaryWriter;
+use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::GameVersion::{RoC, TFT};
 use wce_formats::{BinaryConverter, GameVersion};
 use wce_formats::{MapArchive, MpqError, ReadError};
@@ -90,7 +90,7 @@ impl BinaryConverter for TriggerJassFile {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
         unimplemented!()
     }
 }

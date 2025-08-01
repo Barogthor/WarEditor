@@ -136,16 +136,15 @@ impl BinaryWriter {
     }
 
     pub fn write<T: BinaryConverter>(&mut self, value: &T) -> WriteResult<()> {
-        value.write(self);
-        Ok(())
+        value.write(self)
     }
 
     pub fn write_version<T: BinaryConverterVersion>(
         &mut self,
         value: &T,
         game_version: &GameVersion,
-    ) -> WriteResult<T> {
-        Ok(value.write_version(self, game_version))
+    ) -> WriteResult<()> {
+        value.write_version(self, game_version)
     }
 
     pub fn write_vec<T: BinaryConverter>(&mut self, vec: &[T]) -> WriteResult<()> {

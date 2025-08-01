@@ -5,7 +5,7 @@ use pretty_assertions::assert_eq;
 
 use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
-use wce_formats::binary_writer::BinaryWriter;
+use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::MapArchive;
 use wce_formats::{BinaryConverter, MpqError, ReadError};
 
@@ -63,7 +63,7 @@ impl BinaryConverter for Region {
         Ok(region)
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -107,7 +107,7 @@ impl BinaryConverter for RegionFile {
         Ok(RegionFile { version, regions })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
         unimplemented!()
     }
 }

@@ -29,7 +29,7 @@ macro_rules! flag_accessors {
 }
 
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
-use wce_formats::binary_writer::BinaryWriter;
+use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::GameVersion::{Reforged, RoC, TFT};
 use wce_formats::MapArchive;
 use wce_formats::{BinaryConverter, GameVersion, MpqError, ReadError};
@@ -150,7 +150,7 @@ impl BinaryConverter for PlayerData {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -175,7 +175,7 @@ impl BinaryConverter for ForceData {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -202,7 +202,7 @@ impl BinaryConverter for UpgradeAvailability {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -223,7 +223,7 @@ impl BinaryConverter for TechAvailability {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -287,7 +287,7 @@ impl BinaryConverter for RandomUnitTable {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -309,7 +309,7 @@ impl BinaryConverter for RandomItemSet {
         Ok(RandomItemSet { items })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -330,7 +330,7 @@ impl BinaryConverter for RandomItemTable {
         Ok(RandomItemTable { id, name, sets })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -503,7 +503,7 @@ impl BinaryConverter for W3iFile {
         Ok(w3i)
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
         unimplemented!()
     }
 }

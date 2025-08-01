@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
-use wce_formats::binary_writer::BinaryWriter;
+use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::MapArchive;
 use wce_formats::{BinaryConverter, MpqError, ReadError};
 
@@ -91,7 +91,7 @@ impl BinaryConverter for TilePoint {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -176,7 +176,7 @@ impl BinaryConverter for TerrainFile {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
         unimplemented!()
     }
 }

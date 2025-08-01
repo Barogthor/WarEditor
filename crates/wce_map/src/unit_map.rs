@@ -5,7 +5,7 @@ use pretty_assertions::assert_eq;
 
 use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
-use wce_formats::binary_writer::BinaryWriter;
+use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::GameVersion::{self, RoC, TFT};
 use wce_formats::{BinaryConverter, BinaryConverterVersion};
 use wce_formats::{MapArchive, MpqError, ReadError};
@@ -56,7 +56,7 @@ impl BinaryConverterVersion for DropItem {
         Ok(Self(item_id, drop_rate))
     }
 
-    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
+    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -70,7 +70,7 @@ impl BinaryConverterVersion for InventoryItem {
         Ok(Self(inventory_slot, item_id))
     }
 
-    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
+    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -93,7 +93,7 @@ impl BinaryConverterVersion for AbilityModification {
         })
     }
 
-    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
+    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -106,7 +106,7 @@ impl BinaryConverterVersion for RandomUnit {
         Ok(Self(unit_id, rate))
     }
 
-    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
+    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -153,7 +153,7 @@ impl BinaryConverterVersion for RandomUnitItemFlag {
         })
     }
 
-    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
+    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -264,7 +264,7 @@ impl BinaryConverterVersion for UnitItem {
         })
     }
 
-    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> Self {
+    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> WriteResult<()> {
         unimplemented!()
     }
 }
@@ -342,7 +342,7 @@ impl BinaryConverter for UnitItemMap {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
+    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
         unimplemented!()
     }
 }
