@@ -41,10 +41,18 @@ impl ImportFile {
         match file {
             Ok(buffer) => {
                 let mut reader = BinaryReader::try_from(buffer).map_err(ImportError::InitReader)?;
-                let v = reader.read::<ImportFile>().map_err(ImportError::Parsing)?;
-                Ok(Some(v))
+                Self::read_opt(&mut reader)
             }
             _ => Ok(None),
+        }
+    }
+
+    fn read_opt(reader: &mut BinaryReader) -> Result<Option<Self>, OpeningError> {
+        if reader.size() > 0 {
+            let v = reader.read::<ImportFile>().map_err(ImportError::Parsing)?;
+            Ok(Some(v))
+        } else {
+            Ok(None)
         }
     }
     pub fn debug(&self) {

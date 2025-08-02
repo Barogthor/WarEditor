@@ -43,11 +43,22 @@ impl CustomBuffFile {
             Ok(buffer) => {
                 let mut reader =
                     BinaryReader::try_from(buffer).map_err(CustomBuffError::InitReader)?;
-                let custom_buff =
-                    Self::from(&mut reader, game_version).map_err(CustomBuffError::Parsing)?;
-                Ok(Some(custom_buff))
+                Self::read_opt(&mut reader, game_version)
             }
             _ => Ok(None),
+        }
+    }
+
+    fn read_opt(
+        reader: &mut BinaryReader,
+        game_version: &GameVersion,
+    ) -> Result<Option<Self>, OpeningError> {
+        if reader.size() > 0 {
+            let custom_buff =
+                Self::from(reader, game_version).map_err(CustomBuffError::Parsing)?;
+            Ok(Some(custom_buff))
+        } else {
+            Ok(None)
         }
     }
 

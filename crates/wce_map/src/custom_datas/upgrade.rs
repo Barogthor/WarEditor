@@ -43,11 +43,22 @@ impl CustomUpgradeFile {
             Ok(buffer) => {
                 let mut reader =
                     BinaryReader::try_from(buffer).map_err(CustomUpgradeError::InitReader)?;
-                let custom_upgrade =
-                    Self::from(&mut reader, game_version).map_err(CustomUpgradeError::Parsing)?;
-                Ok(Some(custom_upgrade))
+                Self::read_opt(&mut reader, game_version)
             }
             _ => Ok(None),
+        }
+    }
+
+    fn read_opt(
+        reader: &mut BinaryReader,
+        game_version: &GameVersion,
+    ) -> Result<Option<Self>, OpeningError> {
+        if reader.size() > 0 {
+            let custom_upgrade =
+                Self::from(reader, game_version).map_err(CustomUpgradeError::Parsing)?;
+            Ok(Some(custom_upgrade))
+        } else {
+            Ok(None)
         }
     }
 

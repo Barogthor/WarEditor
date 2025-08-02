@@ -43,11 +43,22 @@ impl CustomUnitFile {
             Ok(buffer) => {
                 let mut reader =
                     BinaryReader::try_from(buffer).map_err(CustomUnitError::InitReader)?;
-                let custom_unit =
-                    Self::from(&mut reader, game_version).map_err(CustomUnitError::Parsing)?;
-                Ok(Some(custom_unit))
+                Self::read_opt(&mut reader, game_version)
             }
             _ => Ok(None),
+        }
+    }
+
+    fn read_opt(
+        reader: &mut BinaryReader,
+        game_version: &GameVersion,
+    ) -> Result<Option<Self>, OpeningError> {
+        if reader.size() > 0 {
+            let custom_unit =
+                Self::from(reader, game_version).map_err(CustomUnitError::Parsing)?;
+            Ok(Some(custom_unit))
+        } else {
+            Ok(None)
         }
     }
 

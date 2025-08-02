@@ -43,11 +43,22 @@ impl CustomDestructableFile {
             Ok(buffer) => {
                 let mut reader =
                     BinaryReader::try_from(buffer).map_err(CustomDestructableError::InitReader)?;
-                let custom_destructable = Self::from(&mut reader, game_version)
-                    .map_err(CustomDestructableError::Parsing)?;
-                Ok(Some(custom_destructable))
+                Self::read_opt(&mut reader, game_version)
             }
             _ => Ok(None),
+        }
+    }
+
+    fn read_opt(
+        reader: &mut BinaryReader,
+        game_version: &GameVersion,
+    ) -> Result<Option<Self>, OpeningError> {
+        if reader.size() > 0 {
+            let custom_destructable = Self::from(reader, game_version)
+                .map_err(CustomDestructableError::Parsing)?;
+            Ok(Some(custom_destructable))
+        } else {
+            Ok(None)
         }
     }
 

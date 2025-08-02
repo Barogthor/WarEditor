@@ -43,11 +43,22 @@ impl CustomDoodadFile {
             Ok(buffer) => {
                 let mut reader =
                     BinaryReader::try_from(buffer).map_err(CustomDoodadError::InitReader)?;
-                let custom_doodad =
-                    Self::from(&mut reader, game_version).map_err(CustomDoodadError::Parsing)?;
-                Ok(Some(custom_doodad))
+                Self::read_opt(&mut reader, game_version)
             }
             _ => Ok(None),
+        }
+    }
+
+    fn read_opt(
+        reader: &mut BinaryReader,
+        game_version: &GameVersion,
+    ) -> Result<Option<Self>, OpeningError> {
+        if reader.size() > 0 {
+            let custom_doodad =
+                Self::from(reader, game_version).map_err(CustomDoodadError::Parsing)?;
+            Ok(Some(custom_doodad))
+        } else {
+            Ok(None)
         }
     }
 

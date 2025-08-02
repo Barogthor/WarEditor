@@ -80,12 +80,21 @@ impl CameraFile {
         match file {
             Ok(buffer) => {
                 let mut reader = BinaryReader::try_from(buffer).map_err(CameraError::InitReader)?;
-                let camera = reader.read::<CameraFile>().map_err(CameraError::Parsing)?;
-                Ok(Some(camera))
+                Self::read_opt(&mut reader)
             }
             _ => Ok(None),
         }
     }
+
+    fn read_opt(reader: &mut BinaryReader) -> Result<Option<Self>, OpeningError> {
+        if reader.size() > 0 {
+            let camera = reader.read::<CameraFile>().map_err(CameraError::Parsing)?;
+            Ok(Some(camera))
+        } else {
+            Ok(None)
+        }
+    }
+
     pub fn debug(&self) {
         println!("{self:#?}");
     }
