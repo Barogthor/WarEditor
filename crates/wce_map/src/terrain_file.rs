@@ -373,19 +373,16 @@ mod terrain_tests {
             TerrainFile::read_file(&mut map_archive).unwrap_or_else(|e| panic!("{}", e));
         println!("Testing round-trip with real terrain file...");
 
-        // Write the terrain file
         let mut writer = BinaryWriter::new();
         original_terrain
             .write(&mut writer)
             .unwrap_or_else(|e| panic!("{}", e));
         let buffer = writer.into_buffer();
 
-        // Read it back
         let mut reader = BinaryReader::new(buffer);
         let reconstructed_terrain =
             TerrainFile::read(&mut reader).unwrap_or_else(|e| panic!("{}", e));
 
-        // Verify all fields match
         assert_eq!(original_terrain.id, reconstructed_terrain.id);
         assert_eq!(original_terrain.version, reconstructed_terrain.version);
         assert_eq!(
@@ -419,7 +416,6 @@ mod terrain_tests {
             reconstructed_terrain.tilepoints.len()
         );
 
-        // Verify each tilepoint matches
         for (i, (orig, recon)) in original_terrain
             .tilepoints
             .iter()
@@ -447,7 +443,6 @@ mod terrain_tests {
                 "Tilepoint {i}: cliff_texture_and_layer_height mismatch"
             );
 
-            // Verify helper methods work correctly
             assert_eq!(
                 orig.boundary_flag(),
                 recon.boundary_flag(),

@@ -153,12 +153,21 @@ impl SoundFile {
         match file {
             Ok(buffer) => {
                 let mut reader = BinaryReader::try_from(buffer).map_err(SoundError::InitReader)?;
-                let sounds = reader.read::<SoundFile>().map_err(SoundError::Parsing)?;
-                Ok(Some(sounds))
+                Self::read_opt(&mut reader)
             }
             _ => Ok(None),
         }
     }
+
+    fn read_opt(reader: &mut BinaryReader) -> Result<Option<Self>, OpeningError> {
+        if reader.size() > 0 {
+            let sounds = reader.read::<SoundFile>().map_err(SoundError::Parsing)?;
+            Ok(Some(sounds))
+        } else {
+            Ok(None)
+        }
+    }
+
     pub fn debug(&self) {
         println!("{self:#?}");
     }
@@ -180,10 +189,12 @@ impl BinaryConverter for SoundFile {
     }
 
     fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
-        writer.write_u32(self.version)?;
-        writer.write_u32(self.sounds.len() as u32)?;
-        for sound in &self.sounds {
-            sound.write(writer)?;
+        if !self.sounds.is_empty() {
+            writer.write_u32(self.version)?;
+            writer.write_u32(self.sounds.len() as u32)?;
+            for sound in &self.sounds {
+                sound.write(writer)?;
+            }
         }
         Ok(())
     }
@@ -501,15 +512,14 @@ mod w3s_test {
         };
 
         let mut writer = BinaryWriter::new();
-        original.write(&mut writer).unwrap();
+        original.write(&mut writer).unwrap_or_else(|e|panic!("{}",e));
         let buffer = writer.into_buffer();
 
         let mut reader = BinaryReader::new(buffer);
-        let reconstructed = SoundFile::read(&mut reader).unwrap();
+        let reconstructed = SoundFile::read_opt(&mut reader).unwrap_or_else(|e|panic!("{}",e));
 
-        assert_eq!(original.version, reconstructed.version);
-        assert_eq!(original.sounds.len(), reconstructed.sounds.len());
-        assert!(reconstructed.sounds.is_empty());
+        assert!(reconstructed.is_none(), 
+            "Empty buffer shouldn't return sound file.");
     }
 
     #[test]
