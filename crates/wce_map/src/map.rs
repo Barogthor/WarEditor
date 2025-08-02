@@ -84,7 +84,7 @@ impl<'a> Map<'a> {
         let doodad_map = DoodadMap::read_file(&mut map)?;
         // println!("{:#?}", doodad_map);
         let unit_item_map = UnitItemMap::read_file(&mut map)?;
-        let import_listing = ImportFile::read_file(&mut map)?;
+        let import_listing = ImportFile::read_file(&mut map, &game_version)?;
         let unit_datas = CustomUnitFile::read_file(&mut map, &game_version)?;
         let ability_datas = CustomAbilityFile::read_file(&mut map, &game_version)?;
         let item_datas = CustomItemFile::read_file(&mut map, &game_version)?;
