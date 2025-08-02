@@ -54,8 +54,7 @@ impl CustomUnitFile {
         game_version: &GameVersion,
     ) -> Result<Option<Self>, OpeningError> {
         if reader.size() > 0 {
-            let custom_unit =
-                Self::from(reader, game_version).map_err(CustomUnitError::Parsing)?;
+            let custom_unit = Self::from(reader, game_version).map_err(CustomUnitError::Parsing)?;
             Ok(Some(custom_unit))
         } else {
             Ok(None)
@@ -131,7 +130,7 @@ mod custom_unit_test {
 
     #[test]
     fn no_failure_tft() {
-        let map_path = get_path("Scenario/(8)AzureTowerDefense.w3x");
+        let map_path = get_path("Scenario/Sandbox_1.w3x");
         let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
         let game_version = GameVersion::TFT;
         let cunit =
@@ -140,8 +139,8 @@ mod custom_unit_test {
     }
 
     #[test]
-    fn failure_roc() {
-        let map_path = get_path("Scenario/(1)TheDeathSheep.w3m");
+    fn no_failure_roc() {
+        let map_path = get_path("Scenario/Sandbox_1.w3m");
         let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
         let game_version = GameVersion::RoC;
         let cunit =

@@ -131,7 +131,7 @@ mod custom_upgrade_test {
 
     #[test]
     fn no_failure() {
-        let map_path = get_path("sample_2/Remake1 - Copie.w3x");
+        let map_path = get_path("Scenario/Sandbox_1.w3x");
         let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
         let game_version = GameVersion::TFT;
         let cupgrade = CustomUpgradeFile::read_file(&mut map, &game_version)

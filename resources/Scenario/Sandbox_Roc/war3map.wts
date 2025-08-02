@@ -1,0 +1,41 @@
+﻿STRING 1
+{
+Sandbox Roc
+}
+
+STRING 2
+{
+Solo
+}
+
+STRING 3
+{
+Map pour mocker
+}
+
+STRING 4
+{
+Inconnu
+}
+
+STRING 5
+{
+Joueur 1
+}
+
+STRING 6
+{
+Joueur 2
+}
+
+STRING 7
+{
+Force 1
+}
+
+STRING 8
+// Unités: h000 (Fantassin Test), Name (Nom)
+{
+Fantassin Test
+}
+

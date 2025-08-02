@@ -54,8 +54,7 @@ impl CustomItemFile {
         game_version: &GameVersion,
     ) -> Result<Option<Self>, OpeningError> {
         if reader.size() > 0 {
-            let custom_item =
-                Self::from(reader, game_version).map_err(CustomItemError::Parsing)?;
+            let custom_item = Self::from(reader, game_version).map_err(CustomItemError::Parsing)?;
             Ok(Some(custom_item))
         } else {
             Ok(None)
@@ -139,7 +138,7 @@ mod custom_item_test {
 
     #[test]
     fn no_failure() {
-        let map_path = get_path("Scenario/(8)AzureTowerDefense.w3x");
+        let map_path = get_path("Scenario/Sandbox_1.w3x");
         let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
         let game_version = GameVersion::TFT;
         let citem =
