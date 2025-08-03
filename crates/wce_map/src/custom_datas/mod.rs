@@ -2,7 +2,8 @@ use std::ffi::CString;
 use std::fmt::Debug;
 
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
-use wce_formats::{GameVersion, ReadError};
+use wce_formats::binary_writer::{BinaryWriter, WriteResult};
+use wce_formats::{GameVersion, ReadError, WriteError};
 
 pub mod ability;
 pub mod buff;
@@ -45,6 +46,35 @@ pub enum VariableValue {
     AttackBits(String),
 }
 
+impl VariableValue {
+    pub fn get_type_value(&self) -> i32 {
+        match self {
+            VariableValue::Integer(_) => 0,
+            VariableValue::Real(_) => 1,
+            VariableValue::Unreal(_) => 2,
+            VariableValue::String(_) => 3,
+            VariableValue::Bool(_) => 4,
+            VariableValue::Char(_) => 5,
+            VariableValue::UnitList(_) => 6,
+            VariableValue::ItemList(_) => 7,
+            VariableValue::RegenType(_) => 8,
+            VariableValue::AttackType(_) => 9,
+            VariableValue::WeaponType(_) => 10,
+            VariableValue::TargetType(_) => 11,
+            VariableValue::MoveType(_) => 12,
+            VariableValue::DefenseType(_) => 13,
+            VariableValue::PathingTexture(_) => 14,
+            VariableValue::UpgradeList(_) => 15,
+            VariableValue::StringList(_) => 16,
+            VariableValue::AbilityList(_) => 17,
+            VariableValue::HeroAbilityList(_) => 18,
+            VariableValue::MissileArt(_) => 19,
+            VariableValue::AttributeType(_) => 20,
+            VariableValue::AttackBits(_) => 21,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum ObjectId {
     Original(OriginalIdCode),
@@ -75,7 +105,7 @@ pub struct ObjectDefinition {
 }
 
 impl ObjectDefinition {
-    pub fn with_optional(reader: &mut BinaryReader, id: ObjectId) -> ReadResult<Self> {
+    pub fn read_with_optional(reader: &mut BinaryReader, id: ObjectId) -> ReadResult<Self> {
         let modif_count = reader.read_u32()?;
         let mut meta_modified = vec![];
         for _i in 0..modif_count {
@@ -87,7 +117,7 @@ impl ObjectDefinition {
             modified_datas: meta_modified,
         })
     }
-    pub fn without_optional(
+    pub fn read_without_optional(
         reader: &mut BinaryReader,
         id: ObjectId,
         game_version: &GameVersion,
@@ -102,6 +132,53 @@ impl ObjectDefinition {
             id,
             modified_datas: meta_modified,
         })
+    }
+
+    pub fn write_without_optional(
+        &self,
+        writer: &mut BinaryWriter,
+        game_version: &GameVersion,
+    ) -> WriteResult<()> {
+        match self.id {
+            ObjectId::Original(original_id) => {
+                writer.write_bytes(original_id.0.as_slice())?;
+                writer.write_bytes(&[0; 4])?;
+            }
+            ObjectId::Custom(original_id, custom_id) => {
+                writer.write_bytes(original_id.0.as_slice())?;
+                writer.write_bytes(custom_id.0.as_slice())?;
+            }
+        }
+        let modif_count = self.modified_datas.len();
+        writer.write_u32(modif_count as u32)?;
+        for i in 0..modif_count {
+            write_meta_no_opts(
+                writer,
+                &self.id,
+                self.modified_datas.get(i).unwrap(),
+                game_version,
+            )?;
+        }
+        Ok(())
+    }
+
+    pub fn write_with_optional(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        match self.id {
+            ObjectId::Original(original_id) => {
+                writer.write_bytes(original_id.0.as_slice())?;
+                writer.write_bytes(&[0; 4])?;
+            }
+            ObjectId::Custom(original_id, custom_id) => {
+                writer.write_bytes(original_id.0.as_slice())?;
+                writer.write_bytes(custom_id.0.as_slice())?;
+            }
+        }
+        let modif_count = self.modified_datas.len();
+        writer.write_u32(modif_count as u32)?;
+        for i in 0..modif_count {
+            write_meta_opts(writer, &self.id, self.modified_datas.get(i).unwrap())?;
+        }
+        Ok(())
     }
 }
 
@@ -233,6 +310,57 @@ fn read_meta_no_opts(
     })
 }
 
+fn write_meta_no_opts(
+    writer: &mut BinaryWriter,
+    id: &ObjectId,
+    meta: &MetaModification,
+    game_version: &GameVersion,
+) -> WriteResult<()> {
+    writer.write_bytes(meta.id.0.as_slice())?;
+    writer.write_i32(meta.value.get_type_value())?;
+    match (game_version, &meta.value) {
+        (_, VariableValue::Integer(int)) => writer.write_i32(*int)?,
+        (_, VariableValue::Real(real)) => writer.write_f32(*real)?,
+        (_, VariableValue::Unreal(ureal)) => writer.write_f32(*ureal)?,
+        (_, VariableValue::String(s)) => writer.write_c_string_converted(&s)?,
+        (GameVersion::RoC, VariableValue::Bool(b)) => writer.write_u8(*b as u8)?,
+        (GameVersion::RoC, VariableValue::Char(c)) => writer.write_char(*c)?,
+        (GameVersion::RoC, VariableValue::UnitList(s)) => writer.write_c_string_converted(s)?,
+        (GameVersion::RoC, VariableValue::ItemList(s)) => writer.write_c_string_converted(s)?,
+        (GameVersion::RoC, VariableValue::RegenType(s)) => writer.write_c_string_converted(s)?,
+        (GameVersion::RoC, VariableValue::AttackType(s)) => writer.write_c_string_converted(s)?,
+        (GameVersion::RoC, VariableValue::WeaponType(s)) => writer.write_c_string_converted(s)?,
+        (GameVersion::RoC, VariableValue::TargetType(s)) => writer.write_c_string_converted(s)?,
+        (GameVersion::RoC, VariableValue::MoveType(s)) => writer.write_c_string_converted(s)?,
+        (GameVersion::RoC, VariableValue::DefenseType(s)) => writer.write_c_string_converted(s)?,
+        (GameVersion::RoC, VariableValue::PathingTexture(s)) => {
+            writer.write_c_string_converted(s)?
+        }
+        (GameVersion::RoC, VariableValue::UpgradeList(s)) => writer.write_c_string_converted(s)?,
+        (GameVersion::RoC, VariableValue::StringList(s)) => writer.write_c_string_converted(s)?,
+        (GameVersion::RoC, VariableValue::AbilityList(s)) => writer.write_c_string_converted(s)?,
+        (GameVersion::RoC, VariableValue::HeroAbilityList(s)) => {
+            writer.write_c_string_converted(s)?
+        }
+        (GameVersion::RoC, VariableValue::MissileArt(s)) => writer.write_c_string_converted(s)?,
+        (GameVersion::RoC, VariableValue::AttributeType(s)) => {
+            writer.write_c_string_converted(s)?
+        }
+        (GameVersion::RoC, VariableValue::AttackBits(s)) => writer.write_c_string_converted(s)?,
+        (_, vv) => {
+            return Err(WriteError::Reason(format!(
+                "Unsupported vtype '{}' for object {id:?} on meta '{}' version '{:?}'",
+                vv.get_type_value(),
+                String::from_utf8_lossy(&meta.id.0),
+                game_version
+            )))
+        }
+    };
+
+    writer.write_u32(0)?;
+    Ok(())
+}
+
 fn read_meta_opts(reader: &mut BinaryReader, id: &ObjectId) -> ReadResult<MetaModification> {
     let meta_id = reader.read_bytes(4)?;
     let meta_id = [meta_id[0], meta_id[1], meta_id[2], meta_id[3]];
@@ -264,6 +392,32 @@ fn read_meta_opts(reader: &mut BinaryReader, id: &ObjectId) -> ReadResult<MetaMo
         level,
         data_pointer,
     })
+}
+
+pub fn write_meta_opts(
+    writer: &mut BinaryWriter,
+    id: &ObjectId,
+    meta: &MetaModification,
+) -> WriteResult<()> {
+    writer.write_bytes(meta.id.0.as_slice())?;
+    writer.write_i32(meta.value.get_type_value())?;
+    writer.write_i32(meta.level)?;
+    writer.write_i32(meta.data_pointer)?;
+    match &meta.value {
+        VariableValue::Integer(int) => writer.write_i32(*int)?,
+        VariableValue::Real(real) => writer.write_f32(*real)?,
+        VariableValue::Unreal(ureal) => writer.write_f32(*ureal)?,
+        VariableValue::String(s) => writer.write_c_string_converted(s)?,
+        vv => {
+            return Err(WriteError::Reason(format!(
+                "Unsupported vtype '{}' for object {id:?} on meta '{}'",
+                vv.get_type_value(),
+                String::from_utf8_lossy(&meta.id.0),
+            )))
+        }
+    };
+    writer.write_u32(0)?;
+    Ok(())
 }
 
 fn assert_meta_end_format(reader: &BinaryReader, id: &ObjectId, end_meta_id: Vec<u8>) {
