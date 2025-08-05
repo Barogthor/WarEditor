@@ -44,8 +44,101 @@ pub enum Drops {
     Empty,
 }
 
+impl Drops {
+    pub const NO_TABLE_POINTER: i32 = -1;
+}
+impl BinaryConverterVersion for Drops {
+    fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self>
+    where
+        Self: Sized,
+    {
+        match game_version {
+            RoC => {
+                let count_random_drop_sets = reader.read_u32()?;
+                let mut drop_item_sets = vec![];
+                for _ in 0..count_random_drop_sets {
+                    let count_item_set = reader.read_u32()?;
+                    let vi = reader
+                        .read_vec_version::<DropItem>(count_item_set as usize, game_version)?;
+                    drop_item_sets.push(DropItemSet(vi));
+                }
+                if drop_item_sets.is_empty() {
+                    Ok(Drops::Empty)
+                } else {
+                    Ok(Drops::EmbeddedTable(drop_item_sets))
+                }
+            }
+            TFT => {
+                let map_drop_table_pointer = reader.read_i32()?;
+                let count_random_drop_sets = reader.read_u32()?;
+                if map_drop_table_pointer > Self::NO_TABLE_POINTER {
+                    Ok(Drops::PresetTable(map_drop_table_pointer))
+                } else if count_random_drop_sets > 0 {
+                    let drop_item_sets =
+                        reader.read_vec_version(count_random_drop_sets as usize, game_version)?;
+                    Ok(Drops::EmbeddedTable(drop_item_sets))
+                } else {
+                    Ok(Drops::Empty)
+                }
+            }
+            GameVersion::Reforged => unimplemented!(),
+        }
+    }
+
+    fn write_version(
+        &self,
+        writer: &mut BinaryWriter,
+        game_version: &GameVersion,
+    ) -> WriteResult<()> {
+        match (*game_version, self) {
+            (RoC, Drops::EmbeddedTable(sets)) => {
+                writer.write_u32(sets.len() as u32)?;
+                writer.write_vec_version(sets, game_version)?;
+            }
+            (RoC, _) => {
+                writer.write_u32(0)?;
+            }
+            (TFT, Drops::Empty) => {
+                writer.write_i32(Drops::NO_TABLE_POINTER)?;
+                writer.write_u32(0)?;
+            }
+            (TFT, Drops::PresetTable(pointer)) => {
+                writer.write_i32(*pointer)?;
+                writer.write_u32(0)?;
+            }
+            (TFT, Drops::EmbeddedTable(sets)) => {
+                writer.write_i32(Drops::NO_TABLE_POINTER)?;
+                writer.write_u32(sets.len() as u32)?;
+                writer.write_vec_version(sets, game_version)?;
+            }
+            (GameVersion::Reforged, _) => todo!(),
+        };
+        Ok(())
+    }
+}
+
 #[derive(Debug, PartialOrd, PartialEq)]
 pub struct DropItemSet(pub Vec<DropItem>);
+
+impl BinaryConverterVersion for DropItemSet {
+    fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self> {
+        let count_item_set = reader.read_u32()?;
+        let vi = reader.read_vec_version::<DropItem>(count_item_set as usize, game_version)?;
+        Ok(DropItemSet(vi))
+    }
+
+    fn write_version(
+        &self,
+        writer: &mut BinaryWriter,
+        game_version: &GameVersion,
+    ) -> WriteResult<()> {
+        writer.write_u32(self.0.len() as u32)?;
+        for item in &self.0 {
+            writer.write_version(item, game_version)?;
+        }
+        Ok(())
+    }
+}
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct DropItem(String, u32);
@@ -56,8 +149,14 @@ impl BinaryConverterVersion for DropItem {
         Ok(Self(item_id, drop_rate))
     }
 
-    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> WriteResult<()> {
-        unimplemented!()
+    fn write_version(
+        &self,
+        writer: &mut BinaryWriter,
+        _game_version: &GameVersion,
+    ) -> WriteResult<()> {
+        writer.write_string_utf8(&self.0)?;
+        writer.write_u32(self.1)?;
+        Ok(())
     }
 }
 
@@ -70,8 +169,14 @@ impl BinaryConverterVersion for InventoryItem {
         Ok(Self(inventory_slot, item_id))
     }
 
-    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> WriteResult<()> {
-        unimplemented!()
+    fn write_version(
+        &self,
+        writer: &mut BinaryWriter,
+        _game_version: &GameVersion,
+    ) -> WriteResult<()> {
+        writer.write_i32(self.0)?;
+        writer.write_string_utf8(&self.1)?;
+        Ok(())
     }
 }
 
@@ -93,8 +198,15 @@ impl BinaryConverterVersion for AbilityModification {
         })
     }
 
-    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> WriteResult<()> {
-        unimplemented!()
+    fn write_version(
+        &self,
+        writer: &mut BinaryWriter,
+        _game_version: &GameVersion,
+    ) -> WriteResult<()> {
+        writer.write_string_utf8(&self.ability_id)?;
+        writer.write_u32(self.autocast as u32)?;
+        writer.write_u32(self.level)?;
+        Ok(())
     }
 }
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
@@ -106,8 +218,14 @@ impl BinaryConverterVersion for RandomUnit {
         Ok(Self(unit_id, rate))
     }
 
-    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> WriteResult<()> {
-        unimplemented!()
+    fn write_version(
+        &self,
+        writer: &mut BinaryWriter,
+        _game_version: &GameVersion,
+    ) -> WriteResult<()> {
+        writer.write_string_utf8(&self.0)?;
+        writer.write_f32(self.1)?;
+        Ok(())
     }
 }
 
@@ -120,6 +238,10 @@ enum RandomUnitItemFlag {
 }
 
 impl RandomUnitItemFlag {
+    const LEVEL_MASK: u32 = 0x00FFFFFF;
+    const CLASS_MASK: u32 = 0xFF000000;
+    const CLASS_SHIFT: u32 = 24;
+
     fn is_none(&self) -> bool {
         match self {
             NotRandom => true,
@@ -134,8 +256,8 @@ impl BinaryConverterVersion for RandomUnitItemFlag {
         Ok(match kind {
             0 => {
                 let value = reader.read_u32()?;
-                let level = value & 0x00FFFFFF;
-                let item_class = (value & 0xFF000000) as u8;
+                let level = value & Self::LEVEL_MASK;
+                let item_class = ((value & Self::CLASS_MASK) >> Self::CLASS_SHIFT) as u8;
                 Neutral(level, item_class)
             }
             1 => {
@@ -153,8 +275,30 @@ impl BinaryConverterVersion for RandomUnitItemFlag {
         })
     }
 
-    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> WriteResult<()> {
-        unimplemented!()
+    fn write_version(
+        &self,
+        writer: &mut BinaryWriter,
+        game_version: &GameVersion,
+    ) -> WriteResult<()> {
+        match self {
+            Neutral(level, class) => {
+                writer.write_i32(0)?;
+                let class_shifted = (*class as u32) << Self::CLASS_SHIFT;
+                writer.write_u32(level | class_shifted)?;
+            }
+            RandomFromTableGroup(group_id, position) => {
+                writer.write_i32(1)?;
+                writer.write_i32(*group_id)?;
+                writer.write_u32(*position)?;
+            }
+            RandomFromCustomTable(random_units) => {
+                writer.write_i32(2)?;
+                writer.write_u32(random_units.len() as u32)?;
+                writer.write_vec_version(random_units, game_version)?;
+            }
+            NotRandom => writer.write_i32(-1)?,
+        };
+        Ok(())
     }
 }
 
@@ -190,6 +334,10 @@ struct UnitItem {
     creation_id: u32,
 }
 
+impl UnitItem {
+    const DEFAULT_GOLD_AMOUNT: i32 = 12500;
+}
+
 impl BinaryConverterVersion for UnitItem {
     fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self> {
         let model_id = reader.read_string_utf8(4)?;
@@ -207,7 +355,7 @@ impl BinaryConverterVersion for UnitItem {
         let unk2 = reader.read_u8()?;
         let hp = reader.read_i32()?;
         let mana = reader.read_i32()?;
-        let drops = Self::read_unit_drops(reader, game_version)?;
+        let drops = reader.read_version::<Drops>(game_version)?;
         let gold_amount = reader.read_i32()?;
         let acquisition_range = reader.read_f32()?;
         let level = reader.read_u32()?;
@@ -264,33 +412,48 @@ impl BinaryConverterVersion for UnitItem {
         })
     }
 
-    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> WriteResult<()> {
-        unimplemented!()
-    }
-}
-
-impl UnitItem {
-    fn read_unit_drops(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Drops> {
-        let map_drop_table_pointer = if game_version.is_tft() {
-            reader.read_i32()?
-        } else {
-            -1
-        };
-        let count_random_drop_sets = reader.read_u32()?;
-        if game_version.is_tft() && map_drop_table_pointer > -1 {
-            Ok(Drops::PresetTable(map_drop_table_pointer))
-        } else if count_random_drop_sets > 0 {
-            let mut drop_item_sets = vec![];
-            for _ in 0..count_random_drop_sets {
-                let count_item_set = reader.read_u32()?;
-                let vi =
-                    reader.read_vec_version::<DropItem>(count_item_set as usize, game_version)?;
-                drop_item_sets.push(DropItemSet(vi));
-            }
-            Ok(Drops::EmbeddedTable(drop_item_sets))
-        } else {
-            Ok(Drops::Empty)
+    fn write_version(
+        &self,
+        writer: &mut BinaryWriter,
+        game_version: &GameVersion,
+    ) -> WriteResult<()> {
+        writer.write_string_utf8(&self.model_id)?;
+        writer.write_u32(self.variation)?;
+        writer.write_f32(self.coord_x)?;
+        writer.write_f32(self.coord_y)?;
+        writer.write_f32(self.coord_z)?;
+        writer.write_f32(self.angle)?;
+        writer.write_f32(self.scale_x)?;
+        writer.write_f32(self.scale_y)?;
+        writer.write_f32(self.scale_z)?;
+        writer.write_u8(self.flags)?;
+        writer.write_u32(self.player_owner)?;
+        writer.write_u8(self.unk1)?;
+        writer.write_u8(self.unk2)?;
+        writer.write_i32(self.hp)?;
+        writer.write_i32(self.mana)?;
+        writer.write_version(&self.drops, game_version)?;
+        writer.write_i32(self.gold_amount)?;
+        writer.write_f32(self.acquisition_range)?;
+        writer.write_u32(self.level)?;
+        if game_version.is_tft() {
+            writer.write_i32(self.strength)?;
+            writer.write_i32(self.agility)?;
+            writer.write_i32(self.intelligence)?;
         }
+
+        writer.write_u32(self.inventory.len() as u32)?;
+        writer.write_vec_version(&self.inventory, game_version)?;
+
+        writer.write_u32(self.abilities.len() as u32)?;
+        writer.write_vec_version(&self.abilities, game_version)?;
+
+        writer.write_version(&self.random_type, game_version)?;
+        writer.write_i32(self.color)?;
+        writer.write_i32(self.waygate_region_id)?;
+        writer.write_u32(self.creation_id)?;
+
+        Ok(())
     }
 }
 
@@ -319,8 +482,6 @@ impl UnitItemMap {
 impl BinaryConverter for UnitItemMap {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
         let id = reader.read_string_utf8(4)?;
-        //        let id = String::from_utf8(reader.read_bytes(4)).unwrap();
-        //        let id = reader.read_u32();
         let version = reader.read_u32()?;
         let version = to_game_version(version).map_err(ReadError::Reason)?;
         let subversion = reader.read_u32()?;
@@ -342,8 +503,13 @@ impl BinaryConverter for UnitItemMap {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
-        unimplemented!()
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_string_utf8(&self.id)?;
+        writer.write_u32(from_game_version(&self.version))?;
+        writer.write_u32(self.subversion)?;
+        writer.write_u32(self.units_items.len() as u32)?;
+        writer.write_vec_version(&self.units_items, &self.version)?;
+        Ok(())
     }
 }
 
@@ -355,12 +521,21 @@ fn to_game_version(value: u32) -> Result<GameVersion, String> {
     }
 }
 
+fn from_game_version(game_version: &GameVersion) -> u32 {
+    match game_version {
+        RoC => 7,
+        TFT => 8,
+        GameVersion::Reforged => unimplemented!(),
+    }
+}
+
 #[cfg(test)]
 mod unitmap_tests {
     use std::fs::File;
 
     use wce_formats::binary_reader::BinaryReader;
-    use wce_formats::GameVersion::RoC;
+    use wce_formats::binary_writer::BinaryWriter;
+    use wce_formats::{BinaryConverter, GameVersion::RoC};
 
     use crate::get_resources_path;
     use crate::unit_map::RandomUnitItemFlag::{
@@ -600,7 +775,9 @@ mod unitmap_tests {
         let mut unititem_file = File::open(get_path("Scenario/Sandbox_roc/war3mapUnits.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut unititem_file);
-        let unititem_map = reader.read::<UnitItemMap>().unwrap();
+        let unititem_map = reader
+            .read::<UnitItemMap>()
+            .unwrap_or_else(|e| panic!("{}", e));
         assert_eq!(unititem_map.id, "W3do".to_string());
         assert_eq!(unititem_map.version, RoC);
         let units_items_mock = mock_rock();
@@ -620,6 +797,96 @@ mod unitmap_tests {
         let mut unititem_file = File::open(get_path("Scenario/Sandbox_tft/war3mapUnits.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut unititem_file);
-        let _unititem_map = reader.read::<UnitItemMap>();
+        let _unititem_map = reader
+            .read::<UnitItemMap>()
+            .unwrap_or_else(|e| panic!("{}", e));
+    }
+
+    #[test]
+    fn write_read_roundtrip_roc() {
+        // Read original data
+        let mut unititem_file = File::open(get_path("Scenario/Sandbox_roc/war3mapUnits.doo"))
+            .unwrap_or_else(|e| panic!("{}", e));
+        let mut reader = BinaryReader::from(&mut unititem_file);
+        let original_map = reader
+            .read::<UnitItemMap>()
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        // Write to buffer
+        let mut writer = BinaryWriter::new();
+        original_map
+            .write(&mut writer)
+            .expect("Failed to write UnitItemMap");
+        // let f = File::create_new("unit_map_write_roc.w3do").unwrap_or_else(|e| panic!("{}", e));
+        // f.seek_write(writer.get_buffer(), 0)
+        //     .unwrap_or_else(|e| panic!("{}", e));
+
+        println!("Original buffer size: {}", reader.size());
+        println!("Written buffer size: {}", writer.into_buffer().len());
+
+        // Write to buffer again for comparison
+        let mut writer = BinaryWriter::new();
+        original_map
+            .write(&mut writer)
+            .expect("Failed to write UnitItemMap");
+
+        // Read back from buffer
+        let buffer = writer.into_buffer();
+        let mut reader = BinaryReader::new(buffer);
+        let written_map = reader
+            .read::<UnitItemMap>()
+            .unwrap_or_else(|e| panic!("Failed to read back: {}", e));
+
+        // Compare
+        assert_eq!(original_map.id, written_map.id);
+        assert_eq!(original_map.version, written_map.version);
+        assert_eq!(original_map.subversion, written_map.subversion);
+        assert_eq!(
+            original_map.units_items.len(),
+            written_map.units_items.len()
+        );
+
+        // Compare individual items (may have slight floating point precision differences)
+        for (original, written) in original_map
+            .units_items
+            .iter()
+            .zip(written_map.units_items.iter())
+        {
+            assert_eq!(original.model_id, written.model_id);
+            assert_eq!(original.creation_id, written.creation_id);
+            // Note: Floating point precision may cause small differences
+        }
+    }
+
+    #[test]
+    fn write_read_roundtrip_tft() {
+        // Read original data
+        let mut unititem_file = File::open(get_path("Scenario/Sandbox_tft/war3mapUnits.doo"))
+            .unwrap_or_else(|e| panic!("{}", e));
+        let mut reader = BinaryReader::from(&mut unititem_file);
+        let original_map = reader
+            .read::<UnitItemMap>()
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        // Write to buffer
+        let mut writer = BinaryWriter::new();
+        original_map
+            .write(&mut writer)
+            .expect("Failed to write UnitItemMap");
+
+        // Read back from buffer
+        let mut reader = BinaryReader::new(writer.into_buffer());
+        let written_map = reader
+            .read::<UnitItemMap>()
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        // Compare
+        assert_eq!(original_map.id, written_map.id);
+        assert_eq!(original_map.version, written_map.version);
+        assert_eq!(original_map.subversion, written_map.subversion);
+        assert_eq!(
+            original_map.units_items.len(),
+            written_map.units_items.len()
+        );
     }
 }

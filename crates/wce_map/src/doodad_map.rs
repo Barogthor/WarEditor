@@ -9,7 +9,7 @@ use wce_formats::{MapArchive, MpqError, ReadError};
 
 use crate::doodad_map::DestructableFlag::{InvisibleNonSolid, VisibleNonSolid, VisibleSolid};
 use crate::globals::MAP_TERRAIN_DOODADS;
-use crate::unit_map::{DropItem, DropItemSet, Drops};
+use crate::unit_map::Drops;
 use crate::OpeningError;
 
 pub type Radian = f32;
@@ -98,8 +98,25 @@ impl BinaryConverterVersion for Destructable {
         })
     }
 
-    fn write_version(&self, _writer: &mut BinaryWriter, _game_version: &GameVersion) -> WriteResult<()> {
-        unimplemented!()
+    fn write_version(
+        &self,
+        writer: &mut BinaryWriter,
+        game_version: &GameVersion,
+    ) -> WriteResult<()> {
+        writer.write_string_utf8(&self.model_id)?;
+        writer.write_u32(self.variation)?;
+        writer.write_f32(self.coord_x)?;
+        writer.write_f32(self.coord_y)?;
+        writer.write_f32(self.coord_z)?;
+        writer.write_f32(self.angle)?;
+        writer.write_f32(self.scale_x)?;
+        writer.write_f32(self.scale_y)?;
+        writer.write_f32(self.scale_z)?;
+        writer.write_u8(self.flags)?;
+        writer.write_u8(self.life)?;
+        Self::write_drops(&self.drops, writer, game_version)?;
+        writer.write_u32(self.creation_id)?;
+        Ok(())
     }
 }
 
@@ -107,26 +124,25 @@ impl Destructable {
     fn load_drops(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Drops> {
         let drops = match *game_version {
             RoC => Drops::Empty,
-            _ => {
-                let drop_table_pointer = reader.read_i32()?;
-                let count_drop_set = reader.read_u32()?;
-                if drop_table_pointer >= 0 {
-                    Drops::PresetTable(drop_table_pointer)
-                } else if count_drop_set == 0 {
-                    Drops::Empty
-                } else {
-                    let mut drop_sets = vec![];
-                    for _ in 0..count_drop_set {
-                        let count_drop_item = reader.read_u32()?;
-                        let drop_item_set = reader
-                            .read_vec_version::<DropItem>(count_drop_item as usize, game_version)?;
-                        drop_sets.push(DropItemSet(drop_item_set));
-                    }
-                    Drops::EmbeddedTable(drop_sets)
-                }
-            }
+            _ => Drops::read_version(reader, game_version)?,
         };
         Ok(drops)
+    }
+
+    fn write_drops(
+        drops: &Drops,
+        writer: &mut BinaryWriter,
+        game_version: &GameVersion,
+    ) -> WriteResult<()> {
+        match *game_version {
+            RoC => {
+                // RoC destructables don't have drop data at all
+            }
+            _ => {
+                writer.write_version(drops, game_version)?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -152,8 +168,12 @@ impl BinaryConverter for SpecialDoodad {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
-        unimplemented!()
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_string_utf8(&self.model_id)?;
+        writer.write_f32(self.coord_x)?;
+        writer.write_f32(self.coord_y)?;
+        writer.write_f32(self.coord_z)?;
+        Ok(())
     }
 }
 
@@ -209,8 +229,24 @@ impl BinaryConverter for DoodadMap {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
-        unimplemented!()
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_string_utf8(&self.id)?;
+        writer.write_u32(from_game_version(&self.version))?;
+        writer.write_u32(self.subversion)?;
+        writer.write_u32(self.destructables.len() as u32)?;
+        writer.write_vec_version(&self.destructables, &self.version)?;
+        writer.write_u32(self.special_doodad_version)?;
+        writer.write_u32(self.special_doodads.len() as u32)?;
+        writer.write_vec(&self.special_doodads)?;
+        Ok(())
+    }
+}
+
+fn from_game_version(game_version: &GameVersion) -> u32 {
+    match game_version {
+        RoC => 7,
+        TFT => 8,
+        GameVersion::Reforged => unimplemented!(),
     }
 }
 
@@ -227,6 +263,8 @@ mod doodads_test {
     use std::fs::File;
 
     use wce_formats::binary_reader::BinaryReader;
+    use wce_formats::binary_writer::BinaryWriter;
+    use wce_formats::BinaryConverter;
     use wce_formats::GameVersion::RoC;
 
     use crate::{
@@ -322,6 +360,120 @@ mod doodads_test {
         let mut doodad_file = File::open(get_path("Scenario/Sandbox_tft/war3map.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut doodad_file);
-        let _doodad_map = reader.read::<DoodadMap>();
+        let _doodad_map = reader
+            .read::<DoodadMap>()
+            .unwrap_or_else(|e| panic!("{}", e));
+    }
+
+    #[test]
+    fn write_read_roundtrip_roc() {
+        // Read original data
+        let mut doodad_file = File::open(get_path("Scenario/Sandbox_roc/war3map.doo"))
+            .unwrap_or_else(|e| panic!("{}", e));
+        let mut reader = BinaryReader::from(&mut doodad_file);
+        let original_map = reader
+            .read::<DoodadMap>()
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        // Write to buffer
+        let mut writer = BinaryWriter::new();
+        original_map
+            .write(&mut writer)
+            .expect("Failed to write DoodadMap");
+
+        println!("Original buffer size: {}", reader.size());
+        println!("Written buffer size: {}", writer.into_buffer().len());
+
+        // Write to buffer again for comparison
+        let mut writer = BinaryWriter::new();
+        original_map
+            .write(&mut writer)
+            .expect("Failed to write DoodadMap");
+
+        // Read back from buffer
+        let buffer = writer.into_buffer();
+        let mut reader = BinaryReader::new(buffer);
+        let written_map = reader
+            .read::<DoodadMap>()
+            .unwrap_or_else(|e| panic!("Failed to read back: {}", e));
+
+        // Compare
+        assert_eq!(original_map.id, written_map.id);
+        assert_eq!(original_map.version, written_map.version);
+        assert_eq!(original_map.subversion, written_map.subversion);
+        assert_eq!(
+            original_map.destructables.len(),
+            written_map.destructables.len()
+        );
+        assert_eq!(
+            original_map.special_doodad_version,
+            written_map.special_doodad_version
+        );
+        assert_eq!(
+            original_map.special_doodads.len(),
+            written_map.special_doodads.len()
+        );
+
+        // Compare individual destructables
+        for (original, written) in original_map
+            .destructables
+            .iter()
+            .zip(written_map.destructables.iter())
+        {
+            assert_eq!(original.model_id, written.model_id);
+            assert_eq!(original.creation_id, written.creation_id);
+            assert_eq!(original.variation, written.variation);
+            assert_eq!(original.flags, written.flags);
+            assert_eq!(original.life, written.life);
+        }
+
+        // Compare special doodads
+        for (original, written) in original_map
+            .special_doodads
+            .iter()
+            .zip(written_map.special_doodads.iter())
+        {
+            assert_eq!(original.model_id, written.model_id);
+        }
+    }
+
+    #[test]
+    fn write_read_roundtrip_tft() {
+        // Read original data
+        let mut doodad_file = File::open(get_path("Scenario/Sandbox_tft/war3map.doo"))
+            .unwrap_or_else(|e| panic!("{}", e));
+        let mut reader = BinaryReader::from(&mut doodad_file);
+        let original_map = reader
+            .read::<DoodadMap>()
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        // Write to buffer
+        let mut writer = BinaryWriter::new();
+        original_map
+            .write(&mut writer)
+            .expect("Failed to write DoodadMap");
+
+        // Read back from buffer
+        let mut reader = BinaryReader::new(writer.into_buffer());
+        let written_map = reader
+            .read::<DoodadMap>()
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        // Compare
+        assert_eq!(original_map.id, written_map.id);
+        assert_eq!(original_map.version, written_map.version);
+        assert_eq!(original_map.subversion, written_map.subversion);
+        assert_eq!(
+            original_map.destructables.len(),
+            written_map.destructables.len()
+        );
+        assert_eq!(
+            original_map.special_doodad_version,
+            written_map.special_doodad_version
+        );
+        assert_eq!(
+            original_map.special_doodads.len(),
+            written_map.special_doodads.len()
+        );
     }
 }

@@ -63,7 +63,11 @@ pub trait BinaryConverterVersion {
     fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self>
     where
         Self: Sized;
-    fn write_version(&self, writer: &mut BinaryWriter, game_version: &GameVersion) -> WriteResult<()>;
+    fn write_version(
+        &self,
+        writer: &mut BinaryWriter,
+        game_version: &GameVersion,
+    ) -> WriteResult<()>;
 }
 
 #[cfg(test)]
