@@ -1,5 +1,5 @@
 use thiserror::Error;
-use wce_formats::ReadError;
+use wce_formats::{ReadError, WriteError};
 
 use crate::triggers::enums::WtgError::{
     ConditionConversionError, ECAConversionError, ParameterConversionError,
@@ -24,20 +24,27 @@ pub enum WtgError {
     UnknownGameVersion(u32),
     #[error("Binary reader error : {0}")]
     ErrorReader(ReadError),
+    #[error("Binary writer error : {0}")]
+    ErrorWriter(WriteError),
 }
 impl From<ReadError> for WtgError {
     fn from(value: ReadError) -> Self {
         Self::ErrorReader(value)
     }
 }
+impl From<WriteError> for WtgError {
+    fn from(value: WriteError) -> Self {
+        Self::ErrorWriter(value)
+    }
+}
 
 #[derive(PartialOrd, PartialEq, Copy, Clone, Debug)]
 pub enum ParameterType {
-    Preset,
-    Variable,
-    Function,
-    String,
-    Invalid,
+    Preset = 0,
+    Variable = 1,
+    Function = 2,
+    String = 3,
+    Invalid = -1,
 }
 
 impl ParameterType {
@@ -58,9 +65,9 @@ impl ParameterType {
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub enum ECAType {
-    Event,
-    Condition,
-    Action,
+    Event = 0,
+    Condition = 1,
+    Action = 2,
 }
 impl ECAType {
     pub fn from(n: u32) -> Result<ECAType, WtgError> {
@@ -108,9 +115,9 @@ impl SubParameterType {
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub enum ConditionType {
-    Condition,
-    Then,
-    Else,
+    Condition = 0,
+    Then = 1,
+    Else = 2,
 }
 impl ConditionType {
     pub fn from(n: u32) -> Result<Self, WtgError> {

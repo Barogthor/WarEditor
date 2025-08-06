@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 
 use thiserror::Error;
 use wce_formats::binary_reader::BinaryReader;
+use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{self, RoC, TFT};
 // use log::{debug, error, info, trace, warn};
 use wce_formats::{MapArchive, MpqError, ReadError};
@@ -89,6 +90,33 @@ impl TriggerDefinition {
             ecas,
         })
     }
+
+    pub fn write(
+        &self,
+        writer: &mut BinaryWriter,
+        game_version: &GameVersion,
+        trigger_data: &DataIni,
+    ) -> Result<(), WtgError> {
+        writer.write_c_string_converted(&self.name)?;
+        writer.write_c_string_converted(&self.description)?;
+        if game_version.is_tft() {
+            if let Some(is_comment) = self.is_comment {
+                writer.write_u32(is_comment as u32)?;
+            } else {
+                writer.write_u32(0)?;
+            }
+        }
+        writer.write_u32(self.enabled as u32)?;
+        writer.write_u32((!self.is_gui) as u32)?;
+        writer.write_u32((!self.is_on) as u32)?;
+        writer.write_u32((!self.run_on_init) as u32)?;
+        writer.write_u32(self.index_category)?;
+        writer.write_u32(self.ecas.len() as u32)?;
+        for eca in &self.ecas {
+            eca.write(writer, game_version, trigger_data, false)?;
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Default)]
@@ -111,6 +139,25 @@ impl TriggersFile {
         Ok(res)
     }
 
+    pub fn save(&self, writer: &mut BinaryWriter, trigger_data: &DataIni) -> Result<(), WtgError> {
+        writer.write_string_utf8(&self.id)?;
+        writer.write_u32(from_game_version(&self.version))?;
+        writer.write_u32(self.categories.len() as u32)?;
+        for cat in &self.categories {
+            cat.write(writer, &self.version)?;
+        }
+        writer.write_i32(self.unknown)?;
+        writer.write_u32(self.vars.len() as u32)?;
+        for var in &self.vars {
+            var.write(writer, &self.version)?;
+        }
+        writer.write_u32(self.triggers.len() as u32)?;
+        for trigger in &self.triggers {
+            trigger.write(writer, &self.version, trigger_data)?;
+        }
+        Ok(())
+    }
+
     fn from(reader: &mut BinaryReader, trigger_data: &DataIni) -> Result<Self, WtgError> {
         let id = reader
             .read_string_utf8_safe(4)
@@ -127,7 +174,8 @@ impl TriggersFile {
         let count_vars = reader.read_u32().map_err(WtgError::ErrorReader)?;
         let mut vars = vec![];
         for _ in 0..count_vars {
-            vars.push(VariableDefinition::from(reader, &version).map_err(WtgError::ErrorReader)?);
+            let var = VariableDefinition::from(reader, &version)?;
+            vars.push(var);
         }
         let count_triggers = reader.read_u32().map_err(WtgError::ErrorReader)?;
         let mut triggers = vec![];
@@ -162,5 +210,13 @@ fn to_game_version(value: u32) -> Result<GameVersion, WtgError> {
         4 => Ok(RoC),
         7 => Ok(TFT),
         _ => Err(UnknownGameVersion(value)),
+    }
+}
+
+fn from_game_version(game_version: &GameVersion) -> u32 {
+    match game_version {
+        RoC => 4,
+        TFT => 7,
+        GameVersion::Reforged => unimplemented!(),
     }
 }

@@ -1,5 +1,8 @@
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
+use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{self};
+
+use crate::triggers::enums::WtgError;
 
 #[derive(Debug, Default)]
 pub struct VariableDefinition {
@@ -13,7 +16,10 @@ pub struct VariableDefinition {
 }
 
 impl VariableDefinition {
-    pub fn from(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self> {
+    pub fn from(
+        reader: &mut BinaryReader,
+        game_version: &GameVersion,
+    ) -> Result<VariableDefinition, WtgError> {
         let mut def = Self::default();
         def.name = reader.read_c_string_converted()?;
         def.var_type = reader.read_c_string_converted()?;
@@ -25,6 +31,23 @@ impl VariableDefinition {
         def.initialized = reader.read_u32()? == 1;
         def.init_value = reader.read_c_string_converted()?;
         Ok(def)
+    }
+
+    pub fn write(
+        &self,
+        writer: &mut BinaryWriter,
+        game_version: &GameVersion,
+    ) -> Result<(), WtgError> {
+        writer.write_c_string_converted(&self.name)?;
+        writer.write_c_string_converted(&self.var_type)?;
+        writer.write_i32(self.unknown)?;
+        writer.write_u32(self.is_array as u32)?;
+        if game_version.is_tft() {
+            writer.write_u32(self.array_size)?;
+        }
+        writer.write_u32(self.initialized as u32)?;
+        writer.write_c_string_converted(&self.init_value)?;
+        Ok(())
     }
 }
 
@@ -45,5 +68,18 @@ impl TriggerCategory {
             def.is_comment = reader.read_u32()? == 1;
         }
         Ok(def)
+    }
+
+    pub fn write(
+        &self,
+        writer: &mut BinaryWriter,
+        game_version: &GameVersion,
+    ) -> Result<(), WtgError> {
+        writer.write_u32(self.id)?;
+        writer.write_c_string_converted(&self.name)?;
+        if game_version.is_tft() {
+            writer.write_u32(self.is_comment as u32)?;
+        }
+        Ok(())
     }
 }
