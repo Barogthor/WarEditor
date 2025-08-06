@@ -393,7 +393,6 @@ mod w3s_test {
         for (original, recon) in mock_sounds.iter().zip(reconstructed_file.sounds.iter()) {
             assert_eq!(original, recon);
         }
-        
     }
 
     #[test]
@@ -414,25 +413,63 @@ mod w3s_test {
         let reconstructed_sound_file = SoundFile::read(&mut reader).unwrap();
 
         // Verify version and sound count match
-        assert_eq!(original_sound_file.version, reconstructed_sound_file.version);
-        assert_eq!(original_sound_file.sounds.len(), reconstructed_sound_file.sounds.len());
+        assert_eq!(
+            original_sound_file.version,
+            reconstructed_sound_file.version
+        );
+        assert_eq!(
+            original_sound_file.sounds.len(),
+            reconstructed_sound_file.sounds.len()
+        );
 
         // Verify each sound matches
-        for (index, (original, reconstructed)) in original_sound_file.sounds.iter()
+        for (index, (original, reconstructed)) in original_sound_file
+            .sounds
+            .iter()
             .zip(reconstructed_sound_file.sounds.iter())
-            .enumerate() {
-            
+            .enumerate()
+        {
             assert_eq!(original.id, reconstructed.id, "Sound {index}: id mismatch");
-            assert_eq!(original.file, reconstructed.file, "Sound {index}: file mismatch");
-            assert_eq!(original.effect, reconstructed.effect, "Sound {index}: effect mismatch");
-            assert_eq!(original.looping, reconstructed.looping, "Sound {index}: looping mismatch");
-            assert_eq!(original.sound_3d, reconstructed.sound_3d, "Sound {index}: sound_3d mismatch");
-            assert_eq!(original.stop_oof, reconstructed.stop_oof, "Sound {index}: stop_oof mismatch");
-            assert_eq!(original.music, reconstructed.music, "Sound {index}: music mismatch");
-            assert_eq!(original.unknown_flag, reconstructed.unknown_flag, "Sound {index}: unknown_flag mismatch");
-            assert_eq!(original.volume, reconstructed.volume, "Sound {index}: volume mismatch");
-            assert_eq!(original.min_dist, reconstructed.min_dist, "Sound {index}: min_dist mismatch");
-            assert_eq!(original.max_dist, reconstructed.max_dist, "Sound {index}: max_dist mismatch");
+            assert_eq!(
+                original.file, reconstructed.file,
+                "Sound {index}: file mismatch"
+            );
+            assert_eq!(
+                original.effect, reconstructed.effect,
+                "Sound {index}: effect mismatch"
+            );
+            assert_eq!(
+                original.looping, reconstructed.looping,
+                "Sound {index}: looping mismatch"
+            );
+            assert_eq!(
+                original.sound_3d, reconstructed.sound_3d,
+                "Sound {index}: sound_3d mismatch"
+            );
+            assert_eq!(
+                original.stop_oof, reconstructed.stop_oof,
+                "Sound {index}: stop_oof mismatch"
+            );
+            assert_eq!(
+                original.music, reconstructed.music,
+                "Sound {index}: music mismatch"
+            );
+            assert_eq!(
+                original.unknown_flag, reconstructed.unknown_flag,
+                "Sound {index}: unknown_flag mismatch"
+            );
+            assert_eq!(
+                original.volume, reconstructed.volume,
+                "Sound {index}: volume mismatch"
+            );
+            assert_eq!(
+                original.min_dist, reconstructed.min_dist,
+                "Sound {index}: min_dist mismatch"
+            );
+            assert_eq!(
+                original.max_dist, reconstructed.max_dist,
+                "Sound {index}: max_dist mismatch"
+            );
         }
     }
 
@@ -450,7 +487,7 @@ mod w3s_test {
             (true, true, false, false, false, 0x00000003), // looping + sound_3d
             (false, true, true, false, false, 0x00000006), // sound_3d + stop_oof (like Avatar sound)
             (false, false, false, true, false, 0x00000008), // music only (like Credits sound)
-            (true, true, true, true, true, 0x0000001F),  // all flags set
+            (true, true, true, true, true, 0x0000001F),    // all flags set
         ];
 
         for (looping, sound_3d, stop_oof, music, unknown_flag, expected_flags) in test_cases {
@@ -491,9 +528,9 @@ mod w3s_test {
             let reconstructed = Sound::read(&mut reader).unwrap();
 
             // Check that the flags were reconstructed correctly
-            assert_eq!(reconstructed.flags, expected_flags, 
+            assert_eq!(reconstructed.flags, expected_flags,
                 "Flags mismatch for looping={looping}, sound_3d={sound_3d}, stop_oof={stop_oof}, music={music}, unknown_flag={unknown_flag}");
-            
+
             // Check that boolean fields match
             assert_eq!(reconstructed.looping, looping);
             assert_eq!(reconstructed.sound_3d, sound_3d);
@@ -512,14 +549,18 @@ mod w3s_test {
         };
 
         let mut writer = BinaryWriter::new();
-        original.write(&mut writer).unwrap_or_else(|e|panic!("{}",e));
+        original
+            .write(&mut writer)
+            .unwrap_or_else(|e| panic!("{}", e));
         let buffer = writer.into_buffer();
 
         let mut reader = BinaryReader::new(buffer);
-        let reconstructed = SoundFile::read_opt(&mut reader).unwrap_or_else(|e|panic!("{}",e));
+        let reconstructed = SoundFile::read_opt(&mut reader).unwrap_or_else(|e| panic!("{}", e));
 
-        assert!(reconstructed.is_none(), 
-            "Empty buffer shouldn't return sound file.");
+        assert!(
+            reconstructed.is_none(),
+            "Empty buffer shouldn't return sound file."
+        );
     }
 
     #[test]
@@ -592,13 +633,24 @@ mod w3s_test {
                 assert_eq!(original.version, reconstructed.version);
                 assert_eq!(original.sounds.len(), reconstructed.sounds.len());
 
-                for (i, (orig, recon)) in original.sounds.iter().zip(reconstructed.sounds.iter()).enumerate() {
+                for (i, (orig, recon)) in original
+                    .sounds
+                    .iter()
+                    .zip(reconstructed.sounds.iter())
+                    .enumerate()
+                {
                     assert_eq!(orig.id, recon.id, "Sound {i}: id mismatch");
                     assert_eq!(orig.file, recon.file, "Sound {i}: file mismatch");
                     assert_eq!(orig.effect, recon.effect, "Sound {i}: effect mismatch");
                     assert_eq!(orig.looping, recon.looping, "Sound {i}: looping mismatch");
-                    assert_eq!(orig.sound_3d, recon.sound_3d, "Sound {i}: sound_3d mismatch");
-                    assert_eq!(orig.stop_oof, recon.stop_oof, "Sound {i}: stop_oof mismatch");
+                    assert_eq!(
+                        orig.sound_3d, recon.sound_3d,
+                        "Sound {i}: sound_3d mismatch"
+                    );
+                    assert_eq!(
+                        orig.stop_oof, recon.stop_oof,
+                        "Sound {i}: stop_oof mismatch"
+                    );
                     assert_eq!(orig.music, recon.music, "Sound {i}: music mismatch");
                     assert_eq!(orig.volume, recon.volume, "Sound {i}: volume mismatch");
                 }
