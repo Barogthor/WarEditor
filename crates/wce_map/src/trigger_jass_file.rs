@@ -70,9 +70,10 @@ impl BinaryConverter for TriggerJassFile {
         for _ in 0..count_triggers {
             let length = reader.read_u32()? as usize;
             if length == 0 {
-                continue;
+                text_triggers.push(String::new()); // Add empty string instead of skipping
+            } else {
+                text_triggers.push(reader.read_string_utf8(length)?);
             }
-            text_triggers.push(reader.read_string_utf8(length)?);
         }
         assert_eq!(
             reader.size(),
@@ -90,8 +91,26 @@ impl BinaryConverter for TriggerJassFile {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
-        unimplemented!()
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_u32(from_game_version(&self.version))?;
+
+        match self.version {
+            RoC => (),
+            _ => {
+                writer.write_c_string_converted(&self.global_comment)?;
+                writer.write_u32(self.global_script.len() as u32)?;
+                writer.write_string_utf8(&self.global_script)?;
+            }
+        }
+
+        writer.write_u32(self.triggers_script.len() as u32)?;
+        for script in &self.triggers_script {
+            writer.write_u32(script.len() as u32)?;
+            if !script.is_empty() {
+                writer.write_string_utf8(script)?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -103,9 +122,24 @@ fn to_game_version(value: u32) -> Result<GameVersion, String> {
     }
 }
 
+fn from_game_version(game_version: &GameVersion) -> u32 {
+    match game_version {
+        RoC => 0,
+        TFT => 1,
+        wce_formats::GameVersion::Reforged => unimplemented!(),
+    }
+}
+
 #[cfg(test)]
 mod trigger_jass_test {
+    use wce_formats::binary_reader::BinaryReader;
+    use wce_formats::binary_writer::BinaryWriter;
+    use wce_formats::BinaryConverter;
+    use wce_formats::GameVersion::{RoC, TFT};
     use wce_formats::MapArchive;
+
+    #[cfg(test)]
+    use pretty_assertions::assert_eq;
 
     use crate::{get_resources_path, trigger_jass_file::TriggerJassFile};
 
@@ -126,5 +160,147 @@ mod trigger_jass_test {
         let map_path = get_path("Scenario/Sandbox_1.w3x");
         let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
         TriggerJassFile::read_file(&mut map).unwrap_or_else(|e| panic!("{}", e));
+    }
+
+    #[test]
+    fn trigger_jass_roc_test() {
+        let map_path = get_path("Scenario/Sandbox_1.w3m");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        let jass = TriggerJassFile::read_file(&mut map).unwrap_or_else(|e| panic!("{}", e));
+
+        // Basic validation for RoC file
+        assert_eq!(jass.version, RoC);
+        assert!(jass.global_comment.is_empty()); // RoC doesn't have global comment
+        assert!(jass.global_script.is_empty()); // RoC doesn't have global script
+    }
+
+    #[test]
+    fn trigger_jass_tft_test() {
+        let map_path = get_path("Scenario/Sandbox_1.w3x");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        let jass = TriggerJassFile::read_file(&mut map).unwrap_or_else(|e| panic!("{}", e));
+
+        // Basic validation for TFT file
+        assert_eq!(jass.version, TFT);
+        // TFT can have global comment and script (may be empty)
+    }
+
+    #[test]
+    fn write_read_roundtrip_roc() {
+        // Read original data from map archive
+        let map_path = get_path("Scenario/Sandbox_1.w3m");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        let original_jass =
+            TriggerJassFile::read_file(&mut map).unwrap_or_else(|e| panic!("{}", e));
+
+        // Write to buffer
+        let mut writer = BinaryWriter::new();
+        original_jass
+            .write(&mut writer)
+            .expect("Failed to write TriggerJassFile");
+
+        // Read back from buffer
+        let buffer = writer.into_buffer();
+        let mut reader = BinaryReader::new(buffer);
+        let written_jass = reader
+            .read::<TriggerJassFile>()
+            .unwrap_or_else(|e| panic!("Failed to read back: {}", e));
+
+        // Compare
+        assert_eq!(original_jass.version, written_jass.version);
+        assert_eq!(original_jass.global_comment, written_jass.global_comment);
+        assert_eq!(original_jass.global_script, written_jass.global_script);
+        assert_eq!(
+            original_jass.triggers_script.len(),
+            written_jass.triggers_script.len()
+        );
+
+        // Compare each trigger script
+        for (original, written) in original_jass
+            .triggers_script
+            .iter()
+            .zip(written_jass.triggers_script.iter())
+        {
+            assert_eq!(original, written);
+        }
+    }
+
+    #[test]
+    fn write_read_roundtrip_tft() {
+        // Read original data from map archive
+        let map_path = get_path("Scenario/Sandbox_1.w3x");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        let original_jass =
+            TriggerJassFile::read_file(&mut map).unwrap_or_else(|e| panic!("{}", e));
+
+        // Write to buffer
+        let mut writer = BinaryWriter::new();
+        original_jass
+            .write(&mut writer)
+            .expect("Failed to write TriggerJassFile");
+
+        // Read back from buffer
+        let buffer = writer.into_buffer();
+        let mut reader = BinaryReader::new(buffer);
+        let written_jass = reader
+            .read::<TriggerJassFile>()
+            .unwrap_or_else(|e| panic!("Failed to read back: {}", e));
+
+        // Compare
+        assert_eq!(original_jass.version, written_jass.version);
+        assert_eq!(original_jass.global_comment, written_jass.global_comment);
+        assert_eq!(original_jass.global_script, written_jass.global_script);
+        assert_eq!(
+            original_jass.triggers_script.len(),
+            written_jass.triggers_script.len()
+        );
+
+        // Compare each trigger script
+        for (original, written) in original_jass
+            .triggers_script
+            .iter()
+            .zip(written_jass.triggers_script.iter())
+        {
+            assert_eq!(original, written);
+        }
+    }
+
+    #[test]
+    fn test_empty_trigger_script_handling() {
+        // Create a test TriggerJassFile with empty trigger scripts
+        let jass = TriggerJassFile {
+            version: TFT,
+            global_comment: "Test comment".to_string(),
+            global_script: "// Test global script".to_string(),
+            triggers_script: vec![
+                "function test1() {}\n".to_string(),
+                "".to_string(), // Empty script
+                "function test2() {}\n".to_string(),
+            ],
+        };
+
+        // Write to buffer
+        let mut writer = BinaryWriter::new();
+        jass.write(&mut writer)
+            .expect("Failed to write TriggerJassFile");
+
+        // Read back from buffer
+        let buffer = writer.into_buffer();
+        let mut reader = BinaryReader::new(buffer);
+        let written_jass = reader
+            .read::<TriggerJassFile>()
+            .unwrap_or_else(|e| panic!("Failed to read back: {}", e));
+
+        // Compare
+        assert_eq!(jass.version, written_jass.version);
+        assert_eq!(jass.global_comment, written_jass.global_comment);
+        assert_eq!(jass.global_script, written_jass.global_script);
+        assert_eq!(
+            jass.triggers_script.len(),
+            written_jass.triggers_script.len()
+        );
+        assert_eq!(jass.triggers_script[0], written_jass.triggers_script[0]);
+        assert_eq!(jass.triggers_script[1], ""); // Empty script should remain empty
+        assert_eq!(jass.triggers_script[2], written_jass.triggers_script[2]);
     }
 }
