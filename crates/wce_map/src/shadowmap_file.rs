@@ -46,6 +46,8 @@ pub struct ShadowMapFile {
 }
 
 impl ShadowMapFile {
+    pub const FILE_NAME: &str = MAP_SHADERS;
+    
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
         let buffer = map
             .read_file(MAP_SHADERS)

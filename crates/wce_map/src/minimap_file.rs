@@ -29,6 +29,8 @@ pub struct MinimapFile {
 }
 
 impl MinimapFile {
+    pub const FILE_NAME: &str = MAP_MINIMAP;
+    
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
         let buffer = map.read_file(MAP_MINIMAP).map_err(MinimapError::MpqError)?;
         let mut reader = BinaryReader::try_from(buffer).map_err(MinimapError::InitReader)?;

@@ -432,6 +432,8 @@ pub struct W3iFile {
 }
 
 impl W3iFile {
+    pub const FILE_NAME: &str = MAP_INFOS;
+
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
         let buffer = map.read_file(MAP_INFOS).map_err(InfoError::MpqError)?;
         let mut reader = BinaryReader::try_from(buffer).map_err(InfoError::InitReader)?;

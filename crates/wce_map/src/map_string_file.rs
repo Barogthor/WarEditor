@@ -39,6 +39,8 @@ pub struct MapStringFile {
 }
 
 impl MapStringFile {
+    pub const FILE_NAME: &str = MAP_STRINGS;
+    
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
         let buffer = map
             .read_file(MAP_STRINGS)

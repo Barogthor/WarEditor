@@ -35,6 +35,8 @@ pub struct CustomUpgradeFile {
 }
 
 impl CustomUpgradeFile {
+    pub const FILE_NAME: &str = MAP_CUSTOM_UPGRADES;
+    
     pub fn read_file(
         map: &mut MapArchive,
         game_version: &GameVersion,

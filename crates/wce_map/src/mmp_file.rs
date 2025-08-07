@@ -71,6 +71,8 @@ impl BinaryConverter for MMPFile {
 }
 
 impl MMPFile {
+    pub const FILE_NAME: &str = MAP_MENU_MINIMAP;
+    
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
         let buffer = map
             .read_file(MAP_MENU_MINIMAP)

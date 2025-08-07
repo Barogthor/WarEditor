@@ -86,6 +86,8 @@ pub struct CameraFile {
 }
 
 impl CameraFile {
+    pub const FILE_NAME: &str = MAP_CAMERAS;
+
     pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, OpeningError> {
         let file = map.read_file(MAP_CAMERAS);
         match file {

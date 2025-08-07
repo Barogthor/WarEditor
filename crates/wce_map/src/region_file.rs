@@ -91,6 +91,8 @@ pub struct RegionFile {
 }
 
 impl RegionFile {
+    pub const FILE_NAME: &str = MAP_REGIONS;
+    
     pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, OpeningError> {
         let file = map.read_file(MAP_REGIONS);
 

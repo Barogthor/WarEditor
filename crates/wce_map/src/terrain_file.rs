@@ -120,6 +120,8 @@ pub struct TerrainFile {
 }
 
 impl TerrainFile {
+    pub const FILE_NAME: &str = MAP_TERRAIN;
+    
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
         let buffer = map.read_file(MAP_TERRAIN).map_err(TerrainError::MpqError)?;
         let mut reader = BinaryReader::try_from(buffer).map_err(TerrainError::InitReader)?;

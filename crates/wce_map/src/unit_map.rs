@@ -469,6 +469,8 @@ pub struct UnitItemMap {
 }
 
 impl UnitItemMap {
+    pub const FILE_NAME: &str = MAP_TERRAIN_UNITS;
+
     pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
         let buffer = map
             .read_file(MAP_TERRAIN_UNITS)

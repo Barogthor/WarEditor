@@ -35,6 +35,8 @@ pub struct CustomBuffFile {
 }
 
 impl CustomBuffFile {
+    pub const FILE_NAME: &str = MAP_CUSTOM_BUFFS;
+    
     pub fn read_file(
         map: &mut MapArchive,
         game_version: &GameVersion,

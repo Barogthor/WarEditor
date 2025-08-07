@@ -130,6 +130,8 @@ pub struct TriggersFile {
 }
 
 impl TriggersFile {
+    pub const FILE_NAME: &str = MAP_TRIGGERS;
+
     pub fn read_file(map: &mut MapArchive, trigger_data: &DataIni) -> Result<Self, OpeningError> {
         let buffer = map
             .read_file(MAP_TRIGGERS)

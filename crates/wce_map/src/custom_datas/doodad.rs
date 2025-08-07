@@ -35,6 +35,8 @@ pub struct CustomDoodadFile {
 }
 
 impl CustomDoodadFile {
+    pub const FILE_NAME: &str = MAP_CUSTOM_DOODADS;
+    
     pub fn read_file(
         map: &mut MapArchive,
         game_version: &GameVersion,

@@ -35,6 +35,8 @@ pub struct ImportFile {
 }
 
 impl ImportFile {
+    pub const FILE_NAME: &str = MAP_IMPORT_LIST;
+    
     pub fn read_file(
         map: &mut MapArchive,
         game_version: &GameVersion,
