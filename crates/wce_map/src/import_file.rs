@@ -64,6 +64,13 @@ impl ImportFile {
             Ok(None)
         }
     }
+
+    pub fn prepare_write(&self, game_version: &GameVersion) -> WriteResult<BinaryWriter> {
+        let mut writer = BinaryWriter::new();
+        writer.write_version(self, game_version)?;
+        Ok(writer)
+    }
+
     pub fn debug(&self) {
         println!("{self:#?}");
     }

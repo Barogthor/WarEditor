@@ -108,6 +108,12 @@ impl CameraFile {
         }
     }
 
+    pub fn prepare_write(&self) -> WriteResult<BinaryWriter> {
+        let mut writer = BinaryWriter::new();
+        writer.write(self)?;
+        Ok(writer)
+    }
+
     pub fn debug(&self) {
         println!("{self:#?}");
     }

@@ -443,6 +443,12 @@ impl W3iFile {
             .map_err(From::from)
     }
 
+    pub fn prepare_write(&self) -> WriteResult<BinaryWriter> {
+        let mut writer = BinaryWriter::new();
+        writer.write(self)?;
+        Ok(writer)
+    }
+
     pub fn game_version(&self) -> GameVersion {
         self.version
     }

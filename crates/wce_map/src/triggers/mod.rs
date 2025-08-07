@@ -141,7 +141,13 @@ impl TriggersFile {
         Ok(res)
     }
 
-    pub fn save(&self, writer: &mut BinaryWriter, trigger_data: &DataIni) -> Result<(), WtgError> {
+    pub fn prepare_write(&self, trigger_data: &DataIni) -> Result<BinaryWriter, WtgError> {
+        let mut writer = BinaryWriter::new();
+        self.write(&mut writer, trigger_data)?;
+        Ok(writer)
+    }
+
+    fn write(&self, writer: &mut BinaryWriter, trigger_data: &DataIni) -> Result<(), WtgError> {
         writer.write_string_utf8(&self.id)?;
         writer.write_u32(from_game_version(&self.version))?;
         writer.write_u32(self.categories.len() as u32)?;

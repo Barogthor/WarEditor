@@ -216,7 +216,7 @@ mod triggers_file_write_tests {
         // Write to buffer
         let mut writer = BinaryWriter::new();
         original_triggers
-            .save(&mut writer, game_data.get_trigger_data())
+            .write(&mut writer, game_data.get_trigger_data())
             .expect("Failed to write TriggersFile");
 
         // Read back from buffer
@@ -249,7 +249,7 @@ mod triggers_file_write_tests {
         // Write to buffer
         let mut writer = BinaryWriter::new();
         original_triggers
-            .save(&mut writer, game_data.get_trigger_data())
+            .write(&mut writer, game_data.get_trigger_data())
             .expect("Failed to write TriggersFile");
 
         // Read back from buffer

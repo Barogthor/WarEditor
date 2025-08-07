@@ -479,6 +479,12 @@ impl UnitItemMap {
         let unit_map = reader.read::<Self>().map_err(UnitMapError::Parsing)?;
         Ok(unit_map)
     }
+
+    pub fn prepare_write(&self) -> WriteResult<BinaryWriter> {
+        let mut writer = BinaryWriter::new();
+        writer.write(self)?;
+        Ok(writer)
+    }
 }
 
 impl BinaryConverter for UnitItemMap {

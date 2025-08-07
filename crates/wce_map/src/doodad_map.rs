@@ -200,6 +200,12 @@ impl DoodadMap {
         let doodads = reader.read::<DoodadMap>().map_err(DoodadError::Parsing)?;
         Ok(doodads)
     }
+
+    pub fn prepare_write(&self) -> WriteResult<BinaryWriter> {
+        let mut writer = BinaryWriter::new();
+        writer.write(self)?;
+        Ok(writer)
+    }
 }
 
 impl BinaryConverter for DoodadMap {

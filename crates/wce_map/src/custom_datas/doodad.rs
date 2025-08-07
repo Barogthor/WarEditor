@@ -94,7 +94,13 @@ impl CustomDoodadFile {
         })
     }
 
-    pub fn write(&self, writer: &mut BinaryWriter, _game_version: &GameVersion) -> WriteResult<()> {
+    pub fn prepare_write(&self, game_version: &GameVersion) -> WriteResult<BinaryWriter> {
+        let mut writer = BinaryWriter::new();
+        self.write(&mut writer, game_version)?;
+        Ok(writer)
+    }
+
+    fn write(&self, writer: &mut BinaryWriter, _game_version: &GameVersion) -> WriteResult<()> {
         if !self.original_objects.is_empty() || !self.custom_objects.is_empty() {
             writer.write_u32(self.version)?;
             writer.write_u32(self.original_objects.len() as u32)?;
