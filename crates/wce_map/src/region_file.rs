@@ -8,10 +8,10 @@ use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::MapArchive;
-use wce_formats::{BinaryConverter, MpqError, ReadError};
+use wce_formats::{BinaryConverter, MpqError, ReadError, WriteError};
 
 use crate::globals::MAP_REGIONS;
-use crate::OpeningError;
+use crate::MapError;
 
 #[derive(Debug, Error)]
 pub enum RegionError {
@@ -21,10 +21,12 @@ pub enum RegionError {
     InitReader(ReadError),
     #[error("Failed to parse regions datas. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save region data. {0}")]
+    SaveError(WriteError),
 }
-impl From<RegionError> for OpeningError {
+impl From<RegionError> for MapError {
     fn from(value: RegionError) -> Self {
-        OpeningError::Region(value)
+        MapError::Region(value)
     }
 }
 
@@ -92,8 +94,8 @@ pub struct RegionFile {
 
 impl RegionFile {
     pub const FILE_NAME: &str = MAP_REGIONS;
-    
-    pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, OpeningError> {
+
+    pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, MapError> {
         let file = map.read_file(MAP_REGIONS);
 
         match file {
@@ -105,7 +107,7 @@ impl RegionFile {
         }
     }
 
-    fn read_opt(reader: &mut BinaryReader) -> Result<Option<Self>, OpeningError> {
+    fn read_opt(reader: &mut BinaryReader) -> Result<Option<Self>, MapError> {
         if reader.size() > 0 {
             let regions = reader.read::<RegionFile>().map_err(RegionError::Parsing)?;
             Ok(Some(regions))
@@ -114,9 +116,9 @@ impl RegionFile {
         }
     }
 
-    pub fn prepare_write(&self) -> WriteResult<BinaryWriter> {
+    pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        writer.write(self)?;
+        writer.write(self).map_err(RegionError::SaveError)?;
         Ok(writer)
     }
 

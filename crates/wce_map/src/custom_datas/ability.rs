@@ -4,11 +4,11 @@ use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::MapArchive;
-use wce_formats::{GameVersion, MpqError, ReadError};
+use wce_formats::{GameVersion, MpqError, ReadError, WriteError};
 
 use crate::custom_datas::ObjectDefinition;
 use crate::globals::MAP_CUSTOM_ABILITIES;
-use crate::OpeningError;
+use crate::MapError;
 
 use super::ObjectId;
 
@@ -20,10 +20,12 @@ pub enum CustomAbilityError {
     InitReader(ReadError),
     #[error("Failed to parse custom abilities datas. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save custom ability data. {0}")]
+    SaveError(WriteError),
 }
-impl From<CustomAbilityError> for OpeningError {
+impl From<CustomAbilityError> for MapError {
     fn from(value: CustomAbilityError) -> Self {
-        OpeningError::CustomAbility(value)
+        MapError::CustomAbility(value)
     }
 }
 
@@ -40,7 +42,7 @@ impl CustomAbilityFile {
     pub fn read_file(
         map: &mut MapArchive,
         game_version: &GameVersion,
-    ) -> Result<Option<CustomAbilityFile>, OpeningError> {
+    ) -> Result<Option<CustomAbilityFile>, MapError> {
         let file = map.read_file(MAP_CUSTOM_ABILITIES);
         match file {
             Ok(buffer) => {
@@ -55,7 +57,7 @@ impl CustomAbilityFile {
     fn read_opt(
         reader: &mut BinaryReader,
         game_version: &GameVersion,
-    ) -> Result<Option<Self>, OpeningError> {
+    ) -> Result<Option<Self>, MapError> {
         if reader.size() > 0 {
             let custom_ability =
                 Self::parse(reader, game_version).map_err(CustomAbilityError::Parsing)?;
@@ -94,9 +96,10 @@ impl CustomAbilityFile {
         })
     }
 
-    pub fn prepare_write(&self, game_version: &GameVersion) -> WriteResult<BinaryWriter> {
+    pub fn prepare_write(&self, game_version: &GameVersion) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        self.write(&mut writer, game_version)?;
+        self.write(&mut writer, game_version)
+            .map_err(CustomAbilityError::SaveError)?;
         Ok(writer)
     }
 

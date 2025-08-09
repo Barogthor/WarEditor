@@ -5,14 +5,14 @@ use wce_formats::binary_reader::BinaryReader;
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{self, RoC, TFT};
 // use log::{debug, error, info, trace, warn};
-use wce_formats::{MapArchive, MpqError, ReadError};
+use wce_formats::{MapArchive, MpqError, ReadError, WriteError};
 
 use crate::data_ini::DataIni;
 use crate::globals::MAP_TRIGGERS;
 use crate::triggers::enums::WtgError::{self, UnknownGameVersion};
 use crate::triggers::misc::{TriggerCategory, VariableDefinition};
 use crate::triggers::trigger_data::ECADefinition;
-use crate::OpeningError;
+use crate::MapError;
 
 mod enums;
 mod misc;
@@ -27,10 +27,12 @@ pub enum TriggersError {
     InitReader(#[from] ReadError),
     #[error("Failed to parse trigger data. {0}")]
     Parsing(#[from] WtgError),
+    #[error("Failed to save trigger data. {0}")]
+    SaveError(WriteError),
 }
-impl From<TriggersError> for OpeningError {
+impl From<TriggersError> for MapError {
     fn from(value: TriggersError) -> Self {
-        OpeningError::Triggers(value)
+        MapError::Triggers(value)
     }
 }
 
@@ -132,7 +134,7 @@ pub struct TriggersFile {
 impl TriggersFile {
     pub const FILE_NAME: &str = MAP_TRIGGERS;
 
-    pub fn read_file(map: &mut MapArchive, trigger_data: &DataIni) -> Result<Self, OpeningError> {
+    pub fn read_file(map: &mut MapArchive, trigger_data: &DataIni) -> Result<Self, MapError> {
         let buffer = map
             .read_file(MAP_TRIGGERS)
             .map_err(TriggersError::MpqError)?;
@@ -141,7 +143,7 @@ impl TriggersFile {
         Ok(res)
     }
 
-    pub fn prepare_write(&self, trigger_data: &DataIni) -> Result<BinaryWriter, WtgError> {
+    pub fn prepare_write(&self, trigger_data: &DataIni) -> Result<BinaryWriter, TriggersError> {
         let mut writer = BinaryWriter::new();
         self.write(&mut writer, trigger_data)?;
         Ok(writer)

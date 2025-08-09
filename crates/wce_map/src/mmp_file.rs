@@ -4,10 +4,10 @@ use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::MapArchive;
-use wce_formats::{BinaryConverter, MpqError, ReadError};
+use wce_formats::{BinaryConverter, MpqError, ReadError, WriteError};
 
 use crate::globals::MAP_MENU_MINIMAP;
-use crate::OpeningError;
+use crate::MapError;
 
 type RGBA = Vec<u8>;
 #[derive(Debug, Error)]
@@ -18,10 +18,12 @@ pub enum MenuMinimapError {
     InitReader(ReadError),
     #[error("Failed to parse menu minimap datas. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save menu minimap data. {0}")]
+    SaveError(WriteError),
 }
-impl From<MenuMinimapError> for OpeningError {
+impl From<MenuMinimapError> for MapError {
     fn from(value: MenuMinimapError) -> Self {
-        OpeningError::MenuMinimap(value)
+        MapError::MenuMinimap(value)
     }
 }
 
@@ -72,8 +74,8 @@ impl BinaryConverter for MMPFile {
 
 impl MMPFile {
     pub const FILE_NAME: &str = MAP_MENU_MINIMAP;
-    
-    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
+
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, MapError> {
         let buffer = map
             .read_file(MAP_MENU_MINIMAP)
             .map_err(MenuMinimapError::MpqError)?;
@@ -82,6 +84,11 @@ impl MMPFile {
             .read::<MMPFile>()
             .map_err(MenuMinimapError::Parsing)?;
         Ok(mmp)
+    }
+
+    pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
+        let writer = BinaryWriter::new();
+        unimplemented!()
     }
 
     pub fn debug(&self) {

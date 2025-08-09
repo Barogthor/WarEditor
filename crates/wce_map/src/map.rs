@@ -26,7 +26,7 @@ use crate::trigger_jass_file::TriggerJassFile;
 use crate::triggers::TriggersFile;
 use crate::unit_map::UnitItemMap;
 use crate::w3i_file::W3iFile;
-use crate::{GameData, OpeningError};
+use crate::{GameData, MapError};
 
 pub struct Map<'a> {
     game_data: &'a GameData,
@@ -56,8 +56,8 @@ pub struct Map<'a> {
 }
 
 impl<'a> Map<'a> {
-    pub fn open(path: String, game_data: &'a GameData) -> Result<Self, OpeningError> {
-        let mut map = MapArchive::open(path.to_owned()).map_err(OpeningError::Protected)?;
+    pub fn open(path: String, game_data: &'a GameData) -> Result<Self, MapError> {
+        let mut map = MapArchive::open(path.to_owned()).map_err(MapError::Protected)?;
 
         let w3i = W3iFile::read_file(&mut map)?;
         let game_version = w3i.game_version();
@@ -131,7 +131,7 @@ impl<'a> Map<'a> {
         f.write_all(&writer.into_buffer()).unwrap();
     }
 
-    pub fn save(&self, path: String, game_data: &'a GameData) -> WriteResult<()> {
+    pub fn save(&self, path: String, game_data: &'a GameData) -> Result<(), MapError> {
         let path_fn = |file_name: &str| format!("{path}/{file_name}");
         let game_version = self.infos.game_version();
         Self::save_file(self.infos.prepare_write()?, &path_fn(W3iFile::FILE_NAME));
@@ -139,6 +139,9 @@ impl<'a> Map<'a> {
             self.terrain.prepare_write()?,
             &path_fn(TerrainFile::FILE_NAME),
         );
+        // Self::save_file(self.menu_minimap.prepare_write()?, MMPFile::FILE_NAME);
+        // Self::save_file(self.minimap.prepare_write()?, MinimapFile::FILE_NAME);
+        // Self::save_file(self.shaders.prepare_write()?, ShadowMapFile::FILE_NAME);
         if let Some(f) = &self.cameras {
             Self::save_file(f.prepare_write()?, &path_fn(CameraFile::FILE_NAME));
         }
@@ -214,9 +217,9 @@ impl<'a> Map<'a> {
 
 #[cfg(test)]
 mod map_tests {
-    use std::fs;
     use super::Map;
     use crate::{get_resources_path, GameData};
+    use std::fs;
 
     fn get_path(path_resource: &str) -> String {
         let base_path = get_resources_path();
@@ -226,7 +229,7 @@ mod map_tests {
     #[test]
     fn map_open_save_roundtrip_roc() {
         let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
-        
+
         // Open RoC map (Sandbox_1.w3m)
         let map_path = get_path("Scenario/Sandbox_1.w3m");
         let map = Map::open(map_path.clone(), &game_data)
@@ -248,21 +251,36 @@ mod map_tests {
         let triggers_path = format!("{}/war3map.wtg", output_dir);
         let units_path = format!("{}/war3mapUnits.doo", output_dir);
 
-        assert!(fs::metadata(&w3i_path).is_ok(), "war3map.w3i should be created");
-        assert!(fs::metadata(&env_path).is_ok(), "war3map.w3e should be created");
-        assert!(fs::metadata(&triggers_path).is_ok(), "war3map.wtg should be created");
-        assert!(fs::metadata(&units_path).is_ok(), "war3mapUnits.doo should be created");
+        assert!(
+            fs::metadata(&w3i_path).is_ok(),
+            "war3map.w3i should be created"
+        );
+        assert!(
+            fs::metadata(&env_path).is_ok(),
+            "war3map.w3e should be created"
+        );
+        assert!(
+            fs::metadata(&triggers_path).is_ok(),
+            "war3map.wtg should be created"
+        );
+        assert!(
+            fs::metadata(&units_path).is_ok(),
+            "war3mapUnits.doo should be created"
+        );
 
-        println!("RoC map open/save test passed. Files saved to: {}", output_dir);
-        
+        println!(
+            "RoC map open/save test passed. Files saved to: {}",
+            output_dir
+        );
+
         // Clean up
         let _ = fs::remove_dir_all(&output_dir);
     }
 
-    #[test] 
+    #[test]
     fn map_open_save_roundtrip_tft() {
         let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
-        
+
         // Open TFT map (Sandbox_1.w3x)
         let map_path = get_path("Scenario/Sandbox_1.w3x");
         let map = Map::open(map_path.clone(), &game_data)
@@ -284,13 +302,28 @@ mod map_tests {
         let triggers_path = format!("{}/war3map.wtg", output_dir);
         let units_path = format!("{}/war3mapUnits.doo", output_dir);
 
-        assert!(fs::metadata(&w3i_path).is_ok(), "war3map.w3i should be created");
-        assert!(fs::metadata(&env_path).is_ok(), "war3map.w3e should be created");
-        assert!(fs::metadata(&triggers_path).is_ok(), "war3map.wtg should be created");
-        assert!(fs::metadata(&units_path).is_ok(), "war3mapUnits.doo should be created");
+        assert!(
+            fs::metadata(&w3i_path).is_ok(),
+            "war3map.w3i should be created"
+        );
+        assert!(
+            fs::metadata(&env_path).is_ok(),
+            "war3map.w3e should be created"
+        );
+        assert!(
+            fs::metadata(&triggers_path).is_ok(),
+            "war3map.wtg should be created"
+        );
+        assert!(
+            fs::metadata(&units_path).is_ok(),
+            "war3mapUnits.doo should be created"
+        );
 
-        println!("TFT map open/save test passed. Files saved to: {}", output_dir);
-        
+        println!(
+            "TFT map open/save test passed. Files saved to: {}",
+            output_dir
+        );
+
         // Clean up
         let _ = fs::remove_dir_all(&output_dir);
     }
@@ -298,44 +331,46 @@ mod map_tests {
     #[test]
     fn map_open_save_both_formats_comparison() {
         let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
-        
+
         // Test both formats
         let roc_map_path = get_path("Scenario/Sandbox_1.w3m");
         let tft_map_path = get_path("Scenario/Sandbox_1.w3x");
-        
+
         let roc_map = Map::open(roc_map_path, &game_data)
             .unwrap_or_else(|e| panic!("Failed to open RoC map: {:?}", e));
-            
+
         let tft_map = Map::open(tft_map_path, &game_data)
             .unwrap_or_else(|e| panic!("Failed to open TFT map: {:?}", e));
 
         // Create output directories
         let roc_output = get_path("Scenario/write-test-roc-comp");
         let tft_output = get_path("Scenario/write-test-tft-comp");
-        
+
         let _ = fs::remove_dir_all(&roc_output);
         let _ = fs::remove_dir_all(&tft_output);
         fs::create_dir_all(&roc_output).unwrap();
         fs::create_dir_all(&tft_output).unwrap();
 
         // Save both maps
-        roc_map.save(roc_output.clone(), &game_data)
+        roc_map
+            .save(roc_output.clone(), &game_data)
             .unwrap_or_else(|e| panic!("Failed to save RoC map: {:?}", e));
-            
-        tft_map.save(tft_output.clone(), &game_data) 
+
+        tft_map
+            .save(tft_output.clone(), &game_data)
             .unwrap_or_else(|e| panic!("Failed to save TFT map: {:?}", e));
 
         // Check that triggers file was written with correct format
         let roc_triggers = format!("{}/war3map.wtg", roc_output);
         let tft_triggers = format!("{}/war3map.wtg", tft_output);
-        
+
         let roc_triggers_data = fs::read(&roc_triggers).unwrap();
         let tft_triggers_data = fs::read(&tft_triggers).unwrap();
-        
+
         // RoC and TFT triggers should have different sizes/content due to version differences
         println!("RoC triggers size: {} bytes", roc_triggers_data.len());
         println!("TFT triggers size: {} bytes", tft_triggers_data.len());
-        
+
         // Clean up
         let _ = fs::remove_dir_all(&roc_output);
         let _ = fs::remove_dir_all(&tft_output);
@@ -347,26 +382,26 @@ mod map_tests {
     #[ignore] // Ignored by default, run with: cargo test -- --ignored
     fn map_save_persistent_files() {
         let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
-        
+
         // Open both maps and save to persistent directories (no cleanup)
         let roc_map = Map::open(get_path("Scenario/Sandbox_1.w3m"), &game_data).unwrap();
         let tft_map = Map::open(get_path("Scenario/Sandbox_1.w3x"), &game_data).unwrap();
-        
+
         let roc_output = get_path("Scenario/write-test-roc-persistent");
         let tft_output = get_path("Scenario/write-test-tft-persistent");
-        
+
         let _ = fs::remove_dir_all(&roc_output);
         let _ = fs::remove_dir_all(&tft_output);
         fs::create_dir_all(&roc_output).unwrap();
         fs::create_dir_all(&tft_output).unwrap();
-        
+
         roc_map.save(roc_output.clone(), &game_data).unwrap();
         tft_map.save(tft_output.clone(), &game_data).unwrap();
-        
+
         println!("Files saved persistently to:");
         println!("  RoC: {}", roc_output);
         println!("  TFT: {}", tft_output);
-        
+
         // List files created
         if let Ok(entries) = fs::read_dir(&roc_output) {
             println!("RoC files created:");
@@ -376,7 +411,7 @@ mod map_tests {
                 }
             }
         }
-        
+
         if let Ok(entries) = fs::read_dir(&tft_output) {
             println!("TFT files created:");
             for entry in entries {

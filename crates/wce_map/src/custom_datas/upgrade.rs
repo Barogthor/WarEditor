@@ -4,11 +4,11 @@ use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::MapArchive;
-use wce_formats::{GameVersion, MpqError, ReadError};
+use wce_formats::{GameVersion, MpqError, ReadError, WriteError};
 
 use crate::custom_datas::ObjectDefinition;
 use crate::globals::MAP_CUSTOM_UPGRADES;
-use crate::OpeningError;
+use crate::MapError;
 
 use super::ObjectId;
 
@@ -20,10 +20,12 @@ pub enum CustomUpgradeError {
     InitReader(ReadError),
     #[error("Failed to parse custom upgrades datas. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save custom upgrade data. {0}")]
+    SaveError(WriteError),
 }
-impl From<CustomUpgradeError> for OpeningError {
+impl From<CustomUpgradeError> for MapError {
     fn from(value: CustomUpgradeError) -> Self {
-        OpeningError::CustomUpgrade(value)
+        MapError::CustomUpgrade(value)
     }
 }
 
@@ -36,11 +38,11 @@ pub struct CustomUpgradeFile {
 
 impl CustomUpgradeFile {
     pub const FILE_NAME: &str = MAP_CUSTOM_UPGRADES;
-    
+
     pub fn read_file(
         map: &mut MapArchive,
         game_version: &GameVersion,
-    ) -> Result<Option<Self>, OpeningError> {
+    ) -> Result<Option<Self>, MapError> {
         let file = map.read_file(MAP_CUSTOM_UPGRADES);
         match file {
             Ok(buffer) => {
@@ -55,7 +57,7 @@ impl CustomUpgradeFile {
     fn read_opt(
         reader: &mut BinaryReader,
         game_version: &GameVersion,
-    ) -> Result<Option<Self>, OpeningError> {
+    ) -> Result<Option<Self>, MapError> {
         if reader.size() > 0 {
             let custom_upgrade =
                 Self::parse(reader, game_version).map_err(CustomUpgradeError::Parsing)?;
@@ -94,9 +96,10 @@ impl CustomUpgradeFile {
         })
     }
 
-    pub fn prepare_write(&self, game_version: &GameVersion) -> WriteResult<BinaryWriter> {
+    pub fn prepare_write(&self, game_version: &GameVersion) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        self.write(&mut writer, game_version)?;
+        self.write(&mut writer, game_version)
+            .map_err(CustomUpgradeError::SaveError)?;
         Ok(writer)
     }
 

@@ -32,10 +32,10 @@ use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::GameVersion::{Reforged, RoC, TFT};
 use wce_formats::MapArchive;
-use wce_formats::{BinaryConverter, GameVersion, MpqError, ReadError};
+use wce_formats::{BinaryConverter, GameVersion, MpqError, ReadError, WriteError};
 
 use crate::globals::MAP_INFOS;
-use crate::OpeningError;
+use crate::MapError;
 
 #[derive(Debug, Error)]
 pub enum InfoError {
@@ -45,10 +45,12 @@ pub enum InfoError {
     InitReader(ReadError),
     #[error("Failed to parse infos datas. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save map info data. {0}")]
+    SaveError(WriteError),
 }
-impl From<InfoError> for OpeningError {
+impl From<InfoError> for MapError {
     fn from(value: InfoError) -> Self {
-        OpeningError::Info(value)
+        MapError::Info(value)
     }
 }
 
@@ -434,7 +436,7 @@ pub struct W3iFile {
 impl W3iFile {
     pub const FILE_NAME: &str = MAP_INFOS;
 
-    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, MapError> {
         let buffer = map.read_file(MAP_INFOS).map_err(InfoError::MpqError)?;
         let mut reader = BinaryReader::try_from(buffer).map_err(InfoError::InitReader)?;
         reader
@@ -443,9 +445,9 @@ impl W3iFile {
             .map_err(From::from)
     }
 
-    pub fn prepare_write(&self) -> WriteResult<BinaryWriter> {
+    pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        writer.write(self)?;
+        writer.write(self).map_err(InfoError::SaveError)?;
         Ok(writer)
     }
 

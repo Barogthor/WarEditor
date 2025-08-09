@@ -5,12 +5,12 @@ use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::GameVersion::{self, RoC, TFT};
 use wce_formats::{BinaryConverter, BinaryConverterVersion};
-use wce_formats::{MapArchive, MpqError, ReadError};
+use wce_formats::{MapArchive, MpqError, ReadError, WriteError};
 
 use crate::doodad_map::DestructableFlag::{InvisibleNonSolid, VisibleNonSolid, VisibleSolid};
 use crate::globals::MAP_TERRAIN_DOODADS;
 use crate::unit_map::Drops;
-use crate::OpeningError;
+use crate::MapError;
 
 pub type Radian = f32;
 
@@ -22,10 +22,12 @@ pub enum DoodadError {
     InitReader(ReadError),
     #[error("Failed to parse doodads datas. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save doodads data. {0}")]
+    SaveError(WriteError),
 }
-impl From<DoodadError> for OpeningError {
+impl From<DoodadError> for MapError {
     fn from(value: DoodadError) -> Self {
-        OpeningError::Doodad(value)
+        MapError::Doodad(value)
     }
 }
 
@@ -192,7 +194,7 @@ pub struct DoodadMap {
 impl DoodadMap {
     pub const FILE_NAME: &str = MAP_TERRAIN_DOODADS;
 
-    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, MapError> {
         let buffer = map
             .read_file(MAP_TERRAIN_DOODADS)
             .map_err(DoodadError::MpqError)?;
@@ -201,9 +203,9 @@ impl DoodadMap {
         Ok(doodads)
     }
 
-    pub fn prepare_write(&self) -> WriteResult<BinaryWriter> {
+    pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        writer.write(self)?;
+        writer.write(self).map_err(DoodadError::SaveError)?;
         Ok(writer)
     }
 }

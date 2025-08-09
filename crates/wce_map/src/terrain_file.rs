@@ -4,10 +4,10 @@ use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::MapArchive;
-use wce_formats::{BinaryConverter, MpqError, ReadError};
+use wce_formats::{BinaryConverter, MpqError, ReadError, WriteError};
 
 use crate::globals::MAP_TERRAIN;
-use crate::OpeningError;
+use crate::MapError;
 
 #[derive(Debug, Error)]
 pub enum TerrainError {
@@ -17,10 +17,12 @@ pub enum TerrainError {
     InitReader(ReadError),
     #[error("Failed to parse terrain data. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save terrain data. {0}")]
+    SaveError(WriteError),
 }
-impl From<TerrainError> for OpeningError {
+impl From<TerrainError> for MapError {
     fn from(value: TerrainError) -> Self {
-        OpeningError::Environment(value)
+        MapError::Environment(value)
     }
 }
 
@@ -121,8 +123,8 @@ pub struct TerrainFile {
 
 impl TerrainFile {
     pub const FILE_NAME: &str = MAP_TERRAIN;
-    
-    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
+
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, MapError> {
         let buffer = map.read_file(MAP_TERRAIN).map_err(TerrainError::MpqError)?;
         let mut reader = BinaryReader::try_from(buffer).map_err(TerrainError::InitReader)?;
         let terrain = reader
@@ -131,9 +133,9 @@ impl TerrainFile {
         Ok(terrain)
     }
 
-    pub fn prepare_write(&self) -> WriteResult<BinaryWriter> {
+    pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        writer.write(self)?;
+        writer.write(self).map_err(TerrainError::SaveError)?;
         Ok(writer)
     }
 

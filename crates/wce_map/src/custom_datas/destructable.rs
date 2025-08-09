@@ -4,11 +4,11 @@ use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::MapArchive;
-use wce_formats::{GameVersion, MpqError, ReadError};
+use wce_formats::{GameVersion, MpqError, ReadError, WriteError};
 
 use crate::custom_datas::ObjectDefinition;
 use crate::globals::MAP_CUSTOM_DESTRUCTABLES;
-use crate::OpeningError;
+use crate::MapError;
 
 use super::ObjectId;
 
@@ -20,10 +20,12 @@ pub enum CustomDestructableError {
     InitReader(ReadError),
     #[error("Failed to parse custom destructables datas. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save custom destructable data. {0}")]
+    SaveError(WriteError),
 }
-impl From<CustomDestructableError> for OpeningError {
+impl From<CustomDestructableError> for MapError {
     fn from(value: CustomDestructableError) -> Self {
-        OpeningError::CustomDestructable(value)
+        MapError::CustomDestructable(value)
     }
 }
 
@@ -40,7 +42,7 @@ impl CustomDestructableFile {
     pub fn read_file(
         map: &mut MapArchive,
         game_version: &GameVersion,
-    ) -> Result<Option<CustomDestructableFile>, OpeningError> {
+    ) -> Result<Option<CustomDestructableFile>, MapError> {
         let file = map.read_file(MAP_CUSTOM_DESTRUCTABLES);
         match file {
             Ok(buffer) => {
@@ -55,7 +57,7 @@ impl CustomDestructableFile {
     fn read_opt(
         reader: &mut BinaryReader,
         game_version: &GameVersion,
-    ) -> Result<Option<Self>, OpeningError> {
+    ) -> Result<Option<Self>, MapError> {
         if reader.size() > 0 {
             let custom_destructable =
                 Self::parse(reader, game_version).map_err(CustomDestructableError::Parsing)?;
@@ -94,9 +96,9 @@ impl CustomDestructableFile {
         })
     }
 
-    pub fn prepare_write(&self, game_version: &GameVersion) -> WriteResult<BinaryWriter> {
+    pub fn prepare_write(&self, game_version: &GameVersion) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        self.write(&mut writer, game_version)?;
+        self.write(&mut writer, game_version).map_err(CustomDestructableError::SaveError)?;
         Ok(writer)
     }
 

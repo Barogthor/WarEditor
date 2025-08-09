@@ -7,10 +7,10 @@ use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::MapArchive;
-use wce_formats::{BinaryConverter, MpqError, ReadError};
+use wce_formats::{BinaryConverter, MpqError, ReadError, WriteError};
 
 use crate::globals::MAP_SOUNDS;
-use crate::OpeningError;
+use crate::MapError;
 
 const DEFAULT_FLOAT: f32 = 4.294_967_3e9;
 
@@ -22,10 +22,12 @@ pub enum SoundError {
     InitReader(ReadError),
     #[error("Failed to parse sounds datas. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save sound data. {0}")]
+    SaveError(WriteError),
 }
-impl From<SoundError> for OpeningError {
+impl From<SoundError> for MapError {
     fn from(value: SoundError) -> Self {
-        OpeningError::Sound(value)
+        MapError::Sound(value)
     }
 }
 
@@ -148,8 +150,8 @@ pub struct SoundFile {
 
 impl SoundFile {
     pub const FILE_NAME: &str = MAP_SOUNDS;
-    
-    pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, OpeningError> {
+
+    pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, MapError> {
         let file = map.read_file(MAP_SOUNDS);
 
         match file {
@@ -161,7 +163,7 @@ impl SoundFile {
         }
     }
 
-    fn read_opt(reader: &mut BinaryReader) -> Result<Option<Self>, OpeningError> {
+    fn read_opt(reader: &mut BinaryReader) -> Result<Option<Self>, MapError> {
         if reader.size() > 0 {
             let sounds = reader.read::<SoundFile>().map_err(SoundError::Parsing)?;
             Ok(Some(sounds))
@@ -170,9 +172,9 @@ impl SoundFile {
         }
     }
 
-    pub fn prepare_write(&self) -> WriteResult<BinaryWriter> {
+    pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        writer.write(self)?;
+        writer.write(self).map_err(SoundError::SaveError)?;
         Ok(writer)
     }
 

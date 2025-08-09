@@ -6,10 +6,10 @@ use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::GameVersion::RoC;
 use wce_formats::{BinaryConverterVersion, GameVersion};
-use wce_formats::{MapArchive, MpqError, ReadError};
+use wce_formats::{MapArchive, MpqError, ReadError, WriteError};
 
 use crate::globals::MAP_IMPORT_LIST;
-use crate::OpeningError;
+use crate::MapError;
 
 type ImportPath = Vec<(ImportPathType, CString)>;
 
@@ -21,11 +21,13 @@ pub enum ImportError {
     InitReader(ReadError),
     #[error("Failed to parse imports datas. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save import data. {0}")]
+    SaveError(WriteError),
 }
 
-impl From<ImportError> for OpeningError {
+impl From<ImportError> for MapError {
     fn from(value: ImportError) -> Self {
-        OpeningError::Import(value)
+        MapError::Import(value)
     }
 }
 
@@ -36,11 +38,11 @@ pub struct ImportFile {
 
 impl ImportFile {
     pub const FILE_NAME: &str = MAP_IMPORT_LIST;
-    
+
     pub fn read_file(
         map: &mut MapArchive,
         game_version: &GameVersion,
-    ) -> Result<Option<Self>, OpeningError> {
+    ) -> Result<Option<Self>, MapError> {
         let file = map.read_file(MAP_IMPORT_LIST);
         match file {
             Ok(buffer) => {
@@ -54,7 +56,7 @@ impl ImportFile {
     fn read_opt(
         reader: &mut BinaryReader,
         game_version: &GameVersion,
-    ) -> Result<Option<Self>, OpeningError> {
+    ) -> Result<Option<Self>, MapError> {
         if reader.size() > 0 {
             let v = reader
                 .read_version::<ImportFile>(game_version)
@@ -65,9 +67,11 @@ impl ImportFile {
         }
     }
 
-    pub fn prepare_write(&self, game_version: &GameVersion) -> WriteResult<BinaryWriter> {
+    pub fn prepare_write(&self, game_version: &GameVersion) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        writer.write_version(self, game_version)?;
+        writer
+            .write_version(self, game_version)
+            .map_err(ImportError::SaveError)?;
         Ok(writer)
     }
 

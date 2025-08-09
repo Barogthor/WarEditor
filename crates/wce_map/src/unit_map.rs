@@ -8,14 +8,14 @@ use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::GameVersion::{self, RoC, TFT};
 use wce_formats::{BinaryConverter, BinaryConverterVersion};
-use wce_formats::{MapArchive, MpqError, ReadError};
+use wce_formats::{MapArchive, MpqError, ReadError, WriteError};
 
 use crate::doodad_map::Radian;
 use crate::globals::MAP_TERRAIN_UNITS;
 use crate::unit_map::RandomUnitItemFlag::{
     Neutral, NotRandom, RandomFromCustomTable, RandomFromTableGroup,
 };
-use crate::OpeningError;
+use crate::MapError;
 
 const RANDOM_ITEM_ID: &str = "iDNR";
 const RANDOM_UNIT_ID: &str = "uDNR";
@@ -30,10 +30,13 @@ pub enum UnitMapError {
     InitReader(ReadError),
     #[error("Failed to parse units map datas. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save units and items data. {0}")]
+    SaveError(WriteError),
 }
-impl From<UnitMapError> for OpeningError {
+
+impl From<UnitMapError> for MapError {
     fn from(value: UnitMapError) -> Self {
-        OpeningError::UnitItem(value)
+        MapError::UnitItem(value)
     }
 }
 
@@ -471,7 +474,7 @@ pub struct UnitItemMap {
 impl UnitItemMap {
     pub const FILE_NAME: &str = MAP_TERRAIN_UNITS;
 
-    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, MapError> {
         let buffer = map
             .read_file(MAP_TERRAIN_UNITS)
             .map_err(UnitMapError::MpqError)?;
@@ -480,9 +483,9 @@ impl UnitItemMap {
         Ok(unit_map)
     }
 
-    pub fn prepare_write(&self) -> WriteResult<BinaryWriter> {
+    pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        writer.write(self)?;
+        writer.write(self).map_err(UnitMapError::SaveError)?;
         Ok(writer)
     }
 }

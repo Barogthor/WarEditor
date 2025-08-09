@@ -5,10 +5,10 @@ use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::GameVersion::{RoC, TFT};
 use wce_formats::{BinaryConverter, GameVersion};
-use wce_formats::{MapArchive, MpqError, ReadError};
+use wce_formats::{MapArchive, MpqError, ReadError, WriteError};
 
 use crate::globals::MAP_TRIGGERS_SCRIPT;
-use crate::OpeningError;
+use crate::MapError;
 
 type TextScript = String;
 
@@ -20,10 +20,12 @@ pub enum TriggerJassError {
     InitReader(ReadError),
     #[error("Failed to parse custom triggers content. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save trigger JASS data. {0}")]
+    SaveError(WriteError),
 }
-impl From<TriggerJassError> for OpeningError {
+impl From<TriggerJassError> for MapError {
     fn from(value: TriggerJassError) -> Self {
-        OpeningError::CustomTextTrigger(value)
+        MapError::CustomTextTrigger(value)
     }
 }
 
@@ -38,7 +40,7 @@ pub struct TriggerJassFile {
 impl TriggerJassFile {
     pub const FILE_NAME: &str = MAP_TRIGGERS_SCRIPT;
 
-    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, MapError> {
         let buffer = map
             .read_file(MAP_TRIGGERS_SCRIPT)
             .map_err(TriggerJassError::MpqError)?;
@@ -49,9 +51,9 @@ impl TriggerJassFile {
         Ok(jass)
     }
 
-    pub fn prepare_write(&self) -> WriteResult<BinaryWriter> {
+    pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        writer.write(self)?;
+        writer.write(self).map_err(TriggerJassError::SaveError)?;
         Ok(writer)
     }
 

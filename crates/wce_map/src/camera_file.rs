@@ -7,10 +7,10 @@ use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::MapArchive;
-use wce_formats::{BinaryConverter, MpqError, ReadError};
+use wce_formats::{BinaryConverter, MpqError, ReadError, WriteError};
 
 use crate::globals::MAP_CAMERAS;
-use crate::OpeningError;
+use crate::MapError;
 
 type Degree = f32;
 
@@ -22,10 +22,12 @@ pub enum CameraError {
     InitReader(ReadError),
     #[error("Failed to parse cameras data. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save cameras data. {0}")]
+    SaveError(WriteError),
 }
-impl From<CameraError> for OpeningError {
+impl From<CameraError> for MapError {
     fn from(value: CameraError) -> Self {
-        OpeningError::Camera(value)
+        MapError::Camera(value)
     }
 }
 
@@ -88,7 +90,7 @@ pub struct CameraFile {
 impl CameraFile {
     pub const FILE_NAME: &str = MAP_CAMERAS;
 
-    pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, OpeningError> {
+    pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, MapError> {
         let file = map.read_file(MAP_CAMERAS);
         match file {
             Ok(buffer) => {
@@ -99,7 +101,7 @@ impl CameraFile {
         }
     }
 
-    fn read_opt(reader: &mut BinaryReader) -> Result<Option<Self>, OpeningError> {
+    fn read_opt(reader: &mut BinaryReader) -> Result<Option<Self>, MapError> {
         if reader.size() > 0 {
             let camera = reader.read::<CameraFile>().map_err(CameraError::Parsing)?;
             Ok(Some(camera))
@@ -108,9 +110,9 @@ impl CameraFile {
         }
     }
 
-    pub fn prepare_write(&self) -> WriteResult<BinaryWriter> {
+    pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        writer.write(self)?;
+        writer.write(self).map_err(CameraError::SaveError)?;
         Ok(writer)
     }
 

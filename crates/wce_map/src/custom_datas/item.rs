@@ -4,11 +4,11 @@ use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::MapArchive;
-use wce_formats::{GameVersion, MpqError, ReadError};
+use wce_formats::{GameVersion, MpqError, ReadError, WriteError};
 
 use crate::custom_datas::ObjectDefinition;
 use crate::globals::MAP_CUSTOM_ITEMS;
-use crate::OpeningError;
+use crate::MapError;
 
 use super::ObjectId;
 
@@ -20,10 +20,12 @@ pub enum CustomItemError {
     InitReader(ReadError),
     #[error("Failed to parse custom items datas. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save custom item data. {0}")]
+    SaveError(WriteError),
 }
-impl From<CustomItemError> for OpeningError {
+impl From<CustomItemError> for MapError {
     fn from(value: CustomItemError) -> Self {
-        OpeningError::CustomItem(value)
+        MapError::CustomItem(value)
     }
 }
 
@@ -40,7 +42,7 @@ impl CustomItemFile {
     pub fn read_file(
         map: &mut MapArchive,
         game_version: &GameVersion,
-    ) -> Result<Option<Self>, OpeningError> {
+    ) -> Result<Option<Self>, MapError> {
         let file = map.read_file(MAP_CUSTOM_ITEMS);
         match file {
             Ok(buffer) => {
@@ -55,7 +57,7 @@ impl CustomItemFile {
     fn read_opt(
         reader: &mut BinaryReader,
         game_version: &GameVersion,
-    ) -> Result<Option<Self>, OpeningError> {
+    ) -> Result<Option<Self>, MapError> {
         if reader.size() > 0 {
             let custom_item =
                 Self::parse(reader, game_version).map_err(CustomItemError::Parsing)?;
@@ -94,9 +96,9 @@ impl CustomItemFile {
         })
     }
 
-    pub fn prepare_write(&self, game_version: &GameVersion) -> WriteResult<BinaryWriter> {
+    pub fn prepare_write(&self, game_version: &GameVersion) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        self.write(&mut writer, game_version)?;
+        self.write(&mut writer, game_version).map_err(CustomItemError::SaveError)?;
         Ok(writer)
     }
 

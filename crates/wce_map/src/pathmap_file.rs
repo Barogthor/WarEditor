@@ -4,10 +4,10 @@ use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::{BinaryConverter, ReadError};
-use wce_formats::{MapArchive, MpqError};
+use wce_formats::{MapArchive, MpqError, WriteError};
 
 use crate::globals::MAP_PATH_MAP;
-use crate::OpeningError;
+use crate::MapError;
 
 #[derive(Debug, Error)]
 pub enum PathmapError {
@@ -17,10 +17,12 @@ pub enum PathmapError {
     InitReader(ReadError),
     #[error("Failed to parse pathmap datas. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save pathmap data. {0}")]
+    SaveError(WriteError),
 }
-impl From<PathmapError> for OpeningError {
+impl From<PathmapError> for MapError {
     fn from(value: PathmapError) -> Self {
-        OpeningError::PathingMap(value)
+        MapError::PathingMap(value)
     }
 }
 
@@ -65,8 +67,8 @@ pub struct PathMapFile {
 
 impl PathMapFile {
     pub const FILE_NAME: &str = MAP_PATH_MAP;
-    
-    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
+
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, MapError> {
         let buffer = map
             .read_file(MAP_PATH_MAP)
             .map_err(PathmapError::MpqError)?;
@@ -77,9 +79,9 @@ impl PathMapFile {
         Ok(pathmaps)
     }
 
-    pub fn prepare_write(&self) -> WriteResult<BinaryWriter> {
+    pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        writer.write(self)?;
+        writer.write(self).map_err(PathmapError::SaveError)?;
         Ok(writer)
     }
 
