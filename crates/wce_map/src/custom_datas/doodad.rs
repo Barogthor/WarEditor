@@ -38,7 +38,7 @@ pub struct CustomDoodadFile {
 
 impl CustomDoodadFile {
     pub const FILE_NAME: &str = MAP_CUSTOM_DOODADS;
-    
+
     pub fn read_file(
         map: &mut MapArchive,
         game_version: &GameVersion,
@@ -98,7 +98,8 @@ impl CustomDoodadFile {
 
     pub fn prepare_write(&self, game_version: &GameVersion) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        self.write(&mut writer, game_version).map_err(CustomDoodadError::SaveError)?;
+        self.write(&mut writer, game_version)
+            .map_err(CustomDoodadError::SaveError)?;
         Ok(writer)
     }
 

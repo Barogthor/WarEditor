@@ -98,7 +98,8 @@ impl CustomUnitFile {
 
     pub fn prepare_write(&self, game_version: &GameVersion) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        self.write(&mut writer, game_version).map_err(CustomUnitError::SaveError)?;
+        self.write(&mut writer, game_version)
+            .map_err(CustomUnitError::SaveError)?;
         Ok(writer)
     }
 

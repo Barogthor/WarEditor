@@ -38,7 +38,7 @@ pub struct CustomDestructableFile {
 
 impl CustomDestructableFile {
     pub const FILE_NAME: &str = MAP_CUSTOM_DESTRUCTABLES;
-    
+
     pub fn read_file(
         map: &mut MapArchive,
         game_version: &GameVersion,
@@ -98,7 +98,8 @@ impl CustomDestructableFile {
 
     pub fn prepare_write(&self, game_version: &GameVersion) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
-        self.write(&mut writer, game_version).map_err(CustomDestructableError::SaveError)?;
+        self.write(&mut writer, game_version)
+            .map_err(CustomDestructableError::SaveError)?;
         Ok(writer)
     }
 
