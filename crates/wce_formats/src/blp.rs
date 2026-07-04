@@ -163,6 +163,24 @@ impl BLP {
         &self.jpeg_header
     }
 
+    /// Image width in pixels (top mipmap).
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    /// Image height in pixels (top mipmap).
+    pub fn height(&self) -> u32 {
+        self.height
+    }
+
+    /// Number of decoded mipmap levels (JPEG images or paletted index lists).
+    pub fn mipmap_count(&self) -> usize {
+        match self.compression {
+            Compression::JPEG => self.jpeg_mipmaps.len(),
+            Compression::PALETTE => self.palette_rgb_indexes.len(),
+        }
+    }
+
     /// Whether the `Flags` field marks an alpha channel. Bit test, not equality:
     /// the spec says flags combine (`specs/blp.txt:29,49`).
     pub fn has_alpha(&self) -> bool {
@@ -309,10 +327,7 @@ fn cmyk_to_rgb(cmyk: &mut [u8]) -> RGB8 {
 #[cfg(test)]
 mod blp_parse {
     use std::fs::File;
-    use std::io::{BufReader, Read};
-
-    use image::ImageReader;
-    use log::warn;
+    use std::io::Read;
 
     use crate::binary_reader::BinaryReader;
     use crate::blp::BLP;
@@ -323,20 +338,28 @@ mod blp_parse {
         format!("{prefix}/{path}")
     }
 
+    /// Read a resource file fully, failing loudly if it is missing so a missing
+    /// fixture can never make a test pass silently.
+    fn read_resource(rel: &str) -> Vec<u8> {
+        let path = get_path(rel);
+        let mut file =
+            File::open(&path).unwrap_or_else(|e| panic!("missing resource {}: {:?}", path, e));
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer)
+            .unwrap_or_else(|e| panic!("failed to read {}: {:?}", path, e));
+        buffer
+    }
+
+    fn parse_resource(rel: &str) -> BLP {
+        let mut reader = BinaryReader::new(read_resource(rel));
+        BLP::from(&mut reader).unwrap_or_else(|e| panic!("failed to parse {}: {:?}", rel, e))
+    }
+
     #[test]
     fn open_local_blp_palette() {
-        let file_res = File::open(get_path("blp/BTNDeathBomb.blp"));
-        match file_res {
-            Ok(mut file) => {
-                let mut buffer: Vec<u8> = Vec::with_capacity(2000);
-                file.read_to_end(&mut buffer)
-                    .unwrap_or_else(|e| panic!("{:?}", e));
-                let mut reader = BinaryReader::new(buffer);
-                let _blp = BLP::from(&mut reader);
-                //        println!("{:?}", s);
-            }
-            Err(e) => println!("{e:?}"),
-        }
+        let blp = parse_resource("blp/BTNDeathBomb.blp");
+        assert_eq!((blp.width(), blp.height()), (64, 64));
+        assert_eq!(blp.mipmap_count(), 7);
     }
 
     #[test]
@@ -347,29 +370,28 @@ mod blp_parse {
         let mut reader = BinaryReader::new(b"BLP2".to_vec());
         match BLP::from(&mut reader) {
             Err(BLPError::InvalidMagic(m)) => assert_eq!(m, "BLP2"),
-            other => panic!("expected InvalidMagic, got {other:?}"),
+            Err(e) => panic!("expected InvalidMagic, got a different error: {:?}", e),
+            Ok(_) => panic!("expected InvalidMagic, but parsing succeeded"),
         }
+    }
+
+    /// Read a resource, parse it, write it back, and return
+    /// `(original_bytes, written_bytes)`.
+    fn roundtrip(rel: &str) -> (Vec<u8>, Vec<u8>) {
+        use crate::binary_writer::BinaryWriter;
+        let original = read_resource(rel);
+        let blp = parse_resource(rel);
+        let mut writer = BinaryWriter::new();
+        blp.write(&mut writer)
+            .unwrap_or_else(|e| panic!("failed to write {}: {:?}", rel, e));
+        (original, writer.into_buffer())
     }
 
     #[test]
     fn roundtrip_blp_palette() {
-        use crate::binary_writer::BinaryWriter;
-
-        let mut file =
-            File::open(get_path("blp/BTNDeathBomb.blp")).unwrap_or_else(|e| panic!("{:?}", e));
-        let mut original: Vec<u8> = Vec::new();
-        file.read_to_end(&mut original)
-            .unwrap_or_else(|e| panic!("{:?}", e));
-
-        let mut reader = BinaryReader::new(original.clone());
-        let blp = BLP::from(&mut reader).unwrap();
-
-        let mut writer = BinaryWriter::new();
-        blp.write(&mut writer).unwrap();
-
+        let (original, written) = roundtrip("blp/BTNDeathBomb.blp");
         assert_eq!(
-            writer.get_buffer(),
-            original.as_slice(),
+            written, original,
             "paletted BLP roundtrip must be byte-exact"
         );
     }
@@ -378,31 +400,18 @@ mod blp_parse {
     /// (mirroring the source's basename) so the output can be opened in a BLP
     /// viewer and compared visually with the source. Asserts byte-exactness.
     fn persist_roundtrip(src_rel: &str) {
-        use crate::binary_writer::BinaryWriter;
-
-        let src = get_path(src_rel);
-        let mut file = File::open(&src).unwrap_or_else(|e| panic!("{:?}", e));
-        let mut original: Vec<u8> = Vec::new();
-        file.read_to_end(&mut original)
-            .unwrap_or_else(|e| panic!("{:?}", e));
-
-        let mut reader = BinaryReader::new(original.clone());
-        let blp = BLP::from(&mut reader).unwrap();
-
-        let mut writer = BinaryWriter::new();
-        blp.write(&mut writer).unwrap();
+        let (original, written) = roundtrip(src_rel);
 
         let basename = src_rel.rsplit('/').next().unwrap();
         let out_dir = format!("{}blp/out", get_resources_path());
         std::fs::create_dir_all(&out_dir).unwrap_or_else(|e| panic!("{:?}", e));
         let out_path = format!("{out_dir}/{basename}");
-        std::fs::write(&out_path, writer.get_buffer()).unwrap_or_else(|e| panic!("{:?}", e));
+        std::fs::write(&out_path, &written).unwrap_or_else(|e| panic!("{:?}", e));
 
-        println!("source:  {src}");
+        println!("source:  {}", get_path(src_rel));
         println!("written: {out_path}");
         assert_eq!(
-            writer.get_buffer(),
-            original.as_slice(),
+            written, original,
             "written BLP differs from source (see {out_path})"
         );
     }
@@ -423,20 +432,11 @@ mod blp_parse {
 
     #[test]
     fn open_local_blp_jpeg_map() {
-        let mut file = File::open(get_path("Scenario/Sandbox_Roc/war3mapMap.blp"))
-            .unwrap_or_else(|e| panic!("{:?}", e));
-        let mut buffer: Vec<u8> = Vec::with_capacity(2000);
-        file.read_to_end(&mut buffer)
-            .unwrap_or_else(|e| panic!("{:?}", e));
-        let mut reader = BinaryReader::new(buffer);
-        let _blp = BLP::from(&mut reader);
-        // for i in 0..1{
-        //     let name = format!("resources/war3mapMap_mmap{}.jpg", i);
-        //     let mut file = File::create(name).unwrap();
-        //     file.write(blp.get_jpeg_header()).unwrap();
-        //     let mipmap = &blp.get_jpeg_mipmaps()[i];
-        //     file.write().unwrap();
-        // }
+        let blp = parse_resource("Scenario/Sandbox_Roc/war3mapMap.blp");
+        assert_eq!((blp.width(), blp.height()), (256, 256));
+        assert_eq!(blp.mipmap_count(), 1);
+        // Blizzard's shared JPEG header is the classic 624 bytes here.
+        assert_eq!(blp.get_jpeg_header().len(), 624);
     }
 
     // Byte-exact roundtrip of a JPEG-compressed BLP: the writer preserves the
@@ -444,66 +444,17 @@ mod blp_parse {
     // between the shared JPEG header and the mipmap data (todos/11 point 7, phase 1).
     #[test]
     fn roundtrip_blp_jpeg_map() {
-        use crate::binary_writer::BinaryWriter;
-
-        let mut file = File::open(get_path("Scenario/Sandbox_Roc/war3mapMap.blp"))
-            .unwrap_or_else(|e| panic!("{:?}", e));
-        let mut original: Vec<u8> = Vec::new();
-        file.read_to_end(&mut original)
-            .unwrap_or_else(|e| panic!("{:?}", e));
-
-        let mut reader = BinaryReader::new(original.clone());
-        let blp = BLP::from(&mut reader).unwrap();
-
-        let mut writer = BinaryWriter::new();
-        blp.write(&mut writer).unwrap();
-
-        assert_eq!(
-            writer.get_buffer(),
-            original.as_slice(),
-            "JPEG BLP roundtrip must be byte-exact"
-        );
+        let (original, written) = roundtrip("Scenario/Sandbox_Roc/war3mapMap.blp");
+        assert_eq!(written, original, "JPEG BLP roundtrip must be byte-exact");
     }
 
     #[test]
     fn open_local_blp_jpeg_texture() {
-        let file_res = File::open(get_path("blp/FrostmourneNew.blp"));
-        match file_res {
-            Ok(mut file) => {
-                let mut buffer: Vec<u8> = Vec::with_capacity(2000);
-                file.read_to_end(&mut buffer)
-                    .unwrap_or_else(|e| panic!("{:?}", e));
-                let mut reader = BinaryReader::new(buffer);
-                let blp = BLP::from(&mut reader).unwrap();
-                // let mmap1 = &blp.get_jpeg_mipmaps()[3];
-                // println!("{mmap1:?}");
-                // println!("{:#?}", mmap1[0..mmap1.len()/100]);
-                // for i in 0..3{
-                //     let name = format!("resources/FrostmourneNew_mmap{}.jpg", i);
-                //     let mut file = File::create(name).unwrap();
-                //     file.write(blp.get_jpeg_header()).unwrap();
-                //     file.write(&blp.get_jpeg_mipmaps()[i]).unwrap();
-                // }
-            }
-            Err(e) => println!("{e:?}"),
-        }
-    }
-
-    #[test]
-    fn open_local_jpeg_mipmap() {
-        let file_res = File::open(get_path("FrostmourneNew_mmap2.jpg"));
-        match file_res {
-            Ok(file) => {
-                let buffer = BufReader::new(file);
-                let mut reader = ImageReader::new(buffer);
-                reader.set_format(image::ImageFormat::Jpeg);
-                let image = reader.decode().unwrap_or_else(|e| panic!("{}", e));
-                // image.read_info().unwrap_or_else(|e| panic!("{:?}", e));
-                // let info = decoder.info();
-                // println!("{info:#?}");
-                // decoder.decode().unwrap_or_else(|e| panic!("{:?}", e));
-            }
-            Err(e) => println!("{e:?}"),
-        }
+        // FrostmourneNew is a JPEG texture with the alpha flag set (Flags = 8).
+        let blp = parse_resource("blp/FrostmourneNew.blp");
+        assert_eq!((blp.width(), blp.height()), (256, 512));
+        assert!(blp.has_alpha(), "Flags = 8 must report an alpha channel");
+        assert!(blp.mipmap_count() >= 1);
+        assert!(!blp.get_jpeg_header().is_empty());
     }
 }
