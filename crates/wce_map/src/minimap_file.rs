@@ -42,8 +42,9 @@ impl MinimapFile {
     }
 
     pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
-        let writer = BinaryWriter::new();
-        unimplemented!()
+        let mut writer = BinaryWriter::new();
+        self.minimap.write(&mut writer).map_err(MinimapError::Blp)?;
+        Ok(writer)
     }
 }
 

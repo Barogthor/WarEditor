@@ -139,9 +139,26 @@ impl<'a> Map<'a> {
             self.terrain.prepare_write()?,
             &path_fn(TerrainFile::FILE_NAME),
         );
-        // Self::save_file(self.menu_minimap.prepare_write()?, MMPFile::FILE_NAME);
-        // Self::save_file(self.minimap.prepare_write()?, MinimapFile::FILE_NAME);
-        // Self::save_file(self.shaders.prepare_write()?, ShadowMapFile::FILE_NAME);
+        Self::save_file(
+            self.menu_minimap.prepare_write()?,
+            &path_fn(MMPFile::FILE_NAME),
+        );
+        Self::save_file(
+            self.minimap.prepare_write()?,
+            &path_fn(MinimapFile::FILE_NAME),
+        );
+        Self::save_file(
+            self.shaders.prepare_write()?,
+            &path_fn(ShadowMapFile::FILE_NAME),
+        );
+        Self::save_file(
+            self.strings.prepare_write()?,
+            &path_fn(MapStringFile::FILE_NAME),
+        );
+        Self::save_file(
+            self.custom_scripts.prepare_write()?,
+            &path_fn(TriggerJassFile::FILE_NAME),
+        );
         if let Some(f) = &self.cameras {
             Self::save_file(f.prepare_write()?, &path_fn(CameraFile::FILE_NAME));
         }
@@ -150,6 +167,12 @@ impl<'a> Map<'a> {
         }
         if let Some(f) = &self.sounds {
             Self::save_file(f.prepare_write()?, &path_fn(SoundFile::FILE_NAME));
+        }
+        if let Some(f) = &self.import_listing {
+            Self::save_file(
+                f.prepare_write(&game_version)?,
+                &path_fn(ImportFile::FILE_NAME),
+            );
         }
         Self::save_file(
             self.path_map.prepare_write()?,
@@ -268,6 +291,18 @@ mod map_tests {
             "war3mapUnits.doo should be created"
         );
 
+        // Previously-missing mandatory files must now be written on save.
+        for name in [
+            "war3map.wts",    // trigger strings
+            "war3map.wct",    // custom scripts
+            "war3map.mmp",    // menu minimap
+            "war3mapMap.blp", // minimap
+            "war3map.shd",    // shadow map
+        ] {
+            let p = format!("{}/{}", output_dir, name);
+            assert!(fs::metadata(&p).is_ok(), "{} should be created", name);
+        }
+
         println!(
             "RoC map open/save test passed. Files saved to: {}",
             output_dir
@@ -318,6 +353,18 @@ mod map_tests {
             fs::metadata(&units_path).is_ok(),
             "war3mapUnits.doo should be created"
         );
+
+        // Previously-missing mandatory files must now be written on save.
+        for name in [
+            "war3map.wts",    // trigger strings
+            "war3map.wct",    // custom scripts
+            "war3map.mmp",    // menu minimap
+            "war3mapMap.blp", // minimap
+            "war3map.shd",    // shadow map
+        ] {
+            let p = format!("{}/{}", output_dir, name);
+            assert!(fs::metadata(&p).is_ok(), "{} should be created", name);
+        }
 
         println!(
             "TFT map open/save test passed. Files saved to: {}",

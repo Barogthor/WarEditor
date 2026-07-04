@@ -48,8 +48,12 @@ impl BinaryConverter for MMPDataset {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
-        unimplemented!()
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_u32(self.icon_type)?;
+        writer.write_i32(self.x)?;
+        writer.write_i32(self.y)?;
+        writer.write_bytes(&self.color)?;
+        Ok(())
     }
 }
 
@@ -67,8 +71,11 @@ impl BinaryConverter for MMPFile {
         Ok(MMPFile { unknown, datasets })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) -> WriteResult<()> {
-        unimplemented!()
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_i32(self.unknown)?;
+        writer.write_i32(self.datasets.len() as i32)?;
+        writer.write_vec(&self.datasets)?;
+        Ok(())
     }
 }
 
@@ -87,8 +94,9 @@ impl MMPFile {
     }
 
     pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
-        let writer = BinaryWriter::new();
-        unimplemented!()
+        let mut writer = BinaryWriter::new();
+        writer.write(self).map_err(MenuMinimapError::SaveError)?;
+        Ok(writer)
     }
 
     pub fn debug(&self) {

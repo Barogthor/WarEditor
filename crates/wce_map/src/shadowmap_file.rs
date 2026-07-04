@@ -43,6 +43,15 @@ impl TryFrom<u8> for ShadowType {
     }
 }
 
+impl ShadowType {
+    fn to_byte(&self) -> u8 {
+        match self {
+            ShadowType::Shadow => 0x00,
+            ShadowType::NoShadow => 0xff,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct ShadowMapFile {
     shaders: Vec<ShadowType>,
@@ -67,8 +76,13 @@ impl ShadowMapFile {
     }
 
     pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
-        let writer = BinaryWriter::new();
-        unimplemented!()
+        let mut writer = BinaryWriter::new();
+        for shadow in &self.shaders {
+            writer
+                .write_u8(shadow.to_byte())
+                .map_err(ShadowMapError::SaveError)?;
+        }
+        Ok(writer)
     }
 
     pub fn debug(&self) {

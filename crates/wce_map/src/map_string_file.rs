@@ -58,7 +58,7 @@ impl MapStringFile {
         Self::extract(&buffer).map_err(From::from)
     }
 
-    fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
+    pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
         let mut writer = BinaryWriter::new();
         for (id, content) in self.trigger_strings.iter() {
             let mstr = format!("STRING {id} {{\n{content}\n}}\n");
