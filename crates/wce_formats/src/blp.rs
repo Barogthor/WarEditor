@@ -2,12 +2,13 @@
 
 use std::io::Cursor;
 
-use jpeg_decoder::Decoder;
+use image::{GenericImageView, ImageReader};
 use rgb::{RGB8, RGBA8};
 use thiserror::Error;
 
 use crate::binary_reader::BinaryReader;
-use crate::ReadError;
+use crate::binary_writer::{BinaryWriter, WriteResult};
+use crate::{ReadError, WriteError};
 
 type MipmapPixels = Vec<Vec<RGB8>>;
 type MipmapIndexes = Vec<Vec<u8>>;
@@ -20,8 +21,10 @@ pub const MAX_MIPMAP: usize = 16;
 pub enum BLPError {
     #[error("Error while reading BLP buffer. {0}")]
     Read(ReadError),
+    #[error("Error while writing BLP buffer. {0}")]
+    Write(WriteError),
     #[error("Decoding JPEG failure. {0}")]
-    Decoding(#[from] jpeg_decoder::Error),
+    Decoding(#[from] image::error::ImageError),
     #[error("Unknown BLP type '{0}'.")]
     UnknownType(u32),
     #[error("Unknown BLP flag '{0}'.")]
@@ -33,11 +36,11 @@ impl From<ReadError> for BLPError {
     }
 }
 
-#[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub enum BlpFlag {
-    RGB,
-    RGBA,
-    NoTeamColor,
+    RGB = 5,
+    RGBA = 4,
+    // NoTeamColor,
 }
 
 impl BlpFlag {
@@ -57,10 +60,10 @@ pub enum BlpData {
     //    PalettedBlp(PalettedBlpData),
 }
 
-#[derive(PartialOrd, PartialEq, Clone, Debug)]
+#[derive(PartialOrd, PartialEq, Clone, Debug, Copy)]
 pub enum Compression {
-    JPEG,
-    PALETTE,
+    JPEG = 0,
+    PALETTE = 1,
 }
 
 impl Compression {
@@ -87,8 +90,12 @@ pub struct BLP {
 
     jpeg_header_size: u32,
     jpeg_header: Vec<u8>,
+    jpeg_mipmaps_dim: Vec<(u32, u32)>,
     jpeg_mipmaps: MipmapPixels,
-
+    /// Raw compressed JPEG fragment bytes per mipmap, kept verbatim so the file
+    /// can be re-serialized byte-for-byte without lossy re-encoding.
+    jpeg_mipmaps_raw: Vec<Vec<u8>>,
+    // jpeg_mipmaps: Vec<DynamicImage>,
     palette_colors: Vec<RGBA8>,
     palette_rgb_indexes: MipmapIndexes,
     palette_alpha_indexes: MipmapIndexes,
@@ -106,15 +113,26 @@ impl BLP {
             }
             reader.seek_begin();
             reader.skip(offset);
+            let raw = reader.read_bytes(size)?;
+            // Keep the compressed fragment verbatim for byte-exact re-serialization,
+            // then rebuild a full JPEG (shared header + fragment) for decoding.
+            self.jpeg_mipmaps_raw.push(raw.clone());
             let mut jpeg_buffer = self.jpeg_header.clone();
             jpeg_buffer.reserve(size + 10);
-            let mut raw = reader.read_bytes(size)?;
-            jpeg_buffer.append(&mut raw);
+            jpeg_buffer.extend_from_slice(&raw);
 
             let reader = Cursor::new(jpeg_buffer);
-            let mut decoder = Decoder::new(reader);
-            let mut res = decoder.decode().map_err(BLPError::Decoding)?;
-            let pixels: Vec<RGB8> = res.chunks_mut(4).map(cmyk_to_rgb).collect();
+            let mut reader = ImageReader::new(reader);
+            reader.set_format(image::ImageFormat::Jpeg);
+
+            let image = reader.decode().map_err(BLPError::Decoding)?;
+            self.jpeg_mipmaps_dim.push(image.dimensions());
+
+            let pixels: Vec<RGB8> = image
+                .to_rgb8()
+                .pixels()
+                .map(|rgb| RGB8::new(rgb.0[0], rgb.0[1], rgb.0[2]))
+                .collect();
             self.jpeg_mipmaps.push(pixels);
         }
         Ok(())
@@ -151,9 +169,9 @@ impl BLP {
     pub fn get_jpeg_header(&self) -> &Vec<u8> {
         &self.jpeg_header
     }
-    pub fn get_jpeg_mipmaps(&self) -> &MipmapPixels {
-        &self.jpeg_mipmaps
-    }
+    // pub fn get_jpeg_mipmaps(&self) -> &MipmapPixels {
+    //     &self.jpeg_mipmaps
+    // }
 
     pub fn from(reader: &mut BinaryReader) -> Result<Self, BLPError> {
         let magic_num = reader.read_string_utf8_safe(4)?;
@@ -180,9 +198,11 @@ impl BLP {
             jpeg_header_size: 0,
             jpeg_header: Vec::with_capacity(MAX_MIPMAP),
             jpeg_mipmaps: Vec::with_capacity(MAX_MIPMAP),
+            jpeg_mipmaps_raw: Vec::with_capacity(MAX_MIPMAP),
             palette_colors: vec![],
             palette_rgb_indexes: Vec::with_capacity(MAX_MIPMAP),
             palette_alpha_indexes: Vec::with_capacity(MAX_MIPMAP),
+            jpeg_mipmaps_dim: Vec::with_capacity(MAX_MIPMAP),
         };
         match blp.compression {
             Compression::JPEG => blp.parse_jpeg_mipmaps(reader)?,
@@ -195,6 +215,66 @@ impl BLP {
             reader.size() - reader.pos() as usize
         );
         Ok(blp)
+    }
+
+    //TODO very likely need to recalculate mipmap size/offset and palette for some use case (minimap, menu minimap, ...)
+    pub fn write(&self, writer: &mut BinaryWriter) -> Result<(), BLPError> {
+        self.write_blp(writer).map_err(BLPError::Write)
+    }
+    fn write_blp(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_string_utf8(&self.magic_num)?;
+        writer.write_u32(self.compression as u32)?;
+        writer.write_u32(if self.has_alpha { 0x0000_0008 } else { 0 })?;
+        writer.write_u32(self.width)?;
+        writer.write_u32(self.height)?;
+        writer.write_u32(self.flag as u32)?;
+        writer.write_u32(self.smooth as u32)?;
+        // Spec: MipMapOffset[16] then MipMapSize[16] as two contiguous blocks,
+        // never interleaved (specs/blp.txt:56-57).
+        for i in 0..MAX_MIPMAP {
+            writer.write_u32(*self.mipmap_offsets.get(i).unwrap_or(&0))?;
+        }
+        for i in 0..MAX_MIPMAP {
+            writer.write_u32(*self.mipmap_sizes.get(i).unwrap_or(&0))?;
+        }
+        match self.compression {
+            Compression::JPEG => self.write_jpeg_mipmaps(writer)?,
+            Compression::PALETTE => self.write_palette(writer)?,
+        };
+        Ok(())
+    }
+
+    /// Re-serialize the JPEG payload by preserving the original compressed
+    /// bytes: shared header followed by each mipmap fragment placed at its
+    /// original offset (spec `specs/blp.txt:56-96`). The gap the spec allows
+    /// between header and data is reproduced as zero padding. This is lossless
+    /// and byte-exact; it does not re-encode pixels (see todos/11 point 7,
+    /// phase 2).
+    fn write_jpeg_mipmaps(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_u32(self.jpeg_header.len() as u32)?;
+        writer.write_bytes(&self.jpeg_header)?;
+        for (i, fragment) in self.jpeg_mipmaps_raw.iter().enumerate() {
+            let target = *self.mipmap_offsets.get(i).unwrap_or(&0) as u64;
+            while writer.pos() < target {
+                writer.write_u8(0)?;
+            }
+            writer.write_bytes(fragment)?;
+        }
+        Ok(())
+    }
+
+    fn write_palette(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        for rgba in &self.palette_colors {
+            let bgra = [rgba.b, rgba.g, rgba.r, 255 - rgba.a];
+            writer.write_bytes(&bgra)?;
+        }
+        for i in 0..self.palette_rgb_indexes.len() {
+            writer.write_bytes(&self.palette_rgb_indexes[i])?;
+            if self.flag == BlpFlag::RGBA {
+                writer.write_bytes(&self.palette_alpha_indexes[i])?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -226,7 +306,8 @@ mod blp_parse {
     use std::fs::File;
     use std::io::{BufReader, Read};
 
-    use jpeg_decoder::Decoder;
+    use image::ImageReader;
+    use log::warn;
 
     use crate::binary_reader::BinaryReader;
     use crate::blp::BLP;
@@ -239,20 +320,94 @@ mod blp_parse {
 
     #[test]
     fn open_local_blp_palette() {
+        let file_res = File::open(get_path("blp/BTNDeathBomb.blp"));
+        match file_res {
+            Ok(mut file) => {
+                let mut buffer: Vec<u8> = Vec::with_capacity(2000);
+                file.read_to_end(&mut buffer)
+                    .unwrap_or_else(|e| panic!("{:?}", e));
+                let mut reader = BinaryReader::new(buffer);
+                let _blp = BLP::from(&mut reader);
+                //        println!("{:?}", s);
+            }
+            Err(e) => println!("{e:?}"),
+        }
+    }
+
+    #[test]
+    fn roundtrip_blp_palette() {
+        use crate::binary_writer::BinaryWriter;
+
         let mut file =
             File::open(get_path("blp/BTNDeathBomb.blp")).unwrap_or_else(|e| panic!("{:?}", e));
-        let mut buffer: Vec<u8> = Vec::with_capacity(2000);
-        file.read_to_end(&mut buffer)
+        let mut original: Vec<u8> = Vec::new();
+        file.read_to_end(&mut original)
             .unwrap_or_else(|e| panic!("{:?}", e));
-        let mut reader = BinaryReader::new(buffer);
-        let _blp = BLP::from(&mut reader);
-        //        println!("{:?}", s);
+
+        let mut reader = BinaryReader::new(original.clone());
+        let blp = BLP::from(&mut reader).unwrap();
+
+        let mut writer = BinaryWriter::new();
+        blp.write(&mut writer).unwrap();
+
+        assert_eq!(
+            writer.get_buffer(),
+            original.as_slice(),
+            "paletted BLP roundtrip must be byte-exact"
+        );
+    }
+
+    /// Read a BLP, write it back, and persist the result to `resources/blp/out/`
+    /// (mirroring the source's basename) so the output can be opened in a BLP
+    /// viewer and compared visually with the source. Asserts byte-exactness.
+    fn persist_roundtrip(src_rel: &str) {
+        use crate::binary_writer::BinaryWriter;
+
+        let src = get_path(src_rel);
+        let mut file = File::open(&src).unwrap_or_else(|e| panic!("{:?}", e));
+        let mut original: Vec<u8> = Vec::new();
+        file.read_to_end(&mut original)
+            .unwrap_or_else(|e| panic!("{:?}", e));
+
+        let mut reader = BinaryReader::new(original.clone());
+        let blp = BLP::from(&mut reader).unwrap();
+
+        let mut writer = BinaryWriter::new();
+        blp.write(&mut writer).unwrap();
+
+        let basename = src_rel.rsplit('/').next().unwrap();
+        let out_dir = format!("{}blp/out", get_resources_path());
+        std::fs::create_dir_all(&out_dir).unwrap_or_else(|e| panic!("{:?}", e));
+        let out_path = format!("{out_dir}/{basename}");
+        std::fs::write(&out_path, writer.get_buffer()).unwrap_or_else(|e| panic!("{:?}", e));
+
+        println!("source:  {src}");
+        println!("written: {out_path}");
+        assert_eq!(
+            writer.get_buffer(),
+            original.as_slice(),
+            "written BLP differs from source (see {out_path})"
+        );
+    }
+
+    /// Persist read→write output for both a paletted and a JPEG BLP to
+    /// `resources/blp/out/` for manual visual inspection. Ignored by default
+    /// (filesystem side effect); run on demand:
+    ///
+    /// ```text
+    /// cargo test -p wce_formats --lib blp_write_persistent -- --ignored --nocapture
+    /// ```
+    #[test]
+    #[ignore = "writes to resources/blp/out/ for manual visual inspection"]
+    fn blp_write_persistent() {
+        persist_roundtrip("blp/BTNDeathBomb.blp"); // paletted
+        persist_roundtrip("Scenario/Sandbox_Roc/war3mapMap.blp"); // JPEG
     }
 
     #[test]
     fn open_local_blp_jpeg_map() {
-        let mut file =
-            File::open(get_path("sample_2/war3mapMap.blp")).unwrap_or_else(|e| panic!("{:?}", e));
+        let mut file = File::open(get_path("Scenario/Sandbox_Roc/war3mapMap.blp"))
+            .unwrap_or_else(|e| panic!("{:?}", e));
         let mut buffer: Vec<u8> = Vec::with_capacity(2000);
         file.read_to_end(&mut buffer)
             .unwrap_or_else(|e| panic!("{:?}", e));
@@ -267,36 +422,71 @@ mod blp_parse {
         // }
     }
 
+    // Byte-exact roundtrip of a JPEG-compressed BLP: the writer preserves the
+    // original compressed fragments (no lossy re-encode), including the zero gap
+    // between the shared JPEG header and the mipmap data (todos/11 point 7, phase 1).
     #[test]
-    fn open_local_blp_jpeg_texture() {
-        let mut file =
-            File::open(get_path("blp/FrostmourneNew.blp")).unwrap_or_else(|e| panic!("{:?}", e));
-        let mut buffer: Vec<u8> = Vec::with_capacity(2000);
-        file.read_to_end(&mut buffer)
+    fn roundtrip_blp_jpeg_map() {
+        use crate::binary_writer::BinaryWriter;
+
+        let mut file = File::open(get_path("Scenario/Sandbox_Roc/war3mapMap.blp"))
             .unwrap_or_else(|e| panic!("{:?}", e));
-        let mut reader = BinaryReader::new(buffer);
+        let mut original: Vec<u8> = Vec::new();
+        file.read_to_end(&mut original)
+            .unwrap_or_else(|e| panic!("{:?}", e));
+
+        let mut reader = BinaryReader::new(original.clone());
         let blp = BLP::from(&mut reader).unwrap();
-        let mmap1 = &blp.get_jpeg_mipmaps()[3];
-        println!("{mmap1:?}");
-        // println!("{:#?}", mmap1[0..mmap1.len()/100]);
-        // for i in 0..3{
-        //     let name = format!("resources/FrostmourneNew_mmap{}.jpg", i);
-        //     let mut file = File::create(name).unwrap();
-        //     file.write(blp.get_jpeg_header()).unwrap();
-        //     file.write(&blp.get_jpeg_mipmaps()[i]).unwrap();
-        // }
+
+        let mut writer = BinaryWriter::new();
+        blp.write(&mut writer).unwrap();
+
+        assert_eq!(
+            writer.get_buffer(),
+            original.as_slice(),
+            "JPEG BLP roundtrip must be byte-exact"
+        );
     }
 
-    // #[test]
-    fn open_local_jpeg_mipmap() {
-        let file =
-            File::open(get_path("FrostmourneNew_mmap2.jpg")).unwrap_or_else(|e| panic!("{:?}", e));
-        let buffer = BufReader::new(file);
+    #[test]
+    fn open_local_blp_jpeg_texture() {
+        let file_res = File::open(get_path("blp/FrostmourneNew.blp"));
+        match file_res {
+            Ok(mut file) => {
+                let mut buffer: Vec<u8> = Vec::with_capacity(2000);
+                file.read_to_end(&mut buffer)
+                    .unwrap_or_else(|e| panic!("{:?}", e));
+                let mut reader = BinaryReader::new(buffer);
+                let blp = BLP::from(&mut reader).unwrap();
+                // let mmap1 = &blp.get_jpeg_mipmaps()[3];
+                // println!("{mmap1:?}");
+                // println!("{:#?}", mmap1[0..mmap1.len()/100]);
+                // for i in 0..3{
+                //     let name = format!("resources/FrostmourneNew_mmap{}.jpg", i);
+                //     let mut file = File::create(name).unwrap();
+                //     file.write(blp.get_jpeg_header()).unwrap();
+                //     file.write(&blp.get_jpeg_mipmaps()[i]).unwrap();
+                // }
+            }
+            Err(e) => println!("{e:?}"),
+        }
+    }
 
-        let mut decoder = Decoder::new(buffer);
-        decoder.read_info().unwrap_or_else(|e| panic!("{:?}", e));
-        let info = decoder.info();
-        println!("{info:#?}");
-        decoder.decode().unwrap_or_else(|e| panic!("{:?}", e));
+    #[test]
+    fn open_local_jpeg_mipmap() {
+        let file_res = File::open(get_path("FrostmourneNew_mmap2.jpg"));
+        match file_res {
+            Ok(file) => {
+                let buffer = BufReader::new(file);
+                let mut reader = ImageReader::new(buffer);
+                reader.set_format(image::ImageFormat::Jpeg);
+                let image = reader.decode().unwrap_or_else(|e| panic!("{}", e));
+                // image.read_info().unwrap_or_else(|e| panic!("{:?}", e));
+                // let info = decoder.info();
+                // println!("{info:#?}");
+                // decoder.decode().unwrap_or_else(|e| panic!("{:?}", e));
+            }
+            Err(e) => println!("{e:?}"),
+        }
     }
 }
