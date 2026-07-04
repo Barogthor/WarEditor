@@ -132,6 +132,10 @@ impl BLP {
     }
 
     fn parse_palette(&mut self, reader: &mut BinaryReader) -> Result<(), ReadError> {
+        // BLP1 palette entries are stored BGRA, not RGBA as the Magos spec
+        // literally states. Verified empirically (test `dump_palette_channel_order`)
+        // and consistent with HiveWE; see the note in specs/blp.txt at COLOR.
+        // Alpha is inverse-stored (real alpha = 255 - stored) for PictureType 5.
         self.palette_colors = reader
             .read_bytes(PALETTE_SIZE * 4)?
             .chunks(4)
@@ -360,6 +364,39 @@ mod blp_parse {
         let blp = parse_resource("blp/BTNDeathBomb.blp");
         assert_eq!((blp.width(), blp.height()), (64, 64));
         assert_eq!(blp.mipmap_count(), 7);
+    }
+
+    /// Render the top paletted mipmap under both channel interpretations to
+    /// settle whether BLP1 palettes are BGRA (as the code reads) or RGBA (as the
+    /// Magos spec literally says). Ignored; run on demand and eyeball the PNGs:
+    ///
+    /// ```text
+    /// cargo test -p wce_formats --lib dump_palette_channel_order -- --ignored
+    /// ```
+    #[test]
+    #[ignore = "dumps channel-order comparison PNGs to resources/blp/out/"]
+    fn dump_palette_channel_order() {
+        let blp = parse_resource("blp/BTNDeathBomb.blp");
+        let (w, h) = (blp.width(), blp.height());
+        let indexes = &blp.palette_rgb_indexes[0];
+        let out_dir = format!("{}blp/out", get_resources_path());
+        std::fs::create_dir_all(&out_dir).unwrap_or_else(|e| panic!("{:?}", e));
+
+        // `palette_colors` already holds the code's BGRA reading (r=byte2, b=byte0).
+        let bgra = image::ImageBuffer::from_fn(w, h, |x, y| {
+            let c = blp.palette_colors[indexes[(y * w + x) as usize] as usize];
+            image::Rgb([c.r, c.g, c.b])
+        });
+        // The RGBA-literal reading is the same bytes with red/blue swapped back.
+        let rgba = image::ImageBuffer::from_fn(w, h, |x, y| {
+            let c = blp.palette_colors[indexes[(y * w + x) as usize] as usize];
+            image::Rgb([c.b, c.g, c.r])
+        });
+        bgra.save(format!("{out_dir}/BTNDeathBomb_bgra.png"))
+            .unwrap_or_else(|e| panic!("{:?}", e));
+        rgba.save(format!("{out_dir}/BTNDeathBomb_rgba.png"))
+            .unwrap_or_else(|e| panic!("{:?}", e));
+        println!("wrote {out_dir}/BTNDeathBomb_{{bgra,rgba}}.png");
     }
 
     #[test]
