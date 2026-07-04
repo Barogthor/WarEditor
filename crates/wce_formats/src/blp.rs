@@ -27,8 +27,8 @@ pub enum BLPError {
     Decoding(#[from] image::error::ImageError),
     #[error("Unknown BLP type '{0}'.")]
     UnknownType(u32),
-    #[error("Unknown BLP flag '{0}'.")]
-    UnknownFlag(u32),
+    #[error("Unsupported BLP magic '{0}', expected 'BLP1'.")]
+    InvalidMagic(String),
 }
 impl From<ReadError> for BLPError {
     fn from(value: ReadError) -> Self {
@@ -36,23 +36,11 @@ impl From<ReadError> for BLPError {
     }
 }
 
-#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
-pub enum BlpFlag {
-    RGB = 5,
-    RGBA = 4,
-    // NoTeamColor,
-}
-
-impl BlpFlag {
-    pub fn from(n: u32) -> Result<Self, BLPError> {
-        match n {
-            //TODO faire conversion slim (regarder jpeg_decoder marker)
-            3 | 4 => Ok(BlpFlag::RGBA),
-            flag if flag >= 5 => Ok(BlpFlag::RGB),
-            _ => Err(BLPError::UnknownFlag(n)),
-        }
-    }
-}
+/// Expected file magic for the BLP1 format (Warcraft III). BLP0 (beta) and
+/// BLP2 (WoW) use different layouts and are not supported.
+const BLP1_MAGIC: &str = "BLP1";
+/// `Flags` bit that signals an alpha channel (`specs/blp.txt:49`).
+const FLAG_ALPHA: u32 = 0x0000_0008;
 
 #[derive(Debug)]
 pub enum BlpData {
@@ -80,11 +68,16 @@ impl Compression {
 pub struct BLP {
     magic_num: String,
     compression: Compression,
-    has_alpha: bool,
+    /// Raw `Flags` field, kept verbatim for fidelity. Bits combine; the alpha
+    /// bit is `FLAG_ALPHA` (see `has_alpha`).
+    flags: u32,
     width: u32,
     height: u32,
-    flag: BlpFlag,
-    smooth: bool, // u32
+    /// Raw `PictureType` (3/4 = index + alpha list, 5 = index only), kept
+    /// verbatim; layout decisions use `has_alpha_list`.
+    picture_type: u32,
+    /// Raw `PictureSubType`; semantics unknown per spec, kept opaque.
+    picture_sub_type: u32,
     mipmap_offsets: Vec<u32>,
     mipmap_sizes: Vec<u32>,
 
@@ -159,7 +152,7 @@ impl BLP {
             reader.skip(offset);
 
             self.palette_rgb_indexes.push(reader.read_bytes(size)?);
-            if self.flag == BlpFlag::RGBA {
+            if self.has_alpha_list() {
                 self.palette_alpha_indexes.push(reader.read_bytes(size)?);
             }
         }
@@ -169,30 +162,44 @@ impl BLP {
     pub fn get_jpeg_header(&self) -> &Vec<u8> {
         &self.jpeg_header
     }
+
+    /// Whether the `Flags` field marks an alpha channel. Bit test, not equality:
+    /// the spec says flags combine (`specs/blp.txt:29,49`).
+    pub fn has_alpha(&self) -> bool {
+        self.flags & FLAG_ALPHA != 0
+    }
+
+    /// Whether each mipmap carries a separate per-pixel alpha index list, i.e.
+    /// `PictureType` 3 or 4 (`specs/blp.txt:52-54`). Type 5 is index-only.
+    fn has_alpha_list(&self) -> bool {
+        matches!(self.picture_type, 3 | 4)
+    }
     // pub fn get_jpeg_mipmaps(&self) -> &MipmapPixels {
     //     &self.jpeg_mipmaps
     // }
 
     pub fn from(reader: &mut BinaryReader) -> Result<Self, BLPError> {
         let magic_num = reader.read_string_utf8_safe(4)?;
+        if magic_num != BLP1_MAGIC {
+            return Err(BLPError::InvalidMagic(magic_num));
+        }
         let compression = reader.read_u32()?;
         let compression = Compression::from(compression)?;
-        let has_alpha = reader.read_u32()? == 0x0000_0008;
+        let flags = reader.read_u32()?;
         let width = reader.read_u32()?;
         let height = reader.read_u32()?;
-        let flag = reader.read_u32()?;
-        let flag = BlpFlag::from(flag)?;
-        let smooth = reader.read_u32()? == 1;
+        let picture_type = reader.read_u32()?;
+        let picture_sub_type = reader.read_u32()?;
         let mipmap_offsets = reader.read_vec_u32(MAX_MIPMAP)?;
         let mipmap_sizes = reader.read_vec_u32(MAX_MIPMAP)?;
         let mut blp = BLP {
             magic_num,
             compression,
-            has_alpha,
+            flags,
             width,
             height,
-            flag,
-            smooth,
+            picture_type,
+            picture_sub_type,
             mipmap_offsets,
             mipmap_sizes,
             jpeg_header_size: 0,
@@ -208,12 +215,10 @@ impl BLP {
             Compression::JPEG => blp.parse_jpeg_mipmaps(reader)?,
             Compression::PALETTE => blp.parse_palette(reader)?,
         };
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "BLP reader for hasn't reached EOF. Missing {} bytes",
-            reader.size() - reader.pos() as usize
-        );
+        // No EOF assertion: the spec allows unused padding between the JPEG
+        // header and the mipmap data, and after the last mipmap
+        // (`specs/blp.txt:86-88`). A mipmap that overruns the file is already
+        // caught by `read_bytes` (read_exact) during parsing.
         Ok(blp)
     }
 
@@ -224,11 +229,11 @@ impl BLP {
     fn write_blp(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
         writer.write_string_utf8(&self.magic_num)?;
         writer.write_u32(self.compression as u32)?;
-        writer.write_u32(if self.has_alpha { 0x0000_0008 } else { 0 })?;
+        writer.write_u32(self.flags)?;
         writer.write_u32(self.width)?;
         writer.write_u32(self.height)?;
-        writer.write_u32(self.flag as u32)?;
-        writer.write_u32(self.smooth as u32)?;
+        writer.write_u32(self.picture_type)?;
+        writer.write_u32(self.picture_sub_type)?;
         // Spec: MipMapOffset[16] then MipMapSize[16] as two contiguous blocks,
         // never interleaved (specs/blp.txt:56-57).
         for i in 0..MAX_MIPMAP {
@@ -270,7 +275,7 @@ impl BLP {
         }
         for i in 0..self.palette_rgb_indexes.len() {
             writer.write_bytes(&self.palette_rgb_indexes[i])?;
-            if self.flag == BlpFlag::RGBA {
+            if self.has_alpha_list() {
                 writer.write_bytes(&self.palette_alpha_indexes[i])?;
             }
         }
@@ -331,6 +336,18 @@ mod blp_parse {
                 //        println!("{:?}", s);
             }
             Err(e) => println!("{e:?}"),
+        }
+    }
+
+    #[test]
+    fn rejects_non_blp1_magic() {
+        use crate::blp::BLPError;
+        // BLP2 (WoW) has a different layout; it must fail fast with a clear
+        // error instead of being misparsed as a BLP1 header.
+        let mut reader = BinaryReader::new(b"BLP2".to_vec());
+        match BLP::from(&mut reader) {
+            Err(BLPError::InvalidMagic(m)) => assert_eq!(m, "BLP2"),
+            other => panic!("expected InvalidMagic, got {other:?}"),
         }
     }
 
