@@ -213,6 +213,7 @@ pub struct CustomObjectsFile<K: CustomObjectKind> {
 }
 
 impl<K: CustomObjectKind> CustomObjectsFile<K> {
+    /// Archive file name of this object table (e.g. `war3map.w3a`), from the kind marker.
     pub const FILE_NAME: &'static str = K::FILE_NAME;
 
     /// Read this kind's table from the map archive; `Ok(None)` when the file
@@ -333,6 +334,7 @@ impl<K: CustomObjectKind> CustomObjectsFile<K> {
         }
     }
 
+    /// Print the parsed table with `Debug` pretty-formatting.
     pub fn debug(&self) {
         println!("{self:#?}");
     }

@@ -150,7 +150,7 @@ impl BLP {
         self.height
     }
 
-    /// Number of decoded mipmap levels (JPEG images or paletted index lists).
+    /// Number of stored mipmap levels (raw JPEG fragments or paletted index lists).
     pub fn mipmap_count(&self) -> usize {
         match self.compression {
             Compression::JPEG => self.jpeg_mipmaps_raw.len(),
