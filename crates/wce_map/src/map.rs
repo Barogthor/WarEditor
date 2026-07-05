@@ -55,9 +55,70 @@ pub struct Map<'a> {
     doodad_datas: Option<CustomDoodadFile>,
     destructable_datas: Option<CustomDestructableFile>,
     upgrade_datas: Option<CustomUpgradeFile>,
+    /// Archive entries not modelled as typed components — imported assets
+    /// (models, textures, sounds) carried verbatim so they survive a repack.
+    /// Stored as `(archive_name, raw_bytes)`.
+    extra_files: Vec<(String, Vec<u8>)>,
 }
 
 impl<'a> Map<'a> {
+    /// Every archive file name modelled as a typed component. Used on open to
+    /// tell imported assets apart from files that round-trip via their own
+    /// `prepare_write()`.
+    const KNOWN_COMPONENT_FILES: [&'static str; 22] = [
+        W3iFile::FILE_NAME,
+        TerrainFile::FILE_NAME,
+        MMPFile::FILE_NAME,
+        MinimapFile::FILE_NAME,
+        ShadowMapFile::FILE_NAME,
+        MapStringFile::FILE_NAME,
+        TriggerJassFile::FILE_NAME,
+        PathMapFile::FILE_NAME,
+        TriggersFile::FILE_NAME,
+        DoodadMap::FILE_NAME,
+        UnitItemMap::FILE_NAME,
+        CameraFile::FILE_NAME,
+        RegionFile::FILE_NAME,
+        SoundFile::FILE_NAME,
+        ImportFile::FILE_NAME,
+        CustomUnitFile::FILE_NAME,
+        CustomAbilityFile::FILE_NAME,
+        CustomBuffFile::FILE_NAME,
+        CustomDoodadFile::FILE_NAME,
+        CustomDestructableFile::FILE_NAME,
+        CustomItemFile::FILE_NAME,
+        CustomUpgradeFile::FILE_NAME,
+    ];
+
+    /// Read every archive entry that is neither a typed component nor an
+    /// MPQ-internal file (`(listfile)`, `(attributes)`, `(signature)`) as a raw
+    /// blob, so imported assets survive an open/save round-trip. Returns an
+    /// empty list when the archive has no `(listfile)` to enumerate.
+    fn capture_extra_files(map: &mut MapArchive) -> Result<Vec<(String, Vec<u8>)>, MapError> {
+        let names = match map.files() {
+            Some(names) => names,
+            None => return Ok(Vec::new()),
+        };
+        let mut extra = Vec::new();
+        for name in names {
+            // The writer regenerates its own (listfile); (attributes)/(signature)
+            // would be stale after content changes. Skip all MPQ-internal files.
+            if name.starts_with('(') {
+                continue;
+            }
+            // Typed components are re-emitted via their prepare_write().
+            if Self::KNOWN_COMPONENT_FILES
+                .iter()
+                .any(|known| known.eq_ignore_ascii_case(&name))
+            {
+                continue;
+            }
+            let bytes = map.read_file(&name).map_err(MapError::Archive)?.inner();
+            extra.push((name, bytes));
+        }
+        Ok(extra)
+    }
+
     pub fn open(path: String, game_data: &'a GameData) -> Result<Self, MapError> {
         let mut map = MapArchive::open(path.to_owned()).map_err(MapError::Protected)?;
 
@@ -101,6 +162,7 @@ impl<'a> Map<'a> {
         // unit_datas.debug();
 
         let header = map.header().to_vec();
+        let extra_files = Self::capture_extra_files(&mut map)?;
 
         Ok(Self {
             game_data,
@@ -128,6 +190,7 @@ impl<'a> Map<'a> {
             doodad_datas,
             destructable_datas,
             upgrade_datas,
+            extra_files,
         })
     }
 
@@ -246,6 +309,10 @@ impl<'a> Map<'a> {
                 CustomUpgradeFile::FILE_NAME,
                 f.prepare_write(&game_version)?.into_buffer(),
             )?;
+        }
+        // Imported assets and any other non-component entries, carried verbatim.
+        for (name, bytes) in &self.extra_files {
+            emit(name, bytes.clone())?;
         }
         Ok(())
     }
@@ -407,6 +474,69 @@ mod map_tests {
 
         println!("repacked archive written to: {out_path}");
         // No cleanup: left on disk for manual inspection.
+    }
+
+    /// Imported assets (here `war3mapImported\Grid256.blp`) are not modelled as
+    /// typed components; they must be captured on open and re-emitted byte-exact
+    /// on repack, otherwise a real map would lose its imports. Covers both the
+    /// RoC (`.w3m`) and TFT (`.w3x`) sandbox maps.
+    fn assert_import_survives_repack(source: &str, out_name: &str) {
+        const IMPORT: &str = r"war3mapImported\Grid256.blp";
+
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
+        let map = Map::open(get_path(source), &game_data)
+            .unwrap_or_else(|e| panic!("Failed to open {source}: {:?}", e));
+
+        // The import must be captured on open, verbatim.
+        let original = map
+            .extra_files
+            .iter()
+            .find(|(name, _)| name.eq_ignore_ascii_case(IMPORT))
+            .unwrap_or_else(|| {
+                panic!(
+                    "{source} should carry the imported {IMPORT}; captured: {:?}",
+                    map.extra_files
+                        .iter()
+                        .map(|(n, _)| n)
+                        .collect::<Vec<_>>()
+                )
+            })
+            .clone();
+        assert!(!original.1.is_empty(), "captured import must not be empty");
+
+        // Unique per call so the RoC and TFT tests can run in parallel.
+        let output_dir = get_path(&format!("Scenario/import-repack-test-{out_name}"));
+        let _ = fs::remove_dir_all(&output_dir);
+        fs::create_dir_all(&output_dir).unwrap_or_else(|e| panic!("{:?}", e));
+        let out_path = format!("{}/{}", output_dir, out_name);
+
+        map.save_as_archive(&out_path, &game_data)
+            .unwrap_or_else(|e| panic!("Failed to repack {source}: {:?}", e));
+
+        // Re-open the repacked archive: the import must round-trip byte-exact.
+        let reopened = Map::open(out_path, &game_data)
+            .unwrap_or_else(|e| panic!("Failed to re-open repacked {source}: {:?}", e));
+        let roundtripped = reopened
+            .extra_files
+            .iter()
+            .find(|(name, _)| name.eq_ignore_ascii_case(IMPORT))
+            .unwrap_or_else(|| panic!("repacked {source} lost its import {IMPORT}", source = source, IMPORT = IMPORT));
+        assert_eq!(
+            roundtripped.1, original.1,
+            "imported {IMPORT} must survive repack byte-exact"
+        );
+
+        let _ = fs::remove_dir_all(&output_dir);
+    }
+
+    #[test]
+    fn import_survives_repack_roc() {
+        assert_import_survives_repack("Scenario/Sandbox_1.w3m", "repacked.w3m");
+    }
+
+    #[test]
+    fn import_survives_repack_tft() {
+        assert_import_survives_repack("Scenario/Sandbox_1.w3x", "repacked.w3x");
     }
 
     #[test]

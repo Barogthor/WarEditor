@@ -156,6 +156,24 @@ impl MapArchive {
     pub fn header(&self) -> &[u8] {
         &self.header
     }
+
+    /// Every file name listed in the archive's `(listfile)`, or `None` when the
+    /// archive has no readable `(listfile)`. Used to carry imported assets
+    /// (models, textures, sounds) that are not modelled as typed components.
+    ///
+    /// `mpq::Archive` exposes no enumeration, so the `(listfile)` is read and
+    /// parsed here — `str::lines()` tolerates both `\r\n` and a missing final
+    /// newline. Blank lines are dropped.
+    pub fn files(&mut self) -> Option<Vec<String>> {
+        let listfile = self.read_file("(listfile)").ok()?;
+        let text = String::from_utf8(listfile.inner()).ok()?;
+        Some(
+            text.lines()
+                .filter(|line| !line.is_empty())
+                .map(String::from)
+                .collect(),
+        )
+    }
 }
 
 /// Read the fixed 512-byte map header if the file starts with the `HM3W` magic;
