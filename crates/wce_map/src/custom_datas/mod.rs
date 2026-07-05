@@ -1,9 +1,13 @@
+use std::convert::TryFrom;
 use std::ffi::CString;
 use std::fmt::Debug;
+use std::marker::PhantomData;
 
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::{BinaryWriter, WriteResult};
-use wce_formats::{GameVersion, ReadError, WriteError};
+use wce_formats::{GameVersion, MapArchive, ReadError, WriteError};
+
+use crate::MapError;
 
 pub mod ability;
 pub mod buff;
@@ -179,6 +183,158 @@ impl ObjectDefinition {
             write_meta_opts(writer, &self.id, self.modified_datas.get(i).unwrap())?;
         }
         Ok(())
+    }
+}
+
+/// One custom-object table kind (`war3map.w3a`, `.w3u`, …): archive file
+/// name, on-disk entry layout, and mapping into the kind's `MapError` variant.
+pub trait CustomObjectKind: Debug {
+    /// Archive file name (e.g. `war3map.w3a`).
+    const FILE_NAME: &'static str;
+    /// `true` when entries carry the level/data-pointer fields
+    /// (`*_with_optional` layout: abilities, doodads, upgrades).
+    const HAS_LEVEL_DATA: bool;
+    /// Wrap a reader-initialization failure into this kind's `MapError`.
+    fn init_error(e: ReadError) -> MapError;
+    /// Wrap a parsing failure into this kind's `MapError`.
+    fn parsing_error(e: ReadError) -> MapError;
+    /// Wrap a serialization failure into this kind's `MapError`.
+    fn save_error(e: WriteError) -> MapError;
+}
+
+/// Generic reader/writer shared by all seven custom-object tables; the
+/// per-kind differences live entirely in [`CustomObjectKind`].
+#[derive(Debug)]
+pub struct CustomObjectsFile<K: CustomObjectKind> {
+    version: u32,
+    original_objects: Vec<ObjectDefinition>,
+    custom_objects: Vec<ObjectDefinition>,
+    _kind: PhantomData<K>,
+}
+
+impl<K: CustomObjectKind> CustomObjectsFile<K> {
+    pub const FILE_NAME: &'static str = K::FILE_NAME;
+
+    /// Read this kind's table from the map archive; `Ok(None)` when the file
+    /// is absent or empty.
+    pub fn read_file(
+        map: &mut MapArchive,
+        game_version: &GameVersion,
+    ) -> Result<Option<Self>, MapError> {
+        match map.read_file(K::FILE_NAME) {
+            Ok(buffer) => {
+                let mut reader = BinaryReader::try_from(buffer).map_err(K::init_error)?;
+                Self::read_opt(&mut reader, game_version)
+            }
+            _ => Ok(None),
+        }
+    }
+
+    fn read_opt(
+        reader: &mut BinaryReader,
+        game_version: &GameVersion,
+    ) -> Result<Option<Self>, MapError> {
+        if reader.size() > 0 {
+            let parsed = Self::parse(reader, game_version).map_err(K::parsing_error)?;
+            Ok(Some(parsed))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn parse(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self> {
+        let version = reader.read_u32()?;
+        let original_count = reader.read_u32()?;
+        let mut original_objects = vec![];
+        for _ in 0..original_count {
+            original_objects.push(Self::read_object(reader, game_version)?);
+        }
+        let custom_count = reader.read_u32()?;
+        let mut custom_objects = vec![];
+        for _ in 0..custom_count {
+            custom_objects.push(Self::read_object(reader, game_version)?);
+        }
+        if reader.size() != reader.pos() as usize {
+            return Err(ReadError::Reason(format!(
+                "reader for {} hasn't reached EOF. Missing {} bytes",
+                K::FILE_NAME,
+                reader.size() - reader.pos() as usize
+            )));
+        }
+        Ok(Self {
+            version,
+            original_objects,
+            custom_objects,
+            _kind: PhantomData,
+        })
+    }
+
+    fn read_object(
+        reader: &mut BinaryReader,
+        game_version: &GameVersion,
+    ) -> ReadResult<ObjectDefinition> {
+        let original_id = reader.read_bytes(4)?;
+        let original_id = [
+            original_id[0],
+            original_id[1],
+            original_id[2],
+            original_id[3],
+        ];
+        let custom_id = reader.read_bytes(4)?;
+        let id = if custom_id.iter().all(|c| *c == 0) {
+            ObjectId::for_original(original_id)
+        } else {
+            ObjectId::for_custom(
+                original_id,
+                [custom_id[0], custom_id[1], custom_id[2], custom_id[3]],
+            )
+        };
+        if K::HAS_LEVEL_DATA {
+            ObjectDefinition::read_with_optional(reader, id)
+        } else {
+            ObjectDefinition::read_without_optional(reader, id, game_version)
+        }
+    }
+
+    /// Serialize this table into a fresh writer; an empty table (no original
+    /// nor custom object) produces an empty buffer.
+    pub fn prepare_write(&self, game_version: &GameVersion) -> Result<BinaryWriter, MapError> {
+        let mut writer = BinaryWriter::new();
+        self.write(&mut writer, game_version)
+            .map_err(K::save_error)?;
+        Ok(writer)
+    }
+
+    fn write(&self, writer: &mut BinaryWriter, game_version: &GameVersion) -> WriteResult<()> {
+        if self.original_objects.is_empty() && self.custom_objects.is_empty() {
+            return Ok(());
+        }
+        writer.write_u32(self.version)?;
+        writer.write_u32(self.original_objects.len() as u32)?;
+        for obj in &self.original_objects {
+            Self::write_object(writer, obj, game_version)?;
+        }
+        writer.write_u32(self.custom_objects.len() as u32)?;
+        for obj in &self.custom_objects {
+            Self::write_object(writer, obj, game_version)?;
+        }
+        Ok(())
+    }
+
+    fn write_object(
+        writer: &mut BinaryWriter,
+        obj: &ObjectDefinition,
+        game_version: &GameVersion,
+    ) -> WriteResult<()> {
+        if K::HAS_LEVEL_DATA {
+            obj.write_with_optional(writer)
+        } else {
+            obj.write_without_optional(writer, game_version)
+        }
+    }
+
+    pub fn debug(&self) {
+        println!("{self:#?}");
     }
 }
 
