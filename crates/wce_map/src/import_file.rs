@@ -33,6 +33,9 @@ impl From<ImportError> for MapError {
 
 #[derive(Debug)]
 pub struct ImportFile {
+    /// On-disk format version (0 or 1 in the wild), preserved for byte-exact
+    /// round-trips.
+    version: u32,
     files: ImportPath,
 }
 
@@ -85,7 +88,12 @@ impl BinaryConverterVersion for ImportFile {
     where
         Self: Sized,
     {
-        reader.skip(4); // Roc and TFT maps are 1
+        let version = reader.read_u32()?;
+        if version > 1 {
+            return Err(ReadError::Reason(format!(
+                "Unknown import list format version '{version}', expected 0 or 1"
+            )));
+        }
         let count = reader.read_u32()?;
         let mut files: ImportPath = vec![];
         for _ in 0..count {
@@ -111,7 +119,7 @@ impl BinaryConverterVersion for ImportFile {
             MAP_IMPORT_LIST,
             reader.size() - reader.pos() as usize
         );
-        Ok(ImportFile { files })
+        Ok(ImportFile { version, files })
     }
 
     fn write_version(
@@ -120,7 +128,7 @@ impl BinaryConverterVersion for ImportFile {
         _game_version: &GameVersion,
     ) -> WriteResult<()> {
         if !self.files.is_empty() {
-            writer.write_u32(1)?;
+            writer.write_u32(self.version)?;
             writer.write_u32(self.files.len() as u32)?;
             for (path_type, path) in &self.files {
                 writer.write_u8(path_type.to_u8())?;
@@ -195,6 +203,7 @@ mod import_file_test {
     #[test]
     fn test_import_file_round_trip_tft() {
         let original = ImportFile {
+            version: 1,
             files: mock_import_files_tft(),
         };
 
@@ -221,6 +230,7 @@ mod import_file_test {
     #[test]
     fn test_import_file_round_trip_roc() {
         let original = ImportFile {
+            version: 1,
             files: mock_import_files_roc(),
         };
 
@@ -247,7 +257,7 @@ mod import_file_test {
 
     #[test]
     fn write_empty_edge_case() {
-        let empty_import_file = ImportFile { files: vec![] };
+        let empty_import_file = ImportFile { version: 1, files: vec![] };
 
         let mut writer = BinaryWriter::new();
         empty_import_file
@@ -302,6 +312,7 @@ mod import_file_test {
     #[test]
     fn test_single_import_file() {
         let single_import = ImportFile {
+            version: 1,
             files: vec![(
                 ImportPathType::STANDARD(5),
                 CString::new("Test\\File.mdx").unwrap(),
@@ -440,5 +451,18 @@ mod import_file_test {
             assert_eq!(orig_type, recon_type);
             assert_eq!(orig_path, recon_path);
         }
+    }
+
+    #[test]
+    fn rejects_unknown_format_version() {
+        let mut writer = BinaryWriter::new();
+        writer.write_u32(7).unwrap_or_else(|e| panic!("{}", e)); // bogus format version
+        writer.write_u32(0).unwrap_or_else(|e| panic!("{}", e)); // count
+        let mut reader = BinaryReader::new(writer.into_buffer());
+
+        assert!(
+            ImportFile::read_version(&mut reader, &GameVersion::TFT).is_err(),
+            "a war3map.imp with an unknown format version must be rejected"
+        );
     }
 }
