@@ -16,6 +16,11 @@ WORD   - 16bit unsigned integer
 DWORD  - 32bit unsigned integer
 FLOAT  - 32bit floating point number
 COLOR  - 32bit color value of type RGBA, one byte per channel
+         // For BLP1 palettes the bytes
+         // are actually stored BGRA, not RGBA: byte order is B, G, R, A.
+         // Confirmed empirically by rendering resources/blp/BTNDeathBomb.blp
+         // both ways (see blp.rs test `dump_palette_channel_order`) — only the
+         // BGRA reading yields natural colors. Matches HiveWE and other tools.
 X[n]   - An n-dimensional vector of type X
 
 
@@ -101,7 +106,7 @@ struct BlpJpeg
 //+-----------------------------------------------------------------------------
 struct BlpUncompressed1
 
-  COLOR[256] Palette;
+  COLOR[256] Palette;         // BGRA byte order — see note at COLOR definition
 
   struct MipMap[16]
   {
@@ -123,7 +128,7 @@ struct BlpUncompressed1
 //+-----------------------------------------------------------------------------
 struct BlpUncompressed2
 
-  COLOR[256] Palette;
+  COLOR[256] Palette;         // BGRA byte order — see note at COLOR definition
 
   struct MipMap[16]
   {
