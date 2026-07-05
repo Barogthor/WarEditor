@@ -3,9 +3,6 @@ use std::convert::TryFrom;
 use std::fmt::Debug;
 use thiserror::Error;
 
-#[cfg(test)]
-use pretty_assertions::assert_eq;
-
 macro_rules! flag_accessors {
     ($($name:ident, $bit:expr $(, $doc:literal)?),* $(,)?) => {
         $(
