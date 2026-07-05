@@ -514,10 +514,7 @@ mod map_tests {
             .unwrap_or_else(|| {
                 panic!(
                     "{source} should carry the imported {IMPORT}; captured: {:?}",
-                    map.extra_files
-                        .iter()
-                        .map(|(n, _)| n)
-                        .collect::<Vec<_>>()
+                    map.extra_files.iter().map(|(n, _)| n).collect::<Vec<_>>()
                 )
             })
             .clone();
@@ -539,7 +536,13 @@ mod map_tests {
             .extra_files
             .iter()
             .find(|(name, _)| name.eq_ignore_ascii_case(IMPORT))
-            .unwrap_or_else(|| panic!("repacked {source} lost its import {IMPORT}", source = source, IMPORT = IMPORT));
+            .unwrap_or_else(|| {
+                panic!(
+                    "repacked {source} lost its import {IMPORT}",
+                    source = source,
+                    IMPORT = IMPORT
+                )
+            });
         assert_eq!(
             roundtripped.1, original.1,
             "imported {IMPORT} must survive repack byte-exact"

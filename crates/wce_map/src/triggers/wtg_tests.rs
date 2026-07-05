@@ -399,8 +399,7 @@ mod triggers_file_write_tests {
     /// byte-identical to the archive's original bytes.
     fn assert_wtg_byte_exact(map_resource: &str) {
         let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
-        let mut map =
-            MapArchive::open(get_path(map_resource)).unwrap_or_else(|e| panic!("{}", e));
+        let mut map = MapArchive::open(get_path(map_resource)).unwrap_or_else(|e| panic!("{}", e));
         let original_bytes = map
             .read_file(TriggersFile::FILE_NAME)
             .unwrap_or_else(|e| panic!("{}", e))

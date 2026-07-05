@@ -29,9 +29,7 @@ impl BinaryWriter {
     }
 
     pub fn write_u8(&mut self, value: u8) -> WriteResult<()> {
-        self.buffer
-            .write_u8(value)
-            .map_err(WriteError::IoError)
+        self.buffer.write_u8(value).map_err(WriteError::IoError)
     }
 
     pub fn write_i16(&mut self, value: i16) -> WriteResult<()> {
@@ -130,9 +128,7 @@ impl BinaryWriter {
     }
 
     pub fn write_bytes(&mut self, bytes: &[u8]) -> WriteResult<()> {
-        self.buffer
-            .write_all(bytes)
-            .map_err(WriteError::IoError)
+        self.buffer.write_all(bytes).map_err(WriteError::IoError)
     }
 
     pub fn write<T: BinaryConverter>(&mut self, value: &T) -> WriteResult<()> {

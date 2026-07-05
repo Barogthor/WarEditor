@@ -258,7 +258,10 @@ mod import_file_test {
 
     #[test]
     fn write_empty_edge_case() {
-        let empty_import_file = ImportFile { version: 1, files: vec![] };
+        let empty_import_file = ImportFile {
+            version: 1,
+            files: vec![],
+        };
 
         let mut writer = BinaryWriter::new();
         empty_import_file
