@@ -1,16 +1,11 @@
 #![allow(dead_code)]
 
-use std::io::Cursor;
-
-use image::{GenericImageView, ImageReader};
 use rgb::{RGB8, RGBA8};
 use thiserror::Error;
 
 use crate::binary_reader::BinaryReader;
 use crate::binary_writer::{BinaryWriter, WriteResult};
 use crate::{ReadError, WriteError};
-
-type MipmapPixels = Vec<Vec<RGB8>>;
 type MipmapIndexes = Vec<Vec<u8>>;
 pub const PALETTE_SIZE: usize = 256;
 pub const JPG_BLP: bool = false;
@@ -23,8 +18,6 @@ pub enum BLPError {
     Read(ReadError),
     #[error("Error while writing BLP buffer. {0}")]
     Write(WriteError),
-    #[error("Decoding JPEG failure. {0}")]
-    Decoding(#[from] image::error::ImageError),
     #[error("Unknown BLP type '{0}'.")]
     UnknownType(u32),
     #[error("Unsupported BLP magic '{0}', expected 'BLP1'.")]
@@ -83,12 +76,9 @@ pub struct BLP {
 
     jpeg_header_size: u32,
     jpeg_header: Vec<u8>,
-    jpeg_mipmaps_dim: Vec<(u32, u32)>,
-    jpeg_mipmaps: MipmapPixels,
     /// Raw compressed JPEG fragment bytes per mipmap, kept verbatim so the file
     /// can be re-serialized byte-for-byte without lossy re-encoding.
     jpeg_mipmaps_raw: Vec<Vec<u8>>,
-    // jpeg_mipmaps: Vec<DynamicImage>,
     palette_colors: Vec<RGBA8>,
     palette_rgb_indexes: MipmapIndexes,
     palette_alpha_indexes: MipmapIndexes,
@@ -106,27 +96,10 @@ impl BLP {
             }
             reader.seek_begin();
             reader.skip(offset);
-            let raw = reader.read_bytes(size)?;
-            // Keep the compressed fragment verbatim for byte-exact re-serialization,
-            // then rebuild a full JPEG (shared header + fragment) for decoding.
-            self.jpeg_mipmaps_raw.push(raw.clone());
-            let mut jpeg_buffer = self.jpeg_header.clone();
-            jpeg_buffer.reserve(size + 10);
-            jpeg_buffer.extend_from_slice(&raw);
-
-            let reader = Cursor::new(jpeg_buffer);
-            let mut reader = ImageReader::new(reader);
-            reader.set_format(image::ImageFormat::Jpeg);
-
-            let image = reader.decode().map_err(BLPError::Decoding)?;
-            self.jpeg_mipmaps_dim.push(image.dimensions());
-
-            let pixels: Vec<RGB8> = image
-                .to_rgb8()
-                .pixels()
-                .map(|rgb| RGB8::new(rgb.0[0], rgb.0[1], rgb.0[2]))
-                .collect();
-            self.jpeg_mipmaps.push(pixels);
+            // The compressed fragment is kept verbatim for byte-exact
+            // re-serialization; decoding to pixels is deferred until an editor
+            // actually needs them (todos/11 point 7, phase 2).
+            self.jpeg_mipmaps_raw.push(reader.read_bytes(size)?);
         }
         Ok(())
     }
@@ -180,7 +153,7 @@ impl BLP {
     /// Number of decoded mipmap levels (JPEG images or paletted index lists).
     pub fn mipmap_count(&self) -> usize {
         match self.compression {
-            Compression::JPEG => self.jpeg_mipmaps.len(),
+            Compression::JPEG => self.jpeg_mipmaps_raw.len(),
             Compression::PALETTE => self.palette_rgb_indexes.len(),
         }
     }
@@ -196,9 +169,6 @@ impl BLP {
     fn has_alpha_list(&self) -> bool {
         matches!(self.picture_type, 3 | 4)
     }
-    // pub fn get_jpeg_mipmaps(&self) -> &MipmapPixels {
-    //     &self.jpeg_mipmaps
-    // }
 
     pub fn from(reader: &mut BinaryReader) -> Result<Self, BLPError> {
         let magic_num = reader.read_string_utf8_safe(4)?;
@@ -226,12 +196,10 @@ impl BLP {
             mipmap_sizes,
             jpeg_header_size: 0,
             jpeg_header: Vec::with_capacity(MAX_MIPMAP),
-            jpeg_mipmaps: Vec::with_capacity(MAX_MIPMAP),
             jpeg_mipmaps_raw: Vec::with_capacity(MAX_MIPMAP),
             palette_colors: vec![],
             palette_rgb_indexes: Vec::with_capacity(MAX_MIPMAP),
             palette_alpha_indexes: Vec::with_capacity(MAX_MIPMAP),
-            jpeg_mipmaps_dim: Vec::with_capacity(MAX_MIPMAP),
         };
         match blp.compression {
             Compression::JPEG => blp.parse_jpeg_mipmaps(reader)?,
