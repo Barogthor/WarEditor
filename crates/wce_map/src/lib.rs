@@ -43,6 +43,11 @@ pub enum MapError {
     Protected(MpqError),
     #[error("Failed to write map archive. {0}")]
     Archive(MpqError),
+    #[error("Failed to write file '{path}'. {source}")]
+    SaveFileIo {
+        path: String,
+        source: std::io::Error,
+    },
     #[error("Failed on terrain environment. {0}")]
     Environment(TerrainError),
     #[error("Failed on custom text triggers. {0}")]

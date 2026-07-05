@@ -194,9 +194,13 @@ impl<'a> Map<'a> {
         })
     }
 
-    fn save_file(bytes: &[u8], file_path: &str) {
-        let mut f = File::create(file_path).unwrap();
-        f.write_all(bytes).unwrap();
+    fn save_file(bytes: &[u8], file_path: &str) -> Result<(), MapError> {
+        let to_err = |source| MapError::SaveFileIo {
+            path: file_path.to_string(),
+            source,
+        };
+        let mut f = File::create(file_path).map_err(to_err)?;
+        f.write_all(bytes).map_err(to_err)
     }
 
     /// Emit every component file as `(file_name, bytes)`. Both `save` (loose
@@ -320,8 +324,7 @@ impl<'a> Map<'a> {
     /// Save every component as a loose file under `path`.
     pub fn save(&self, path: String, game_data: &'a GameData) -> Result<(), MapError> {
         self.for_each_component_file(game_data, |file_name, bytes| {
-            Self::save_file(&bytes, &format!("{path}/{file_name}"));
-            Ok(())
+            Self::save_file(&bytes, &format!("{path}/{file_name}"))
         })
     }
 
@@ -412,6 +415,22 @@ mod map_tests {
 
         // Clean up
         let _ = fs::remove_dir_all(&output_dir);
+    }
+
+    #[test]
+    fn save_into_missing_directory_returns_error() {
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
+        let map = Map::open(get_path("Scenario/Sandbox_1.w3m"), &game_data)
+            .unwrap_or_else(|e| panic!("Failed to open map: {:?}", e));
+
+        // The directory intentionally does not exist: the I/O failure must
+        // surface as a MapError, not abort the process.
+        let missing_dir = get_path("Scenario/this-dir-does-not-exist/nested");
+        let result = map.save(missing_dir, &game_data);
+        assert!(
+            result.is_err(),
+            "saving into a missing directory must return Err, not panic"
+        );
     }
 
     #[test]
