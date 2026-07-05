@@ -554,6 +554,14 @@ impl BinaryConverter for W3iFile {
     }
 
     fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        // Reforged (v28) adds fields whose write layout is not implemented;
+        // fail cleanly before emitting a half-written header.
+        if self.version.is_remaster() {
+            return Err(WriteError::Reason(
+                "Writing Reforged (v28) war3map.w3i files is not supported yet".to_string(),
+            ));
+        }
+
         writer.write_u32(from_game_version(&self.version))?;
         writer.write_i32(self.count_saves)?;
         writer.write_i32(self.editor_version)?;
@@ -605,7 +613,7 @@ impl BinaryConverter for W3iFile {
                 writer.write_u8(self.custom_water_blue_tint)?;
                 writer.write_u8(self.custom_water_alpha_tint)?;
             }
-            Reforged => unimplemented!(),
+            Reforged => unreachable!("guarded at the top of write()"),
         }
         writer.write_u32(self.players.len() as u32)?;
         writer.write_vec(&self.players)?;
@@ -629,7 +637,7 @@ fn to_game_version(value: u32) -> Result<GameVersion, String> {
     match value {
         18 => Ok(RoC),
         25 => Ok(TFT),
-        // 28 => Ok(Reforged),
+        28 => Ok(Reforged),
         _ => Err(format!("Unknown or unsupported game version '{value}'")),
     }
 }
@@ -638,7 +646,7 @@ fn from_game_version(game_version: &GameVersion) -> u32 {
     match game_version {
         RoC => 18,
         TFT => 25,
-        Reforged => unimplemented!(),
+        Reforged => 28,
     }
 }
 
@@ -885,6 +893,28 @@ mod w3i_tests {
         let w3i = reader.read::<W3iFile>().unwrap();
         let mock_w3i = get_tft_mock();
         assert_eq!(w3i, mock_w3i);
+    }
+
+    #[test]
+    fn game_version_28_maps_to_reforged() {
+        use super::{from_game_version, to_game_version};
+        use wce_formats::GameVersion::Reforged;
+
+        assert_eq!(to_game_version(28), Ok(Reforged));
+        assert_eq!(from_game_version(&Reforged), 28);
+    }
+
+    #[test]
+    fn reforged_write_is_a_clean_error_not_a_panic() {
+        use wce_formats::GameVersion::Reforged;
+
+        let mut w3i = get_roc_mock();
+        w3i.version = Reforged;
+        let mut writer = BinaryWriter::new();
+        assert!(
+            w3i.write(&mut writer).is_err(),
+            "writing a Reforged w3i must return Err, not panic"
+        );
     }
 
     #[test]
