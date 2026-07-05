@@ -99,7 +99,7 @@ impl BinaryConverterVersion for ImportFile {
         for _ in 0..count {
             let path_type = reader.read_u8()?;
             let path_type = match *game_version {
-                RoC => ImportPathType::RoC,
+                RoC => ImportPathType::RoC(path_type),
                 _ => ImportPathType::from_u8(path_type).ok_or_else(|| {
                     ReadError::Reason(format!(
                         "Invalid import type '{path_type}' at {}/{}.",
@@ -143,7 +143,9 @@ impl BinaryConverterVersion for ImportFile {
 pub enum ImportPathType {
     STANDARD(u8),
     CUSTOM(u8),
-    RoC,
+    /// RoC entry: the raw on-disk byte is kept verbatim (the spec's 5/8/10/13
+    /// taxonomy is TFT-oriented; RoC fixtures carry 0 but custom values exist).
+    RoC(u8),
 }
 
 impl ImportPathType {
@@ -159,7 +161,7 @@ impl ImportPathType {
         match self {
             ImportPathType::STANDARD(n) => *n,
             ImportPathType::CUSTOM(n) => *n,
-            ImportPathType::RoC => 0,
+            ImportPathType::RoC(n) => *n,
         }
     }
 }
@@ -190,11 +192,11 @@ mod import_file_test {
     fn mock_import_files_roc() -> Vec<(ImportPathType, CString)> {
         vec![
             (
-                ImportPathType::RoC,
+                ImportPathType::RoC(0),
                 CString::new("Units\\Orc\\Grunt\\Grunt.mdx").unwrap(),
             ),
             (
-                ImportPathType::RoC,
+                ImportPathType::RoC(0),
                 CString::new("Textures\\Stone.blp").unwrap(),
             ),
         ]
@@ -249,8 +251,7 @@ mod import_file_test {
         for ((orig_type, orig_path), (recon_type, recon_path)) in
             original.files.iter().zip(reconstructed.files.iter())
         {
-            // For RoC, all path types should be RoC
-            assert_eq!(*recon_type, ImportPathType::RoC);
+            assert_eq!(orig_type, recon_type);
             assert_eq!(orig_path, recon_path);
         }
     }
@@ -287,7 +288,8 @@ mod import_file_test {
         assert_eq!(ImportPathType::CUSTOM(13).to_u8(), 13);
 
         // Test RoC type
-        assert_eq!(ImportPathType::RoC.to_u8(), 0);
+        assert_eq!(ImportPathType::RoC(0).to_u8(), 0);
+        assert_eq!(ImportPathType::RoC(13).to_u8(), 13);
 
         // Test round-trip conversions
         assert_eq!(
@@ -355,7 +357,7 @@ mod import_file_test {
         assert_eq!(import_file.files.len(), 1);
 
         let (path_type, path) = &import_file.files[0];
-        assert_eq!(*path_type, ImportPathType::RoC);
+        assert_eq!(*path_type, ImportPathType::RoC(0));
         assert_eq!(
             path.to_str().unwrap(),
             "Grid256.blp",
@@ -414,8 +416,7 @@ mod import_file_test {
         for ((orig_type, orig_path), (recon_type, recon_path)) in
             original.files.iter().zip(reconstructed.files.iter())
         {
-            // For RoC, the reconstructed type should always be RoC regardless of original
-            assert_eq!(*recon_type, ImportPathType::RoC);
+            assert_eq!(orig_type, recon_type);
             assert_eq!(orig_path, recon_path);
         }
     }
@@ -463,6 +464,31 @@ mod import_file_test {
         assert!(
             ImportFile::read_version(&mut reader, &GameVersion::TFT).is_err(),
             "a war3map.imp with an unknown format version must be rejected"
+        );
+    }
+
+    #[test]
+    fn roc_custom_path_type_survives_round_trip() {
+        let original = ImportFile {
+            version: 1,
+            files: vec![(
+                ImportPathType::RoC(13),
+                CString::new("war3mapImported\\custom\\tex.blp").unwrap(),
+            )],
+        };
+
+        let mut writer = BinaryWriter::new();
+        original
+            .write_version(&mut writer, &GameVersion::RoC)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let mut reader = BinaryReader::new(writer.into_buffer());
+        let reconstructed = ImportFile::read_version(&mut reader, &GameVersion::RoC)
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        assert_eq!(
+            reconstructed.files[0].0,
+            ImportPathType::RoC(13),
+            "a RoC custom path type byte must survive the round-trip"
         );
     }
 }
