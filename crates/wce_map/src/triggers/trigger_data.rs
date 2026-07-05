@@ -208,6 +208,10 @@ impl Parameter {
 pub struct SubParameters {
     pub(super) ptype: SubParameterType,
     pub(super) name: String,
+    /// On-disk `beginParameters` flag. Can be 1 with an empty `parameters`
+    /// list (when trigger_data yields zero parameters for the call), so it
+    /// cannot be derived from `parameters.len()` at write time.
+    pub(super) begin_parameters: bool,
     pub(super) parameters: Vec<Parameter>,
 }
 
@@ -247,6 +251,7 @@ impl SubParameters {
         Ok(Self {
             ptype,
             name,
+            begin_parameters,
             parameters,
         })
     }
@@ -259,7 +264,7 @@ impl SubParameters {
     ) -> Result<(), WtgError> {
         writer.write_i32(self.ptype as i32)?;
         writer.write_c_string_converted(&self.name)?;
-        writer.write_u32((self.parameters.len() > 0) as u32)?;
+        writer.write_u32((self.begin_parameters || !self.parameters.is_empty()) as u32)?;
         for param in &self.parameters {
             param.write(writer, game_version, trigger_data)?;
         }

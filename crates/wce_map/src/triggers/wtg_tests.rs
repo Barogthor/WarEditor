@@ -355,4 +355,70 @@ mod triggers_file_write_tests {
             println!("Trigger {} round-trip test passed", i);
         }
     }
+
+    #[test]
+    fn sub_parameters_preserves_on_disk_begin_parameters_flag() {
+        use wce_formats::binary_writer::BinaryWriter;
+
+        use crate::triggers::enums::SubParameterType;
+        use crate::triggers::trigger_data::SubParameters;
+
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
+        // On-disk flag read as 1, yet trigger_data yielded zero parameters:
+        // the write must echo the flag, not derive 0 from the empty list.
+        let sub = SubParameters {
+            ptype: SubParameterType::Call,
+            name: "DoNothing".to_string(),
+            begin_parameters: true,
+            parameters: vec![],
+        };
+
+        let mut writer = BinaryWriter::new();
+        sub.write(&mut writer, &GameVersion::TFT, game_data.get_trigger_data())
+            .unwrap_or_else(|e| panic!("{}", e));
+        let buffer = writer.into_buffer();
+
+        assert_eq!(
+            &buffer[buffer.len() - 4..],
+            &[1, 0, 0, 0],
+            "beginParameters flag read as 1 must be written back as 1"
+        );
+    }
+
+    #[test]
+    fn wtg_write_is_byte_exact_sandbox_w3m() {
+        assert_wtg_byte_exact("Scenario/Sandbox_1.w3m");
+    }
+
+    #[test]
+    fn wtg_write_is_byte_exact_sandbox_w3x() {
+        assert_wtg_byte_exact("Scenario/Sandbox_1.w3x");
+    }
+
+    /// Parse the real `war3map.wtg` then re-serialize it: the output must be
+    /// byte-identical to the archive's original bytes.
+    fn assert_wtg_byte_exact(map_resource: &str) {
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
+        let mut map =
+            MapArchive::open(get_path(map_resource)).unwrap_or_else(|e| panic!("{}", e));
+        let original_bytes = map
+            .read_file(TriggersFile::FILE_NAME)
+            .unwrap_or_else(|e| panic!("{}", e))
+            .inner();
+
+        let mut reader = BinaryReader::new(original_bytes.clone());
+        let triggers = TriggersFile::from(&mut reader, game_data.get_trigger_data())
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        let mut writer = BinaryWriter::new();
+        triggers
+            .write(&mut writer, game_data.get_trigger_data())
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        assert_eq!(
+            writer.into_buffer(),
+            original_bytes,
+            "{map_resource}: war3map.wtg round-trip must be byte-exact"
+        );
+    }
 }
