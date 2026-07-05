@@ -43,6 +43,8 @@ pub enum MapError {
     Protected(MpqError),
     #[error("Failed to write map archive. {0}")]
     Archive(MpqError),
+    #[error("Refusing to save: these archive entries could not be read on open (unsupported MPQ compression) and would be lost: {0:?}")]
+    UnreadableArchiveEntries(Vec<String>),
     #[error("Failed to write file '{path}'. {source}")]
     SaveFileIo {
         path: String,

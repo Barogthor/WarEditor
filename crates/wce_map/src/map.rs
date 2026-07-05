@@ -59,6 +59,11 @@ pub struct Map<'a> {
     /// (models, textures, sounds) carried verbatim so they survive a repack.
     /// Stored as `(archive_name, raw_bytes)`.
     extra_files: Vec<(String, Vec<u8>)>,
+    /// Archive entries that could not be read on open (e.g. Huffman/ADPCM
+    /// MPQ compression the `mpq` crate does not support). Opening stays
+    /// possible for inspection, but saving refuses rather than silently
+    /// dropping these files.
+    unreadable_files: Vec<String>,
 }
 
 impl<'a> Map<'a> {
@@ -92,14 +97,18 @@ impl<'a> Map<'a> {
 
     /// Read every archive entry that is neither a typed component nor an
     /// MPQ-internal file (`(listfile)`, `(attributes)`, `(signature)`) as a raw
-    /// blob, so imported assets survive an open/save round-trip. Returns an
-    /// empty list when the archive has no `(listfile)` to enumerate.
-    fn capture_extra_files(map: &mut MapArchive) -> Result<Vec<(String, Vec<u8>)>, MapError> {
+    /// blob, so imported assets survive an open/save round-trip. Returns the
+    /// captured `(name, bytes)` blobs plus the names of entries that could not
+    /// be read (unsupported MPQ compression such as Huffman/ADPCM on old
+    /// imported `.wav` files) — those must block a later save, not the open.
+    /// Both lists are empty when the archive has no `(listfile)` to enumerate.
+    fn capture_extra_files(map: &mut MapArchive) -> (Vec<(String, Vec<u8>)>, Vec<String>) {
         let names = match map.files() {
             Some(names) => names,
-            None => return Ok(Vec::new()),
+            None => return (Vec::new(), Vec::new()),
         };
         let mut extra = Vec::new();
+        let mut unreadable = Vec::new();
         for name in names {
             // The writer regenerates its own (listfile); (attributes)/(signature)
             // would be stale after content changes. Skip all MPQ-internal files.
@@ -113,10 +122,15 @@ impl<'a> Map<'a> {
             {
                 continue;
             }
-            let bytes = map.read_file(&name).map_err(MapError::Archive)?.inner();
-            extra.push((name, bytes));
+            match map.read_file(&name) {
+                Ok(buffer) => extra.push((name, buffer.inner())),
+                Err(err) => {
+                    log::warn!("Cannot capture archive entry '{name}' for repack: {err:?}");
+                    unreadable.push(name);
+                }
+            }
         }
-        Ok(extra)
+        (extra, unreadable)
     }
 
     pub fn open(path: String, game_data: &'a GameData) -> Result<Self, MapError> {
@@ -162,7 +176,7 @@ impl<'a> Map<'a> {
         // unit_datas.debug();
 
         let header = map.header().to_vec();
-        let extra_files = Self::capture_extra_files(&mut map)?;
+        let (extra_files, unreadable_files) = Self::capture_extra_files(&mut map);
 
         Ok(Self {
             game_data,
@@ -191,6 +205,7 @@ impl<'a> Map<'a> {
             destructable_datas,
             upgrade_datas,
             extra_files,
+            unreadable_files,
         })
     }
 
@@ -205,11 +220,18 @@ impl<'a> Map<'a> {
 
     /// Emit every component file as `(file_name, bytes)`. Both `save` (loose
     /// files) and `save_as_archive` (MPQ) route through here so the two can
-    /// never drift apart on which files they write.
+    /// never drift apart on which files they write. Errors with
+    /// [`MapError::UnreadableArchiveEntries`] when entries could not be
+    /// captured on open — writing would silently drop them.
     fn for_each_component_file<F>(&self, game_data: &GameData, mut emit: F) -> Result<(), MapError>
     where
         F: FnMut(&str, Vec<u8>) -> Result<(), MapError>,
     {
+        if !self.unreadable_files.is_empty() {
+            return Err(MapError::UnreadableArchiveEntries(
+                self.unreadable_files.clone(),
+            ));
+        }
         let game_version = self.infos.game_version();
         emit(
             W3iFile::FILE_NAME,
@@ -329,8 +351,8 @@ impl<'a> Map<'a> {
     }
 
     /// Repackage the map into a single MPQ archive at `path`, preserving the
-    /// original 512-byte `HM3W` header. Produces a re-openable map as long as it
-    /// has no imported assets (those are not yet captured on open).
+    /// original 512-byte `HM3W` header. Imported assets captured on open are
+    /// carried over verbatim.
     pub fn save_as_archive(&self, path: &str, game_data: &'a GameData) -> Result<(), MapError> {
         let mut archive = MapArchiveWriter::new();
         self.for_each_component_file(game_data, |file_name, bytes| {
@@ -547,6 +569,40 @@ mod map_tests {
             roundtripped.1, original.1,
             "imported {IMPORT} must survive repack byte-exact"
         );
+
+        let _ = fs::remove_dir_all(&output_dir);
+    }
+
+    /// An archive entry that could not be read on open (unsupported MPQ
+    /// compression, e.g. Huffman/ADPCM `.wav` imports in old maps) must not
+    /// fail the open, but saving must refuse rather than silently drop it.
+    #[test]
+    fn save_refuses_when_an_entry_was_unreadable_on_open() {
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
+        let mut map = Map::open(get_path("Scenario/Sandbox_1.w3m"), &game_data)
+            .unwrap_or_else(|e| panic!("Failed to open map: {:?}", e));
+        map.unreadable_files
+            .push(r"war3mapImported\Huffman.wav".to_string());
+
+        let output_dir = get_path("Scenario/unreadable-entry-test");
+        let _ = fs::remove_dir_all(&output_dir);
+        fs::create_dir_all(&output_dir).unwrap_or_else(|e| panic!("{:?}", e));
+
+        let archive_err = map
+            .save_as_archive(&format!("{output_dir}/repacked.w3m"), &game_data)
+            .expect_err("save_as_archive must refuse a lossy repack");
+        assert!(
+            matches!(&archive_err, crate::MapError::UnreadableArchiveEntries(files)
+                if files == &[r"war3mapImported\Huffman.wav".to_string()]),
+            "unexpected error: {archive_err:?}"
+        );
+        let save_err = map
+            .save(output_dir.clone(), &game_data)
+            .expect_err("save must refuse a lossy write");
+        assert!(matches!(
+            save_err,
+            crate::MapError::UnreadableArchiveEntries(_)
+        ));
 
         let _ = fs::remove_dir_all(&output_dir);
     }
