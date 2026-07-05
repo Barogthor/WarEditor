@@ -31,79 +31,79 @@ impl BinaryWriter {
     pub fn write_u8(&mut self, value: u8) -> WriteResult<()> {
         self.buffer
             .write_u8(value)
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn write_i16(&mut self, value: i16) -> WriteResult<()> {
         self.buffer
             .write_i16::<LittleEndian>(value)
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn write_u16(&mut self, value: u16) -> WriteResult<()> {
         self.buffer
             .write_u16::<LittleEndian>(value)
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn write_i24(&mut self, value: i32) -> WriteResult<()> {
         self.buffer
             .write_i24::<LittleEndian>(value)
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn write_u24(&mut self, value: u32) -> WriteResult<()> {
         self.buffer
             .write_u24::<LittleEndian>(value)
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn write_i32(&mut self, value: i32) -> WriteResult<()> {
         self.buffer
             .write_i32::<LittleEndian>(value)
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn write_i32_big(&mut self, value: i32) -> WriteResult<()> {
         self.buffer
             .write_i32::<BigEndian>(value)
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn write_u32(&mut self, value: u32) -> WriteResult<()> {
         self.buffer
             .write_u32::<LittleEndian>(value)
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn write_u32_big(&mut self, value: u32) -> WriteResult<()> {
         self.buffer
             .write_u32::<BigEndian>(value)
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn write_u64(&mut self, value: u64) -> WriteResult<()> {
         self.buffer
             .write_u64::<LittleEndian>(value)
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn write_f32(&mut self, value: f32) -> WriteResult<()> {
         self.buffer
             .write_f32::<LittleEndian>(value)
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn write_f64(&mut self, value: f64) -> WriteResult<()> {
         self.buffer
             .write_f64::<LittleEndian>(value)
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn write_c_string(&mut self, value: &CString) -> WriteResult<()> {
         self.buffer
             .write_all(value.as_bytes_with_nul())
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn write_c_string_converted(&mut self, value: &str) -> WriteResult<()> {
@@ -119,7 +119,7 @@ impl BinaryWriter {
     pub fn write_string_utf8(&mut self, value: &str) -> WriteResult<()> {
         self.buffer
             .write_all(value.as_bytes())
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn write_chars(&mut self, chars: &[char]) -> WriteResult<()> {
@@ -132,7 +132,7 @@ impl BinaryWriter {
     pub fn write_bytes(&mut self, bytes: &[u8]) -> WriteResult<()> {
         self.buffer
             .write_all(bytes)
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn write<T: BinaryConverter>(&mut self, value: &T) -> WriteResult<()> {
@@ -197,14 +197,14 @@ impl BinaryWriter {
         self.buffer
             .seek(SeekFrom::Current(offset))
             .map(|_| ())
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn seek_begin(&mut self) -> WriteResult<()> {
         self.buffer
             .seek(SeekFrom::Start(0))
             .map(|_| ())
-            .map_err(|e| to_write_error(self, e))
+            .map_err(WriteError::IoError)
     }
 
     pub fn pos(&self) -> u64 {
@@ -228,12 +228,6 @@ impl BinaryWriter {
         self.seek_begin()
             .expect("Failed to seek to beginning after clear");
     }
-}
-
-fn to_write_error(writer: &BinaryWriter, error: std::io::Error) -> WriteError {
-    let _pos = writer.pos();
-    let _size = writer.size();
-    WriteError::IoError(error)
 }
 
 impl Default for BinaryWriter {
