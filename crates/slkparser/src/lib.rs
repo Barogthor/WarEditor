@@ -11,7 +11,7 @@ pub mod record;
 pub mod slk_type;
 #[cfg(target_os = "macos")]
 pub const END_RECORD: &str = "\n";
-#[cfg(target_os = "windows")]
+#[cfg(not(target_os = "macos"))]
 pub const END_RECORD: &str = "\r\n";
 pub const FIELD_SEPARATOR: &str = ";";
 

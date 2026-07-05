@@ -38,52 +38,61 @@ use crate::unit_map::UnitMapError;
 use crate::w3i_file::InfoError;
 
 #[derive(Debug, Error)]
-pub enum OpeningError {
+pub enum MapError {
     #[error("Map is likely protecte. {0}")]
     Protected(MpqError),
-    #[error("Failed to load terrain environment. {0}")]
+    #[error("Failed to write map archive. {0}")]
+    Archive(MpqError),
+    #[error("Refusing to save: these archive entries could not be read on open (unsupported MPQ compression) and would be lost: {0:?}")]
+    UnreadableArchiveEntries(Vec<String>),
+    #[error("Failed to write file '{path}'. {source}")]
+    SaveFileIo {
+        path: String,
+        source: std::io::Error,
+    },
+    #[error("Failed on terrain environment. {0}")]
     Environment(TerrainError),
-    #[error("Failed to load custom text triggers. {0}")]
+    #[error("Failed on custom text triggers. {0}")]
     CustomTextTrigger(TriggerJassError),
-    #[error("Failed to load trigger data. {0}")]
+    #[error("Failed on trigger data. {0}")]
     Triggers(TriggersError),
-    #[error("Failed to load import file list. {0}")]
+    #[error("Failed on import file list. {0}")]
     Import(ImportError),
-    #[error("Failed to load minimap. {0}")]
+    #[error("Failed on minimap. {0}")]
     Minimap(MinimapError),
-    #[error("Failed to load menu minimap. {0}")]
+    #[error("Failed on menu minimap. {0}")]
     MenuMinimap(MenuMinimapError),
-    #[error("Failed to load pathing map. {0}")]
+    #[error("Failed on pathing map. {0}")]
     PathingMap(PathmapError),
-    #[error("Failed to load regions. {0}")]
+    #[error("Failed on regions. {0}")]
     Region(RegionError),
-    #[error("Failed to load shadow map. {0}")]
+    #[error("Failed on shadow map. {0}")]
     ShadowMap(ShadowMapError),
-    #[error("Failed to load doodads. {0}")]
+    #[error("Failed on doodads. {0}")]
     Doodad(DoodadError),
-    #[error("Failed to load cameras. {0}")]
+    #[error("Failed on cameras. {0}")]
     Camera(CameraError),
-    #[error("Failed to load units and items. {0}")]
+    #[error("Failed on units and items. {0}")]
     UnitItem(UnitMapError),
-    #[error("Failed to load sounds. {0}")]
+    #[error("Failed on sounds. {0}")]
     Sound(SoundError),
-    #[error("Failed to load map strings. {0}")]
+    #[error("Failed on map strings. {0}")]
     MapStrings(MapStringError),
-    #[error("Failed to load map info. {0}")]
+    #[error("Failed on map info. {0}")]
     Info(InfoError),
-    #[error("Failed to load custom units. {0}")]
+    #[error("Failed on custom units. {0}")]
     CustomUnit(CustomUnitError),
-    #[error("Failed to load custom items. {0}")]
+    #[error("Failed on custom items. {0}")]
     CustomItem(CustomItemError),
-    #[error("Failed to load custom abilities. {0}")]
+    #[error("Failed on custom abilities. {0}")]
     CustomAbility(CustomAbilityError),
-    #[error("Failed to load custom buffs. {0}")]
+    #[error("Failed on custom buffs. {0}")]
     CustomBuff(CustomBuffError),
-    #[error("Failed to load custom upgrades. {0}")]
+    #[error("Failed on custom upgrades. {0}")]
     CustomUpgrade(CustomUpgradeError),
-    #[error("Failed to load custom doodads. {0}")]
+    #[error("Failed on custom doodads. {0}")]
     CustomDoodad(CustomDoodadError),
-    #[error("Failed to load custom destructables. {0}")]
+    #[error("Failed on custom destructables. {0}")]
     CustomDestructable(CustomDestructableError),
 }
 

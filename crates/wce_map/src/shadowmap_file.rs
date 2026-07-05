@@ -2,10 +2,11 @@ use std::convert::TryFrom;
 use std::io::{self, Read};
 
 use thiserror::Error;
-use wce_formats::{MapArchive, MpqError, ReadError};
+use wce_formats::binary_writer::BinaryWriter;
+use wce_formats::{MapArchive, MpqError, ReadError, WriteError};
 
 use crate::globals::MAP_SHADERS;
-use crate::OpeningError;
+use crate::MapError;
 
 #[derive(Debug, Error)]
 pub enum ShadowMapError {
@@ -15,10 +16,12 @@ pub enum ShadowMapError {
     IoError(#[from] io::Error),
     #[error("Failed to parse shadow value: {0}")]
     Parsing(ReadError),
+    #[error("Failed to save shadowmap data. {0}")]
+    SaveError(WriteError),
 }
-impl From<ShadowMapError> for OpeningError {
+impl From<ShadowMapError> for MapError {
     fn from(value: ShadowMapError) -> Self {
-        OpeningError::ShadowMap(value)
+        MapError::ShadowMap(value)
     }
 }
 
@@ -40,13 +43,24 @@ impl TryFrom<u8> for ShadowType {
     }
 }
 
+impl ShadowType {
+    fn to_byte(&self) -> u8 {
+        match self {
+            ShadowType::Shadow => 0x00,
+            ShadowType::NoShadow => 0xff,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct ShadowMapFile {
     shaders: Vec<ShadowType>,
 }
 
 impl ShadowMapFile {
-    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
+    pub const FILE_NAME: &str = MAP_SHADERS;
+
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, MapError> {
         let buffer = map
             .read_file(MAP_SHADERS)
             .map_err(ShadowMapError::MpqError)?;
@@ -60,6 +74,17 @@ impl ShadowMapFile {
             .collect::<Result<Vec<_>, _>>()?;
         Ok(Self { shaders })
     }
+
+    pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
+        let mut writer = BinaryWriter::new();
+        for shadow in &self.shaders {
+            writer
+                .write_u8(shadow.to_byte())
+                .map_err(ShadowMapError::SaveError)?;
+        }
+        Ok(writer)
+    }
+
     pub fn debug(&self) {
         println!("{self:#?}");
     }

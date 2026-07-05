@@ -2,11 +2,12 @@ use std::convert::TryFrom;
 
 use thiserror::Error;
 use wce_formats::binary_reader::BinaryReader;
+use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::blp::{BLPError, BLP};
-use wce_formats::{MapArchive, MpqError, ReadError};
+use wce_formats::{MapArchive, MpqError, ReadError, WriteError};
 
 use crate::globals::MAP_MINIMAP;
-use crate::OpeningError;
+use crate::MapError;
 
 #[derive(Debug, Error)]
 pub enum MinimapError {
@@ -16,11 +17,13 @@ pub enum MinimapError {
     InitReader(ReadError),
     #[error("Failed to parse minimap image. {0}")]
     Blp(BLPError),
+    #[error("Failed to save minimap data. {0}")]
+    SaveError(WriteError),
 }
 
-impl From<MinimapError> for OpeningError {
+impl From<MinimapError> for MapError {
     fn from(value: MinimapError) -> Self {
-        OpeningError::Minimap(value)
+        MapError::Minimap(value)
     }
 }
 
@@ -29,11 +32,19 @@ pub struct MinimapFile {
 }
 
 impl MinimapFile {
-    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
+    pub const FILE_NAME: &str = MAP_MINIMAP;
+
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, MapError> {
         let buffer = map.read_file(MAP_MINIMAP).map_err(MinimapError::MpqError)?;
         let mut reader = BinaryReader::try_from(buffer).map_err(MinimapError::InitReader)?;
         let minimap: BLP = BLP::from(&mut reader).map_err(MinimapError::Blp)?;
         Ok(Self { minimap })
+    }
+
+    pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
+        let mut writer = BinaryWriter::new();
+        self.minimap.write(&mut writer).map_err(MinimapError::Blp)?;
+        Ok(writer)
     }
 }
 

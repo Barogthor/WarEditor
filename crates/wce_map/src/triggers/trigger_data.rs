@@ -1,5 +1,6 @@
 // use log::{debug, error, info, trace, warn};
 use wce_formats::binary_reader::BinaryReader;
+use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{self, RoC};
 
 use crate::data_ini::DataIni;
@@ -75,6 +76,41 @@ impl ECADefinition {
             childs_eca,
         })
     }
+
+    pub fn write(
+        &self,
+        writer: &mut BinaryWriter,
+        game_version: &GameVersion,
+        trigger_data: &DataIni,
+        is_child_eca: bool,
+    ) -> Result<(), WtgError> {
+        writer.write_u32(self.ftype as u32)?;
+        match (game_version, is_child_eca) {
+            (RoC, _) | (_, false) => {}
+            (_, true) => {
+                if let Some(condition_type) = self.condition_group {
+                    writer.write_u32(condition_type as u32)?;
+                }
+            }
+        }
+        writer.write_c_string_converted(&self.name)?;
+        writer.write_u32(self.enabled as u32)?;
+        for param in &self.parameters {
+            param.write(writer, game_version, trigger_data)?;
+        }
+        match game_version {
+            RoC => {}
+            _ => {
+                if let Some(childs_eca) = &self.childs_eca {
+                    writer.write_u32(childs_eca.len() as u32)?;
+                    for eca in childs_eca {
+                        eca.write(writer, game_version, trigger_data, true)?;
+                    }
+                }
+            }
+        };
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
@@ -133,12 +169,49 @@ impl Parameter {
             array_parameter,
         })
     }
+
+    pub fn write(
+        &self,
+        writer: &mut BinaryWriter,
+        game_version: &GameVersion,
+        trigger_data: &DataIni,
+    ) -> Result<(), WtgError> {
+        writer.write_i32(self.ptype as i32)?;
+        writer.write_c_string_converted(&self.value)?;
+        writer.write_u32(self.sub_parameters.is_some() as u32)?;
+        if let Some(sub_param) = &self.sub_parameters {
+            sub_param.write(writer, game_version, trigger_data)?;
+        }
+        match (game_version, self.ptype, self.sub_parameters.is_some()) {
+            (RoC, ParameterType::Function, _) => {
+                writer.write_i32(self.unknown.expect("Parameter unknown value missing"))?;
+            }
+            (RoC, _, _) | (_, _, false) => {}
+            (_, _, _) => {
+                writer.write_i32(self.unknown.expect("Parameter unknown value missing"))?
+            }
+        }
+        match (game_version, self.ptype) {
+            (RoC, ParameterType::Function) => {}
+            (RoC, _) | (_, _) => {
+                writer.write_u32(self.array_parameter.is_some() as u32)?;
+                if let Some(array_param) = &self.array_parameter {
+                    array_param.write(writer, game_version, trigger_data)?;
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
 pub struct SubParameters {
     pub(super) ptype: SubParameterType,
     pub(super) name: String,
+    /// On-disk `beginParameters` flag. Can be 1 with an empty `parameters`
+    /// list (when trigger_data yields zero parameters for the call), so it
+    /// cannot be derived from `parameters.len()` at write time.
+    pub(super) begin_parameters: bool,
     pub(super) parameters: Vec<Parameter>,
 }
 
@@ -178,7 +251,23 @@ impl SubParameters {
         Ok(Self {
             ptype,
             name,
+            begin_parameters,
             parameters,
         })
+    }
+
+    pub fn write(
+        &self,
+        writer: &mut BinaryWriter,
+        game_version: &GameVersion,
+        trigger_data: &DataIni,
+    ) -> Result<(), WtgError> {
+        writer.write_i32(self.ptype as i32)?;
+        writer.write_c_string_converted(&self.name)?;
+        writer.write_u32((self.begin_parameters || !self.parameters.is_empty()) as u32)?;
+        for param in &self.parameters {
+            param.write(writer, game_version, trigger_data)?;
+        }
+        Ok(())
     }
 }

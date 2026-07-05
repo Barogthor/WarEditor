@@ -1,0 +1,83 @@
+﻿STRING 1
+{
+Sandbox Roc
+}
+
+STRING 2
+{
+Tous
+}
+
+STRING 3
+{
+Sans description
+}
+
+STRING 4
+{
+Inconnu
+}
+
+STRING 5
+{
+Joueur 1
+}
+
+STRING 6
+{
+Joueur 2
+}
+
+STRING 7
+{
+Force 1
+}
+
+STRING 8
+// Unités: h000 (Footman Test), Name (Nom)
+{
+Footman Test
+}
+
+STRING 9
+// Objets: I000 (Ancien Janggo d'endurance Ex), Name (Nom)
+{
+Ancien Janggo d'endurance Ex
+}
+
+STRING 10
+// Destructibles: B000 (Caisses Ex), Name (Nom)
+{
+Caisses Ex
+}
+
+STRING 11
+// Doodads: D000 (Atre Ex), Name (Nom)
+{
+Atre Ex
+}
+
+STRING 12
+// Compétences: A000 (Défensif Ex), Name (Nom)
+{
+Défensif Ex
+}
+
+STRING 13
+// Enchantements/Effets: B000 (), Bufftip (Bulle d'aide)
+{
+Gelée
+}
+
+STRING 14
+// Enchantements/Effets: B000 (), Buffubertip (Bulle d'aide - longue)
+{
+Cette unité est gelé. Il est impossible d'utiliser ses compétences.
+}
+
+STRING 15
+// Mises à jour: R000 (Elevage), Name (Nom)
+{
+Elevage Ex
+}
+

@@ -3,9 +3,6 @@ use std::convert::TryFrom;
 use std::fmt::Debug;
 use thiserror::Error;
 
-#[cfg(test)]
-use pretty_assertions::assert_eq;
-
 macro_rules! flag_accessors {
     ($($name:ident, $bit:expr $(, $doc:literal)?),* $(,)?) => {
         $(
@@ -29,13 +26,13 @@ macro_rules! flag_accessors {
 }
 
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
-use wce_formats::binary_writer::BinaryWriter;
+use wce_formats::binary_writer::{BinaryWriter, WriteResult};
 use wce_formats::GameVersion::{Reforged, RoC, TFT};
 use wce_formats::MapArchive;
-use wce_formats::{BinaryConverter, GameVersion, MpqError, ReadError};
+use wce_formats::{BinaryConverter, GameVersion, MpqError, ReadError, WriteError};
 
 use crate::globals::MAP_INFOS;
-use crate::OpeningError;
+use crate::MapError;
 
 #[derive(Debug, Error)]
 pub enum InfoError {
@@ -45,10 +42,12 @@ pub enum InfoError {
     InitReader(ReadError),
     #[error("Failed to parse infos datas. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save map info data. {0}")]
+    SaveError(WriteError),
 }
-impl From<InfoError> for OpeningError {
+impl From<InfoError> for MapError {
     fn from(value: InfoError) -> Self {
-        OpeningError::Info(value)
+        MapError::Info(value)
     }
 }
 
@@ -150,8 +149,17 @@ impl BinaryConverter for PlayerData {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
-        unimplemented!()
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_i32(self.player_id)?;
+        writer.write_i32(self.player_type)?;
+        writer.write_i32(self.player_race)?;
+        writer.write_i32(self.fixed_position)?;
+        writer.write_c_string_converted(&self.player_name)?;
+        writer.write_f32(self.starting_pos_x)?;
+        writer.write_f32(self.starting_pos_y)?;
+        writer.write_i32(self.ally_low_priorities)?;
+        writer.write_i32(self.ally_high_priorities)?;
+        Ok(())
     }
 }
 
@@ -175,8 +183,11 @@ impl BinaryConverter for ForceData {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
-        unimplemented!()
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_i32(self.force_flags.raw_value)?;
+        writer.write_i32(self.player_mask)?;
+        writer.write_c_string_converted(&self.name)?;
+        Ok(())
     }
 }
 
@@ -202,8 +213,12 @@ impl BinaryConverter for UpgradeAvailability {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
-        unimplemented!()
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_i32(self.player_availability)?;
+        writer.write_string_utf8(&self.upgrade_id)?;
+        writer.write_i32(self.upgrade_level)?;
+        writer.write_i32(self.availability)?;
+        Ok(())
     }
 }
 
@@ -223,8 +238,10 @@ impl BinaryConverter for TechAvailability {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
-        unimplemented!()
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_i32(self.player_availability)?;
+        writer.write_string_utf8(&self.tech_id)?;
+        Ok(())
     }
 }
 
@@ -236,9 +253,9 @@ struct RandomUnitSet {
 
 #[derive(Debug, PartialEq, Clone, PartialOrd)]
 pub enum RandomTablePositionType {
-    Unit,
-    Building,
-    Item,
+    Unit = 0,
+    Building = 1,
+    Item = 2,
 }
 
 impl RandomTablePositionType {
@@ -264,7 +281,7 @@ impl BinaryConverter for RandomUnitTable {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
         let id = reader.read_i32()?;
         let name = read_c_string_safe(reader)?;
-        let count_pos = reader.read_i32()? as usize;
+        let count_pos = reader.read_u32()?;
         let mut position_types = vec![];
         for _ in 0..count_pos {
             position_types.push(RandomTablePositionType::from(reader.read_u32()?)?)
@@ -287,8 +304,21 @@ impl BinaryConverter for RandomUnitTable {
         })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
-        unimplemented!()
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_i32(self.id)?;
+        writer.write_c_string_converted(&self.name)?;
+        writer.write_u32(self.position_types.len() as u32)?;
+        for pos_type in &self.position_types {
+            writer.write_u32(pos_type.clone() as u32)?;
+        }
+        writer.write_u32(self.sets.len() as u32)?;
+        for set in &self.sets {
+            writer.write_u32(set.chance)?;
+            for id in &set.ids {
+                writer.write_string_utf8(id)?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -299,7 +329,7 @@ struct RandomItemSet {
 
 impl BinaryConverter for RandomItemSet {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
-        let count_items = reader.read_i32()?;
+        let count_items = reader.read_u32()?;
         let mut items = vec![];
         for _ in 0..count_items {
             let chance = reader.read_u32()?;
@@ -309,8 +339,13 @@ impl BinaryConverter for RandomItemSet {
         Ok(RandomItemSet { items })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
-        unimplemented!()
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_u32(self.items.len() as u32)?;
+        for (chance, id) in &self.items {
+            writer.write_u32(*chance)?;
+            writer.write_string_utf8(id)?;
+        }
+        Ok(())
     }
 }
 
@@ -325,13 +360,17 @@ impl BinaryConverter for RandomItemTable {
     fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
         let id = reader.read_i32()?;
         let name = read_c_string_safe(reader)?;
-        let count_sets = reader.read_i32()? as usize;
+        let count_sets = reader.read_u32()? as usize;
         let sets = reader.read_vec::<RandomItemSet>(count_sets)?;
         Ok(RandomItemTable { id, name, sets })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
-        unimplemented!()
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        writer.write_i32(self.id)?;
+        writer.write_c_string_converted(&self.name)?;
+        writer.write_u32(self.sets.len() as u32)?;
+        writer.write_vec(&self.sets)?;
+        Ok(())
     }
 }
 
@@ -392,13 +431,21 @@ pub struct W3iFile {
 }
 
 impl W3iFile {
-    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
+    pub const FILE_NAME: &str = MAP_INFOS;
+
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, MapError> {
         let buffer = map.read_file(MAP_INFOS).map_err(InfoError::MpqError)?;
         let mut reader = BinaryReader::try_from(buffer).map_err(InfoError::InitReader)?;
         reader
             .read::<W3iFile>()
             .map_err(InfoError::Parsing)
             .map_err(From::from)
+    }
+
+    pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
+        let mut writer = BinaryWriter::new();
+        writer.write(self).map_err(InfoError::SaveError)?;
+        Ok(writer)
     }
 
     pub fn game_version(&self) -> GameVersion {
@@ -493,18 +540,93 @@ impl BinaryConverter for W3iFile {
             let random_item_table_count = reader.read_u32()? as usize;
             w3i.random_item_tables = reader.read_vec::<RandomItemTable>(random_item_table_count)?;
         }
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_INFOS,
-            reader.size() - reader.pos() as usize
-        );
+        if reader.size() != reader.pos() as usize {
+            return Err(ReadError::Reason(format!(
+                "reader for {} hasn't reached EOF. Missing {} bytes",
+                MAP_INFOS,
+                reader.size() - reader.pos() as usize
+            )));
+        }
         Ok(w3i)
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
-        unimplemented!()
+    fn write(&self, writer: &mut BinaryWriter) -> WriteResult<()> {
+        // Reforged (v28) adds fields whose write layout is not implemented;
+        // fail cleanly before emitting a half-written header.
+        if self.version.is_remaster() {
+            return Err(WriteError::Reason(
+                "Writing Reforged (v28) war3map.w3i files is not supported yet".to_string(),
+            ));
+        }
+
+        writer.write_u32(from_game_version(&self.version))?;
+        writer.write_i32(self.count_saves)?;
+        writer.write_i32(self.editor_version)?;
+        writer.write_c_string_converted(&self.map_name)?;
+        writer.write_c_string_converted(&self.map_author)?;
+        writer.write_c_string_converted(&self.map_description)?;
+        writer.write_c_string_converted(&self.recommended_players)?;
+        writer.write_vec_f32(&self.camera_bounds)?;
+        writer.write_vec_i32(&self.camera_bounds_complements)?;
+        writer.write_i32(self.map_playable_width)?;
+        writer.write_i32(self.map_playable_height)?;
+        writer.write_i32(self.header_flags.raw_value)?;
+        writer.write_char(self.ground_type)?;
+        match self.version {
+            RoC => {
+                writer.write_i32(self.campaign_background)?;
+                writer.write_c_string_converted(&self.loading_screen_text)?;
+                writer.write_c_string_converted(&self.loading_screen_title)?;
+                writer.write_c_string_converted(&self.loading_screen_subtitle)?;
+                writer.write_i32(self.loading_screen_index)?;
+                writer.write_c_string_converted(&self.prologue_screen_text)?;
+                writer.write_c_string_converted(&self.prologue_screen_title)?;
+                writer.write_c_string_converted(&self.prologue_screen_subtitle)?;
+            }
+            TFT => {
+                writer.write_i32(self.loading_screen_index)?;
+                writer.write_c_string_converted(&self.custom_loading_screen_model_path)?;
+                writer.write_c_string_converted(&self.loading_screen_text)?;
+                writer.write_c_string_converted(&self.loading_screen_title)?;
+                writer.write_c_string_converted(&self.loading_screen_subtitle)?;
+                writer.write_i32(self.user_game_dataset)?;
+                writer.write_c_string_converted(&self.prologue_screen_path)?;
+                writer.write_c_string_converted(&self.prologue_screen_text)?;
+                writer.write_c_string_converted(&self.prologue_screen_title)?;
+                writer.write_c_string_converted(&self.prologue_screen_subtitle)?;
+                writer.write_i32(self.fog_style)?;
+                writer.write_f32(self.fog_z_height_start)?;
+                writer.write_f32(self.fog_z_height_end)?;
+                writer.write_f32(self.fog_density)?;
+                writer.write_u8(self.fog_red_tint)?;
+                writer.write_u8(self.fog_green_tint)?;
+                writer.write_u8(self.fog_blue_tint)?;
+                writer.write_u8(self.fog_alpha_value)?;
+                writer.write_i32(self.global_weather)?;
+                writer.write_c_string_converted(&self.custom_sound_environment)?;
+                writer.write_char(self.custom_light_environment_id)?;
+                writer.write_u8(self.custom_water_red_tint)?;
+                writer.write_u8(self.custom_water_green_tint)?;
+                writer.write_u8(self.custom_water_blue_tint)?;
+                writer.write_u8(self.custom_water_alpha_tint)?;
+            }
+            Reforged => unreachable!("guarded at the top of write()"),
+        }
+        writer.write_u32(self.players.len() as u32)?;
+        writer.write_vec(&self.players)?;
+        writer.write_u32(self.forces.len() as u32)?;
+        writer.write_vec(&self.forces)?;
+        writer.write_u32(self.upgrades.len() as u32)?;
+        writer.write_vec(&self.upgrades)?;
+        writer.write_u32(self.techs.len() as u32)?;
+        writer.write_vec(&self.techs)?;
+        writer.write_u32(self.random_unit_tables.len() as u32)?;
+        writer.write_vec(&self.random_unit_tables)?;
+        if self.version.is_tft() {
+            writer.write_u32(self.random_item_tables.len() as u32)?;
+            writer.write_vec(&self.random_item_tables)?;
+        }
+        Ok(())
     }
 }
 
@@ -517,11 +639,21 @@ fn to_game_version(value: u32) -> Result<GameVersion, String> {
     }
 }
 
+fn from_game_version(game_version: &GameVersion) -> u32 {
+    match game_version {
+        RoC => 18,
+        TFT => 25,
+        Reforged => 28,
+    }
+}
+
 #[cfg(test)]
 mod w3i_tests {
     use std::fs::File;
 
     use wce_formats::binary_reader::BinaryReader;
+    use wce_formats::binary_writer::BinaryWriter;
+    use wce_formats::BinaryConverter;
     use wce_formats::GameVersion::{RoC, TFT};
 
     use crate::get_resources_path;
@@ -761,6 +893,28 @@ mod w3i_tests {
     }
 
     #[test]
+    fn game_version_28_maps_to_reforged() {
+        use super::{from_game_version, to_game_version};
+        use wce_formats::GameVersion::Reforged;
+
+        assert_eq!(to_game_version(28), Ok(Reforged));
+        assert_eq!(from_game_version(&Reforged), 28);
+    }
+
+    #[test]
+    fn reforged_write_is_a_clean_error_not_a_panic() {
+        use wce_formats::GameVersion::Reforged;
+
+        let mut w3i = get_roc_mock();
+        w3i.version = Reforged;
+        let mut writer = BinaryWriter::new();
+        assert!(
+            w3i.write(&mut writer).is_err(),
+            "writing a Reforged w3i must return Err, not panic"
+        );
+    }
+
+    #[test]
     fn test_header_flags_macro() {
         let mut flags = HeaderFlags::new(0);
 
@@ -810,5 +964,199 @@ mod w3i_tests {
         // Test raw value
         let expected = 0x0001 | 0x0002 | 0x0010; // allied + shared_victory + shared_unit_control
         assert_eq!(flags.raw_value(), expected);
+    }
+
+    #[test]
+    fn write_read_roundtrip_roc() {
+        // Read original data
+        let mut w3i_file = File::open(get_path("Scenario/Sandbox_roc/war3map.w3i"))
+            .unwrap_or_else(|e| panic!("{}", e));
+        let mut reader = BinaryReader::from(&mut w3i_file);
+        let original_w3i = reader.read::<W3iFile>().unwrap_or_else(|e| panic!("{}", e));
+
+        // Write to buffer
+        let mut writer = BinaryWriter::new();
+        original_w3i
+            .write(&mut writer)
+            .expect("Failed to write W3iFile");
+
+        println!("Original buffer size: {}", reader.size());
+        println!("Written buffer size: {}", writer.into_buffer().len());
+
+        // Write to buffer again for comparison
+        let mut writer = BinaryWriter::new();
+        original_w3i
+            .write(&mut writer)
+            .expect("Failed to write W3iFile");
+
+        // Read back from buffer
+        let buffer = writer.into_buffer();
+        let mut reader = BinaryReader::new(buffer);
+        let written_w3i = reader
+            .read::<W3iFile>()
+            .unwrap_or_else(|e| panic!("Failed to read back: {}", e));
+
+        // Compare
+        assert_eq!(original_w3i.version, written_w3i.version);
+        assert_eq!(original_w3i.map_name, written_w3i.map_name);
+        assert_eq!(original_w3i.map_author, written_w3i.map_author);
+        assert_eq!(original_w3i.map_description, written_w3i.map_description);
+        assert_eq!(
+            original_w3i.recommended_players,
+            written_w3i.recommended_players
+        );
+        assert_eq!(original_w3i.camera_bounds, written_w3i.camera_bounds);
+        assert_eq!(
+            original_w3i.camera_bounds_complements,
+            written_w3i.camera_bounds_complements
+        );
+        assert_eq!(
+            original_w3i.map_playable_width,
+            written_w3i.map_playable_width
+        );
+        assert_eq!(
+            original_w3i.map_playable_height,
+            written_w3i.map_playable_height
+        );
+        assert_eq!(original_w3i.header_flags, written_w3i.header_flags);
+        assert_eq!(original_w3i.ground_type, written_w3i.ground_type);
+        assert_eq!(original_w3i.players.len(), written_w3i.players.len());
+        assert_eq!(original_w3i.forces.len(), written_w3i.forces.len());
+        assert_eq!(original_w3i.upgrades.len(), written_w3i.upgrades.len());
+        assert_eq!(original_w3i.techs.len(), written_w3i.techs.len());
+        assert_eq!(
+            original_w3i.random_unit_tables.len(),
+            written_w3i.random_unit_tables.len()
+        );
+        assert_eq!(
+            original_w3i.random_item_tables.len(),
+            written_w3i.random_item_tables.len()
+        );
+
+        // Compare individual players
+        for (original, written) in original_w3i.players.iter().zip(written_w3i.players.iter()) {
+            assert_eq!(original.player_id, written.player_id);
+            assert_eq!(original.player_name, written.player_name);
+            assert_eq!(original.player_type, written.player_type);
+            assert_eq!(original.player_race, written.player_race);
+        }
+
+        // Compare forces
+        for (original, written) in original_w3i.forces.iter().zip(written_w3i.forces.iter()) {
+            assert_eq!(original.name, written.name);
+            assert_eq!(original.player_mask, written.player_mask);
+            assert_eq!(original.force_flags, written.force_flags);
+        }
+    }
+
+    #[test]
+    fn write_read_roundtrip_tft() {
+        // Read original data
+        let mut w3i_file = File::open(get_path("Scenario/Sandbox_tft/war3map.w3i"))
+            .unwrap_or_else(|e| panic!("{}", e));
+        let mut reader = BinaryReader::from(&mut w3i_file);
+        let original_w3i = reader.read::<W3iFile>().unwrap_or_else(|e| panic!("{}", e));
+
+        // Write to buffer
+        let mut writer = BinaryWriter::new();
+        original_w3i
+            .write(&mut writer)
+            .expect("Failed to write W3iFile");
+
+        println!("Original buffer size: {}", reader.size());
+        println!("Written buffer size: {}", writer.into_buffer().len());
+
+        // Write to buffer again for comparison
+        let mut writer = BinaryWriter::new();
+        original_w3i
+            .write(&mut writer)
+            .expect("Failed to write W3iFile");
+
+        // Read back from buffer
+        let buffer = writer.into_buffer();
+        let mut reader = BinaryReader::new(buffer);
+        let written_w3i = reader.read::<W3iFile>().unwrap_or_else(|e| panic!("{}", e));
+
+        // Compare
+        assert_eq!(original_w3i.version, written_w3i.version);
+        assert_eq!(original_w3i.map_name, written_w3i.map_name);
+        assert_eq!(original_w3i.map_author, written_w3i.map_author);
+        assert_eq!(original_w3i.map_description, written_w3i.map_description);
+        assert_eq!(
+            original_w3i.recommended_players,
+            written_w3i.recommended_players
+        );
+        assert_eq!(original_w3i.camera_bounds, written_w3i.camera_bounds);
+        assert_eq!(
+            original_w3i.camera_bounds_complements,
+            written_w3i.camera_bounds_complements
+        );
+        assert_eq!(
+            original_w3i.map_playable_width,
+            written_w3i.map_playable_width
+        );
+        assert_eq!(
+            original_w3i.map_playable_height,
+            written_w3i.map_playable_height
+        );
+        assert_eq!(original_w3i.header_flags, written_w3i.header_flags);
+        assert_eq!(original_w3i.ground_type, written_w3i.ground_type);
+        assert_eq!(original_w3i.players.len(), written_w3i.players.len());
+        assert_eq!(original_w3i.forces.len(), written_w3i.forces.len());
+        assert_eq!(original_w3i.upgrades.len(), written_w3i.upgrades.len());
+        assert_eq!(original_w3i.techs.len(), written_w3i.techs.len());
+        assert_eq!(
+            original_w3i.random_unit_tables.len(),
+            written_w3i.random_unit_tables.len()
+        );
+        assert_eq!(
+            original_w3i.random_item_tables.len(),
+            written_w3i.random_item_tables.len()
+        );
+
+        // TFT-specific comparisons
+        assert_eq!(
+            original_w3i.custom_loading_screen_model_path,
+            written_w3i.custom_loading_screen_model_path
+        );
+        assert_eq!(
+            original_w3i.user_game_dataset,
+            written_w3i.user_game_dataset
+        );
+        assert_eq!(
+            original_w3i.prologue_screen_path,
+            written_w3i.prologue_screen_path
+        );
+        assert_eq!(original_w3i.fog_style, written_w3i.fog_style);
+        assert_eq!(original_w3i.fog_density, written_w3i.fog_density);
+        assert_eq!(original_w3i.fog_red_tint, written_w3i.fog_red_tint);
+        assert_eq!(original_w3i.fog_green_tint, written_w3i.fog_green_tint);
+        assert_eq!(original_w3i.fog_blue_tint, written_w3i.fog_blue_tint);
+        assert_eq!(original_w3i.fog_alpha_value, written_w3i.fog_alpha_value);
+        assert_eq!(original_w3i.global_weather, written_w3i.global_weather);
+        assert_eq!(
+            original_w3i.custom_sound_environment,
+            written_w3i.custom_sound_environment
+        );
+        assert_eq!(
+            original_w3i.custom_light_environment_id,
+            written_w3i.custom_light_environment_id
+        );
+        assert_eq!(
+            original_w3i.custom_water_red_tint,
+            written_w3i.custom_water_red_tint
+        );
+        assert_eq!(
+            original_w3i.custom_water_green_tint,
+            written_w3i.custom_water_green_tint
+        );
+        assert_eq!(
+            original_w3i.custom_water_blue_tint,
+            written_w3i.custom_water_blue_tint
+        );
+        assert_eq!(
+            original_w3i.custom_water_alpha_tint,
+            written_w3i.custom_water_alpha_tint
+        );
     }
 }

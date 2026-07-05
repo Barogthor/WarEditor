@@ -8,7 +8,7 @@ mod trigger_file_tests {
     use crate::triggers::TriggerDefinition;
     use crate::{get_resources_path, GameData};
 
-    const TFT_TRIGGER_EVENT: [u8; 116] = [
+    pub const TFT_TRIGGER_EVENT: [u8; 116] = [
         0x54, 0x72, 0x69, 0x67, 0x67, 0x65, 0x72, 0x45, 0x76, 0x65, 0x6E, 0x74, 0x00, 0x54, 0x72,
         0x69, 0x67, 0x67, 0x65, 0x72, 0x20, 0x45, 0x76, 0x65, 0x6E, 0x74, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -18,7 +18,7 @@ mod trigger_file_tests {
         0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x35, 0x2E, 0x30, 0x30, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     ];
-    const TFT_TRIGGER_CONDITION: [u8; 266] = [
+    pub const TFT_TRIGGER_CONDITION: [u8; 266] = [
         0x54, 0x72, 0x69, 0x67, 0x67, 0x65, 0x72, 0x43, 0x6F, 0x6E, 0x64, 0x69, 0x74, 0x69, 0x6F,
         0x6E, 0x00, 0x54, 0x72, 0x69, 0x67, 0x67, 0x65, 0x72, 0x20, 0x43, 0x6F, 0x6E, 0x64, 0x69,
         0x74, 0x69, 0x6F, 0x6E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -38,7 +38,7 @@ mod trigger_file_tests {
         0x00, 0x73, 0x74, 0x6F, 0x70, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     ];
-    const TFT_TRIGGER_ACTION: [u8; 102] = [
+    pub const TFT_TRIGGER_ACTION: [u8; 102] = [
         0x54, 0x72, 0x69, 0x67, 0x67, 0x65, 0x72, 0x41, 0x63, 0x74, 0x69, 0x6F, 0x6E, 0x00, 0x54,
         0x72, 0x69, 0x67, 0x67, 0x65, 0x72, 0x20, 0x41, 0x63, 0x74, 0x69, 0x6F, 0x6E, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -77,7 +77,7 @@ mod trigger_file_tests {
         0x63, 0x74, 0x69, 0x6F, 0x6E, 0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x32,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     ];
-    const TFT_TRIGGER_IF_THEN_ELSE: [u8; 312] = [
+    pub const TFT_TRIGGER_IF_THEN_ELSE: [u8; 312] = [
         0x54, 0x72, 0x69, 0x67, 0x67, 0x65, 0x72, 0x49, 0x66, 0x54, 0x68, 0x65, 0x6E, 0x45, 0x6C,
         0x73, 0x65, 0x00, 0x54, 0x72, 0x69, 0x67, 0x67, 0x65, 0x72, 0x20, 0x49, 0x66, 0x20, 0x54,
         0x68, 0x65, 0x6E, 0x20, 0x45, 0x6C, 0x73, 0x65, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00,
@@ -186,5 +186,238 @@ mod trigger_file_tests {
         let _trigger =
             TriggerDefinition::from(&mut reader, &TFT, game_data.get_trigger_data()).unwrap();
         assert_eq!(reader.pos() as usize, reader.size());
+    }
+}
+
+#[cfg(test)]
+mod triggers_file_write_tests {
+    use wce_formats::binary_reader::BinaryReader;
+    use wce_formats::binary_writer::BinaryWriter;
+    use wce_formats::{GameVersion, MapArchive};
+
+    use crate::triggers::{TriggerDefinition, TriggersFile};
+    use crate::{get_resources_path, GameData};
+
+    fn get_path(path_resource: &str) -> String {
+        let base_path = get_resources_path();
+        format!("{base_path}/{path_resource}")
+    }
+
+    #[test]
+    fn write_read_roundtrip_test_sandbox_w3m() {
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
+
+        // Read original data from map archive
+        let map_path = get_path("Scenario/Sandbox_1.w3m");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        let original_triggers = TriggersFile::read_file(&mut map, game_data.get_trigger_data())
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        // Write to buffer
+        let mut writer = BinaryWriter::new();
+        original_triggers
+            .write(&mut writer, game_data.get_trigger_data())
+            .expect("Failed to write TriggersFile");
+
+        // Read back from buffer
+        let buffer = writer.into_buffer();
+        let mut reader = BinaryReader::new(buffer);
+        let written_triggers = TriggersFile::from(&mut reader, game_data.get_trigger_data())
+            .unwrap_or_else(|e| panic!("Failed to read back: {}", e));
+
+        // Verify the read back was successful (comparison via debug format since fields are private)
+        let original_debug = format!("{:?}", original_triggers);
+        let written_debug = format!("{:?}", written_triggers);
+        assert_eq!(
+            original_debug, written_debug,
+            "TriggersFile round-trip produced different data"
+        );
+
+        println!("TriggersFile round-trip test passed for Sandbox_1.w3m");
+    }
+
+    #[test]
+    fn write_read_roundtrip_test_sandbox_w3x() {
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
+
+        // Read original data from map archive
+        let map_path = get_path("Scenario/Sandbox_1.w3x");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        let original_triggers = TriggersFile::read_file(&mut map, game_data.get_trigger_data())
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        // Write to buffer
+        let mut writer = BinaryWriter::new();
+        original_triggers
+            .write(&mut writer, game_data.get_trigger_data())
+            .expect("Failed to write TriggersFile");
+
+        // Read back from buffer
+        let buffer = writer.into_buffer();
+        let mut reader = BinaryReader::new(buffer);
+        let written_triggers = TriggersFile::from(&mut reader, game_data.get_trigger_data())
+            .unwrap_or_else(|e| panic!("Failed to read back: {}", e));
+
+        // Verify the read back was successful (comparison via debug format since fields are private)
+        let original_debug = format!("{:?}", original_triggers);
+        let written_debug = format!("{:?}", written_triggers);
+        assert_eq!(
+            original_debug, written_debug,
+            "TriggersFile round-trip produced different data"
+        );
+
+        println!("TriggersFile round-trip test passed for Sandbox_1.w3x");
+    }
+
+    #[test]
+    fn write_individual_trigger_test() {
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
+
+        // Test with TFT_TRIGGER_EVENT data
+        let buffer = super::trigger_file_tests::TFT_TRIGGER_EVENT.to_vec();
+        let mut reader = BinaryReader::new(buffer.clone());
+        let original_trigger =
+            TriggerDefinition::from(&mut reader, &GameVersion::TFT, game_data.get_trigger_data())
+                .unwrap_or_else(|e| panic!("Failed to read trigger: {}", e));
+
+        // Write trigger back to buffer
+        let mut writer = BinaryWriter::new();
+        original_trigger
+            .write(&mut writer, &GameVersion::TFT, game_data.get_trigger_data())
+            .expect("Failed to write trigger");
+
+        let written_buffer = writer.into_buffer();
+
+        // Read back the written trigger
+        let mut reader = BinaryReader::new(written_buffer);
+        let written_trigger =
+            TriggerDefinition::from(&mut reader, &GameVersion::TFT, game_data.get_trigger_data())
+                .unwrap_or_else(|e| panic!("Failed to read back written trigger: {}", e));
+
+        // Compare triggers via debug format since fields are private
+        let original_debug = format!("{:?}", original_trigger);
+        let written_debug = format!("{:?}", written_trigger);
+        assert_eq!(
+            original_debug, written_debug,
+            "TriggerDefinition round-trip produced different data"
+        );
+
+        println!("Individual TriggerDefinition round-trip test passed");
+    }
+
+    #[test]
+    fn write_multiple_triggers_test() {
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
+
+        // Test multiple trigger types
+        let trigger_buffers = vec![
+            super::trigger_file_tests::TFT_TRIGGER_EVENT.to_vec(),
+            super::trigger_file_tests::TFT_TRIGGER_CONDITION.to_vec(),
+            super::trigger_file_tests::TFT_TRIGGER_ACTION.to_vec(),
+            super::trigger_file_tests::TFT_TRIGGER_IF_THEN_ELSE.to_vec(),
+        ];
+
+        for (i, buffer) in trigger_buffers.iter().enumerate() {
+            let mut reader = BinaryReader::new(buffer.clone());
+            let original_trigger = TriggerDefinition::from(
+                &mut reader,
+                &GameVersion::TFT,
+                game_data.get_trigger_data(),
+            )
+            .unwrap_or_else(|e| panic!("Failed to read trigger {}: {}", i, e));
+
+            // Write trigger back to buffer
+            let mut writer = BinaryWriter::new();
+            original_trigger
+                .write(&mut writer, &GameVersion::TFT, game_data.get_trigger_data())
+                .expect(&format!("Failed to write trigger {}", i));
+
+            let written_buffer = writer.into_buffer();
+
+            // Read back the written trigger
+            let mut reader = BinaryReader::new(written_buffer);
+            let written_trigger = TriggerDefinition::from(
+                &mut reader,
+                &GameVersion::TFT,
+                game_data.get_trigger_data(),
+            )
+            .unwrap_or_else(|e| panic!("Failed to read back written trigger {}: {}", i, e));
+
+            // Compare triggers via debug format since fields are private
+            let original_debug = format!("{:?}", original_trigger);
+            let written_debug = format!("{:?}", written_trigger);
+            assert_eq!(
+                original_debug, written_debug,
+                "Trigger {} round-trip produced different data",
+                i
+            );
+
+            println!("Trigger {} round-trip test passed", i);
+        }
+    }
+
+    #[test]
+    fn sub_parameters_preserves_on_disk_begin_parameters_flag() {
+        use wce_formats::binary_writer::BinaryWriter;
+
+        use crate::triggers::enums::SubParameterType;
+        use crate::triggers::trigger_data::SubParameters;
+
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
+        // On-disk flag read as 1, yet trigger_data yielded zero parameters:
+        // the write must echo the flag, not derive 0 from the empty list.
+        let sub = SubParameters {
+            ptype: SubParameterType::Call,
+            name: "DoNothing".to_string(),
+            begin_parameters: true,
+            parameters: vec![],
+        };
+
+        let mut writer = BinaryWriter::new();
+        sub.write(&mut writer, &GameVersion::TFT, game_data.get_trigger_data())
+            .unwrap_or_else(|e| panic!("{}", e));
+        let buffer = writer.into_buffer();
+
+        assert_eq!(
+            &buffer[buffer.len() - 4..],
+            &[1, 0, 0, 0],
+            "beginParameters flag read as 1 must be written back as 1"
+        );
+    }
+
+    #[test]
+    fn wtg_write_is_byte_exact_sandbox_w3m() {
+        assert_wtg_byte_exact("Scenario/Sandbox_1.w3m");
+    }
+
+    #[test]
+    fn wtg_write_is_byte_exact_sandbox_w3x() {
+        assert_wtg_byte_exact("Scenario/Sandbox_1.w3x");
+    }
+
+    /// Parse the real `war3map.wtg` then re-serialize it: the output must be
+    /// byte-identical to the archive's original bytes.
+    fn assert_wtg_byte_exact(map_resource: &str) {
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
+        let mut map = MapArchive::open(get_path(map_resource)).unwrap_or_else(|e| panic!("{}", e));
+        let original_bytes = map
+            .read_file(TriggersFile::FILE_NAME)
+            .unwrap_or_else(|e| panic!("{}", e))
+            .inner();
+
+        let mut reader = BinaryReader::new(original_bytes.clone());
+        let triggers = TriggersFile::from(&mut reader, game_data.get_trigger_data())
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        let mut writer = BinaryWriter::new();
+        triggers
+            .write(&mut writer, game_data.get_trigger_data())
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        assert_eq!(
+            writer.into_buffer(),
+            original_bytes,
+            "{map_resource}: war3map.wtg round-trip must be byte-exact"
+        );
     }
 }

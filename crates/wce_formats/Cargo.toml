@@ -12,8 +12,10 @@ pretty_assertions = {workspace = true}
 derivative = {workspace = true}
 byteorder = "1.5.0"
 log ={ workspace = true}
-jpeg-decoder = { git = "https://github.com/Barogthor/jpeg-decoder.git" }
+# jpeg-decoder = { git = "https://github.com/Barogthor/jpeg-decoder.git" }
+image = { version = "0.25.6", features = ["jpeg"]}
 rgb = "0.8.52"
 mpq = "0.7.0"
+ceres-mpq = "0.1.9"
 bencher = {workspace = true}
 thiserror = {workspace = true}

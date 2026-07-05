@@ -3,6 +3,13 @@
 */**/target
 **/*.rs.bk
 resources/**/*
+!resources/Scenario/
+!resources/Scenario/Sandbox_Roc/
+!resources/Scenario/Sandbox_Roc/**
+!resources/Scenario/Sandbox_TFT/
+!resources/Scenario/Sandbox_TFT/**
+!resources/Scenario/Sandbox_1.w3m
+!resources/Scenario/Sandbox_1.w3x
 specs/*
 *.log
 logs

@@ -132,8 +132,8 @@ fn main() {
     let _map = Map::open(circumvention, local_game_data);
     let _map = Map::open(harrow, local_game_data);
     let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
-    // let maps = test_melee_maps(&Path::new(&format!("{}\\Maps", old_dir_w3)));
-    let maps = paths_custom_maps(Path::new(&format!("{old_dir_w3}\\Maps")));
+    // let maps = test_melee_maps(&Path::new(&old_dir_w3).join("Maps"));
+    let maps = paths_custom_maps(&Path::new(&old_dir_w3).join("Maps"));
     for map in maps {
         let path = map.into_os_string().into_string().unwrap();
         println!("{path:?}");
@@ -203,7 +203,7 @@ mod tests_maps {
         let mut on_error = false;
 
         let game_data = &GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{e:?}"));
-        let maps = paths_blizzard_maps(Path::new(&format!("{old_dir_w3}\\Maps")));
+        let maps = paths_blizzard_maps(&Path::new(&old_dir_w3).join("Maps"));
         for map in maps {
             let path = map.into_os_string().into_string().unwrap();
             let map_res = Map::open(path.clone(), game_data);
@@ -223,7 +223,7 @@ mod tests_maps {
         let old_dir_w3 = std::env::var("OLD_WARCRAFT_DIRECTORY").unwrap();
 
         let game_data = &GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{e:?}"));
-        let maps = paths_custom_maps(Path::new(&format!("{old_dir_w3}\\Maps")));
+        let maps = paths_custom_maps(&Path::new(&old_dir_w3).join("Maps"));
         for map in maps {
             let path = map.into_os_string().into_string().unwrap();
             println!("Opening map '{path}'");

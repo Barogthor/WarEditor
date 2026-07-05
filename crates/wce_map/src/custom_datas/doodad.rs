@@ -1,15 +1,12 @@
-use std::convert::TryFrom;
+//! Custom doodads table (`war3map.w3d`) — thin kind definition over
+//! [`CustomObjectsFile`].
 
 use thiserror::Error;
-use wce_formats::binary_reader::{BinaryReader, ReadResult};
-use wce_formats::MapArchive;
-use wce_formats::{GameVersion, MpqError, ReadError};
+use wce_formats::{MpqError, ReadError, WriteError};
 
-use crate::custom_datas::ObjectDefinition;
+use crate::custom_datas::{CustomObjectKind, CustomObjectsFile};
 use crate::globals::MAP_CUSTOM_DOODADS;
-use crate::OpeningError;
-
-use super::ObjectId;
+use crate::MapError;
 
 #[derive(Debug, Error)]
 pub enum CustomDoodadError {
@@ -19,96 +16,39 @@ pub enum CustomDoodadError {
     InitReader(ReadError),
     #[error("Failed to parse custom doodads datas. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save custom doodad data. {0}")]
+    SaveError(WriteError),
 }
-impl From<CustomDoodadError> for OpeningError {
+impl From<CustomDoodadError> for MapError {
     fn from(value: CustomDoodadError) -> Self {
-        OpeningError::CustomDoodad(value)
+        MapError::CustomDoodad(value)
     }
 }
 
+/// Kind marker for the custom doodads table.
 #[derive(Debug)]
-pub struct CustomDoodadFile {
-    version: u32,
-    original_objects: Vec<ObjectDefinition>,
-    custom_objects: Vec<ObjectDefinition>,
-}
+pub enum DoodadKind {}
 
-impl CustomDoodadFile {
-    pub fn read_file(
-        map: &mut MapArchive,
-        game_version: &GameVersion,
-    ) -> Result<Option<CustomDoodadFile>, OpeningError> {
-        let file = map.read_file(MAP_CUSTOM_DOODADS);
-        match file {
-            Ok(buffer) => {
-                let mut reader =
-                    BinaryReader::try_from(buffer).map_err(CustomDoodadError::InitReader)?;
-                let custom_doodad =
-                    Self::from(&mut reader, game_version).map_err(CustomDoodadError::Parsing)?;
-                Ok(Some(custom_doodad))
-            }
-            _ => Ok(None),
-        }
+impl CustomObjectKind for DoodadKind {
+    const FILE_NAME: &'static str = MAP_CUSTOM_DOODADS;
+    const HAS_LEVEL_DATA: bool = true;
+    fn init_error(e: ReadError) -> MapError {
+        CustomDoodadError::InitReader(e).into()
     }
-
-    fn from(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self> {
-        let version = reader.read_u32()?;
-        let original_unit_modified = reader.read_u32()?;
-        let mut original_objects = vec![];
-        let mut custom_objects = vec![];
-        for _i in 0..original_unit_modified {
-            let object = read_object(reader, game_version)?;
-            original_objects.push(object);
-        }
-        let custom_table_count = reader.read_u32()?;
-        for _i in 0..custom_table_count {
-            let object = read_object(reader, game_version)?;
-            custom_objects.push(object);
-        }
-
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_CUSTOM_DOODADS,
-            reader.size() - reader.pos() as usize
-        );
-        Ok(Self {
-            version,
-            original_objects,
-            custom_objects,
-        })
+    fn parsing_error(e: ReadError) -> MapError {
+        CustomDoodadError::Parsing(e).into()
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
+    fn save_error(e: WriteError) -> MapError {
+        CustomDoodadError::SaveError(e).into()
     }
 }
 
-fn read_object(
-    reader: &mut BinaryReader,
-    _game_version: &GameVersion,
-) -> ReadResult<ObjectDefinition> {
-    let original_id = reader.read_bytes(4)?;
-    let original_id = [
-        original_id[0],
-        original_id[1],
-        original_id[2],
-        original_id[3],
-    ];
-    let custom_id = reader.read_bytes(4)?;
-    if custom_id.iter().all(|c| *c == 0) {
-        let id = ObjectId::for_original(original_id);
-        Ok(ObjectDefinition::with_optional(reader, id)?)
-    } else {
-        let custom_id = [custom_id[0], custom_id[1], custom_id[2], custom_id[3]];
-        let id = ObjectId::for_custom(original_id, custom_id);
-        Ok(ObjectDefinition::with_optional(reader, id)?)
-    }
-}
+pub type CustomDoodadFile = CustomObjectsFile<DoodadKind>;
 
 #[cfg(test)]
 mod custom_doodad_test {
+    use wce_formats::binary_reader::BinaryReader;
+    use wce_formats::binary_writer::BinaryWriter;
     use wce_formats::{GameVersion, MapArchive};
 
     use crate::{custom_datas::doodad::CustomDoodadFile, get_resources_path};
@@ -120,11 +60,69 @@ mod custom_doodad_test {
 
     #[test]
     fn no_failure() {
-        let map_path = get_path("sample_2/Remake1 - Copie.w3x");
+        let map_path = get_path("Scenario/Sandbox_1.w3x");
         let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
         let game_version = GameVersion::TFT;
         let cdoodad = CustomDoodadFile::read_file(&mut map, &game_version)
             .unwrap_or_else(|e| panic!("{}", e));
         assert!(cdoodad.is_some());
+    }
+
+    #[test]
+    fn write_empty_edge_case() {
+        let empty_doodad_file = CustomDoodadFile {
+            version: 2,
+            original_objects: vec![],
+            custom_objects: vec![],
+            _kind: std::marker::PhantomData,
+        };
+
+        let mut writer = BinaryWriter::new();
+        let game_version = GameVersion::TFT;
+        empty_doodad_file
+            .write(&mut writer, &game_version)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let buffer = writer.into_buffer();
+
+        assert_eq!(buffer.len(), 0, "Empty doodads should produce empty buffer");
+
+        let mut reader = BinaryReader::new(buffer);
+        let reconstructed = CustomDoodadFile::read_opt(&mut reader, &game_version)
+            .unwrap_or_else(|e| panic!("{}", e));
+        assert!(
+            reconstructed.is_none(),
+            "Reading empty buffer should return nothing"
+        );
+    }
+
+    #[test]
+    fn test_doodad_file_round_trip_tft() {
+        let mut map = MapArchive::open(get_path("Scenario/Sandbox_1.w3x"))
+            .unwrap_or_else(|e| panic!("{}", e));
+        let game_version = GameVersion::TFT;
+
+        let original_file = CustomDoodadFile::read_file(&mut map, &game_version)
+            .unwrap_or_else(|e| panic!("{}", e))
+            .unwrap();
+
+        let mut writer = BinaryWriter::new();
+        original_file
+            .write(&mut writer, &game_version)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let buffer = writer.into_buffer();
+
+        let mut reader = BinaryReader::new(buffer);
+        let reconstructed =
+            CustomDoodadFile::parse(&mut reader, &game_version).unwrap_or_else(|e| panic!("{}", e));
+
+        assert_eq!(original_file.version, reconstructed.version);
+        assert_eq!(
+            original_file.original_objects.len(),
+            reconstructed.original_objects.len()
+        );
+        assert_eq!(
+            original_file.custom_objects.len(),
+            reconstructed.custom_objects.len()
+        );
     }
 }

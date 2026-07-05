@@ -3,11 +3,14 @@ use std::{collections::HashMap, convert::TryFrom};
 use regex::Regex;
 use thiserror::Error;
 
-use wce_formats::{binary_reader::BinaryReader, MapArchive, MpqError, ReadError};
+use wce_formats::{
+    binary_reader::BinaryReader, binary_writer::BinaryWriter, MapArchive, MpqError, ReadError,
+    WriteError,
+};
 
-use crate::{globals::MAP_STRINGS, OpeningError};
+use crate::{globals::MAP_STRINGS, MapError};
 
-const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)\s*\{\s*([^\}]*)\s*\}";
+const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)\s*.*\s+\{\s*([^\}]*)\s*\}";
 //const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)";
 //const EXTRACT_DATA: &str = r"STRING\s+([0-9]+)\s+";
 type TRIGSTR = String;
@@ -26,10 +29,12 @@ pub enum MapStringError {
     CaptureId,
     #[error("Failed to capture content from trigger string")]
     CaptureContent,
+    #[error("Failed to save map strings data. {0}")]
+    SaveError(WriteError),
 }
-impl From<MapStringError> for OpeningError {
+impl From<MapStringError> for MapError {
     fn from(value: MapStringError) -> Self {
-        OpeningError::MapStrings(value)
+        MapError::MapStrings(value)
     }
 }
 
@@ -39,7 +44,9 @@ pub struct MapStringFile {
 }
 
 impl MapStringFile {
-    pub fn read_file(map: &mut MapArchive) -> Result<Self, OpeningError> {
+    pub const FILE_NAME: &str = MAP_STRINGS;
+
+    pub fn read_file(map: &mut MapArchive) -> Result<Self, MapError> {
         let buffer = map
             .read_file(MAP_STRINGS)
             .map_err(MapStringError::MpqError)?;
@@ -49,6 +56,17 @@ impl MapStringFile {
             .map_err(MapStringError::Parsing)?;
         // let buffer = unsafe { String::from_utf8_unchecked(buf) };
         Self::extract(&buffer).map_err(From::from)
+    }
+
+    pub fn prepare_write(&self) -> Result<BinaryWriter, MapError> {
+        let mut writer = BinaryWriter::new();
+        for (id, content) in self.trigger_strings.iter() {
+            let mstr = format!("STRING {id} {{\n{content}\n}}\n");
+            writer
+                .write_string_utf8(&mstr)
+                .map_err(MapStringError::SaveError)?;
+        }
+        Ok(writer)
     }
 
     fn extract(buffer: &str) -> Result<MapStringFile, MapStringError> {
@@ -143,7 +161,25 @@ Force 1
     }
 
     #[test]
-    fn test_parsing_file() {
+    fn test_parsing_file_roc() {
+        let mut f = File::open(get_path("Scenario/Sandbox_roc/war3map.wts"))
+            .unwrap_or_else(|e| panic!("{}", e));
+        let mut reader = BinaryReader::from(&mut f);
+        let buffer = reader
+            .read_string_utf8_safe(reader.size())
+            .unwrap_or_else(|e| panic!("{}", e));
+        let map_str = MapStringFile::extract(&buffer)
+            .unwrap_or_else(|e| panic!("{}", e))
+            .trigger_strings;
+
+        assert_eq!(map_str.keys().len(), 8);
+        assert_eq!(map_str.get("1"), Some(&"Sandbox Roc".to_string()));
+        assert_eq!(map_str.get("3"), Some(&"Map pour mocker".to_string()));
+        assert_eq!(map_str.get("8"), Some(&"Fantassin Test".to_string()));
+    }
+
+    #[test]
+    fn test_parsing_file_tft() {
         let mut f = File::open(get_path("Scenario/Sandbox_tft/war3map.wts"))
             .unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut f);
@@ -154,8 +190,9 @@ Force 1
             .unwrap_or_else(|e| panic!("{}", e))
             .trigger_strings;
 
-        assert_eq!(map_str.keys().len(), 7);
+        assert_eq!(map_str.keys().len(), 15);
         assert_eq!(map_str.get("1"), Some(&"Sandbox Roc".to_string()));
         assert_eq!(map_str.get("3"), Some(&"Sans description".to_string()));
+        assert_eq!(map_str.get("15"), Some(&"Elevage Ex".to_string()));
     }
 }

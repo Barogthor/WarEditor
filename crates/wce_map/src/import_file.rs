@@ -3,13 +3,13 @@ use std::ffi::CString;
 
 use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
-use wce_formats::binary_writer::BinaryWriter;
-use wce_formats::GameVersion::{RoC, TFT};
-use wce_formats::{BinaryConverter, GameVersion};
-use wce_formats::{MapArchive, MpqError, ReadError};
+use wce_formats::binary_writer::{BinaryWriter, WriteResult};
+use wce_formats::GameVersion::RoC;
+use wce_formats::{BinaryConverterVersion, GameVersion};
+use wce_formats::{MapArchive, MpqError, ReadError, WriteError};
 
 use crate::globals::MAP_IMPORT_LIST;
-use crate::OpeningError;
+use crate::MapError;
 
 type ImportPath = Vec<(ImportPathType, CString)>;
 
@@ -21,46 +21,85 @@ pub enum ImportError {
     InitReader(ReadError),
     #[error("Failed to parse imports datas. {0}")]
     Parsing(ReadError),
+    #[error("Failed to save import data. {0}")]
+    SaveError(WriteError),
 }
 
-impl From<ImportError> for OpeningError {
+impl From<ImportError> for MapError {
     fn from(value: ImportError) -> Self {
-        OpeningError::Import(value)
+        MapError::Import(value)
     }
 }
 
 #[derive(Debug)]
 pub struct ImportFile {
-    version: GameVersion,
+    /// On-disk format version (0 or 1 in the wild), preserved for byte-exact
+    /// round-trips.
+    version: u32,
     files: ImportPath,
 }
 
 impl ImportFile {
-    pub fn read_file(map: &mut MapArchive) -> Result<Option<Self>, OpeningError> {
+    pub const FILE_NAME: &str = MAP_IMPORT_LIST;
+
+    pub fn read_file(
+        map: &mut MapArchive,
+        game_version: &GameVersion,
+    ) -> Result<Option<Self>, MapError> {
         let file = map.read_file(MAP_IMPORT_LIST);
         match file {
             Ok(buffer) => {
                 let mut reader = BinaryReader::try_from(buffer).map_err(ImportError::InitReader)?;
-                let v = reader.read::<ImportFile>().map_err(ImportError::Parsing)?;
-                Ok(Some(v))
+                Self::read_opt(&mut reader, game_version)
             }
             _ => Ok(None),
         }
     }
+
+    fn read_opt(
+        reader: &mut BinaryReader,
+        game_version: &GameVersion,
+    ) -> Result<Option<Self>, MapError> {
+        if reader.size() > 0 {
+            let v = reader
+                .read_version::<ImportFile>(game_version)
+                .map_err(ImportError::Parsing)?;
+            Ok(Some(v))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn prepare_write(&self, game_version: &GameVersion) -> Result<BinaryWriter, MapError> {
+        let mut writer = BinaryWriter::new();
+        writer
+            .write_version(self, game_version)
+            .map_err(ImportError::SaveError)?;
+        Ok(writer)
+    }
+
     pub fn debug(&self) {
         println!("{self:#?}");
     }
 }
 
-impl BinaryConverter for ImportFile {
-    fn read(reader: &mut BinaryReader) -> ReadResult<Self> {
-        let version = to_game_version(reader.read_u32()?).map_err(ReadError::Reason)?;
+impl BinaryConverterVersion for ImportFile {
+    fn read_version(reader: &mut BinaryReader, game_version: &GameVersion) -> ReadResult<Self>
+    where
+        Self: Sized,
+    {
+        let version = reader.read_u32()?;
+        if version > 1 {
+            return Err(ReadError::Reason(format!(
+                "Unknown import list format version '{version}', expected 0 or 1"
+            )));
+        }
         let count = reader.read_u32()?;
         let mut files: ImportPath = vec![];
         for _ in 0..count {
             let path_type = reader.read_u8()?;
-            let path_type = match version {
-                RoC => ImportPathType::RoC,
+            let path_type = match *game_version {
+                RoC => ImportPathType::RoC(path_type),
                 _ => ImportPathType::from_u8(path_type).ok_or_else(|| {
                     ReadError::Reason(format!(
                         "Invalid import type '{path_type}' at {}/{}.",
@@ -83,8 +122,20 @@ impl BinaryConverter for ImportFile {
         Ok(ImportFile { version, files })
     }
 
-    fn write(&self, _writer: &mut BinaryWriter) {
-        unimplemented!()
+    fn write_version(
+        &self,
+        writer: &mut BinaryWriter,
+        _game_version: &GameVersion,
+    ) -> WriteResult<()> {
+        if !self.files.is_empty() {
+            writer.write_u32(self.version)?;
+            writer.write_u32(self.files.len() as u32)?;
+            for (path_type, path) in &self.files {
+                writer.write_u8(path_type.to_u8())?;
+                writer.write_c_string(path)?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -92,7 +143,9 @@ impl BinaryConverter for ImportFile {
 pub enum ImportPathType {
     STANDARD(u8),
     CUSTOM(u8),
-    RoC,
+    /// RoC entry: the raw on-disk byte is kept verbatim (the spec's 5/8/10/13
+    /// taxonomy is TFT-oriented; RoC fixtures carry 0 but custom values exist).
+    RoC(u8),
 }
 
 impl ImportPathType {
@@ -103,12 +156,342 @@ impl ImportPathType {
             _ => None,
         }
     }
+
+    pub fn to_u8(&self) -> u8 {
+        match self {
+            ImportPathType::STANDARD(n) => *n,
+            ImportPathType::CUSTOM(n) => *n,
+            ImportPathType::RoC(n) => *n,
+        }
+    }
 }
 
-fn to_game_version(value: u32) -> Result<GameVersion, String> {
-    match value {
-        0 => Ok(RoC),
-        1 => Ok(TFT),
-        _ => Err(format!("Unknown or unsupported game version '{value}'")),
+#[cfg(test)]
+mod import_file_test {
+    use std::ffi::CString;
+
+    use wce_formats::binary_reader::BinaryReader;
+    use wce_formats::binary_writer::BinaryWriter;
+    use wce_formats::{BinaryConverterVersion, GameVersion};
+
+    use crate::import_file::{ImportFile, ImportPathType};
+
+    fn mock_import_files_tft() -> Vec<(ImportPathType, CString)> {
+        vec![
+            (
+                ImportPathType::STANDARD(5),
+                CString::new("Units\\Human\\Footman\\Footman.mdx").unwrap(),
+            ),
+            (
+                ImportPathType::CUSTOM(10),
+                CString::new("CustomTextures\\Grass.blp").unwrap(),
+            ),
+        ]
+    }
+
+    fn mock_import_files_roc() -> Vec<(ImportPathType, CString)> {
+        vec![
+            (
+                ImportPathType::RoC(0),
+                CString::new("Units\\Orc\\Grunt\\Grunt.mdx").unwrap(),
+            ),
+            (
+                ImportPathType::RoC(0),
+                CString::new("Textures\\Stone.blp").unwrap(),
+            ),
+        ]
+    }
+
+    #[test]
+    fn test_import_file_round_trip_tft() {
+        let original = ImportFile {
+            version: 1,
+            files: mock_import_files_tft(),
+        };
+
+        let mut writer = BinaryWriter::new();
+        original
+            .write_version(&mut writer, &GameVersion::TFT)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let buffer = writer.into_buffer();
+
+        let mut reader = BinaryReader::new(buffer);
+        let reconstructed = ImportFile::read_version(&mut reader, &GameVersion::TFT)
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        assert_eq!(original.files.len(), reconstructed.files.len());
+
+        for ((orig_type, orig_path), (recon_type, recon_path)) in
+            original.files.iter().zip(reconstructed.files.iter())
+        {
+            assert_eq!(orig_type, recon_type);
+            assert_eq!(orig_path, recon_path);
+        }
+    }
+
+    #[test]
+    fn test_import_file_round_trip_roc() {
+        let original = ImportFile {
+            version: 1,
+            files: mock_import_files_roc(),
+        };
+
+        let mut writer = BinaryWriter::new();
+        original
+            .write_version(&mut writer, &GameVersion::RoC)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let buffer = writer.into_buffer();
+
+        let mut reader = BinaryReader::new(buffer);
+        let reconstructed = ImportFile::read_version(&mut reader, &GameVersion::RoC)
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        assert_eq!(original.files.len(), reconstructed.files.len());
+
+        for ((orig_type, orig_path), (recon_type, recon_path)) in
+            original.files.iter().zip(reconstructed.files.iter())
+        {
+            assert_eq!(orig_type, recon_type);
+            assert_eq!(orig_path, recon_path);
+        }
+    }
+
+    #[test]
+    fn write_empty_edge_case() {
+        let empty_import_file = ImportFile {
+            version: 1,
+            files: vec![],
+        };
+
+        let mut writer = BinaryWriter::new();
+        empty_import_file
+            .write_version(&mut writer, &GameVersion::TFT)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let buffer = writer.into_buffer();
+
+        assert_eq!(buffer.len(), 0, "Empty imports should produce empty buffer");
+
+        let mut reader = BinaryReader::new(buffer);
+        assert!(
+            ImportFile::read_opt(&mut reader, &GameVersion::TFT)
+                .unwrap_or_else(|e| panic!("{}", e))
+                .is_none(),
+            "Empty buffer shouldn't return import file."
+        );
+    }
+
+    #[test]
+    fn test_import_path_type_conversions() {
+        // Test STANDARD types
+        assert_eq!(ImportPathType::STANDARD(5).to_u8(), 5);
+        assert_eq!(ImportPathType::STANDARD(8).to_u8(), 8);
+
+        // Test CUSTOM types
+        assert_eq!(ImportPathType::CUSTOM(10).to_u8(), 10);
+        assert_eq!(ImportPathType::CUSTOM(13).to_u8(), 13);
+
+        // Test RoC type
+        assert_eq!(ImportPathType::RoC(0).to_u8(), 0);
+        assert_eq!(ImportPathType::RoC(13).to_u8(), 13);
+
+        // Test round-trip conversions
+        assert_eq!(
+            ImportPathType::from_u8(5),
+            Some(ImportPathType::STANDARD(5))
+        );
+        assert_eq!(
+            ImportPathType::from_u8(8),
+            Some(ImportPathType::STANDARD(8))
+        );
+        assert_eq!(
+            ImportPathType::from_u8(10),
+            Some(ImportPathType::CUSTOM(10))
+        );
+        assert_eq!(
+            ImportPathType::from_u8(13),
+            Some(ImportPathType::CUSTOM(13))
+        );
+        assert_eq!(ImportPathType::from_u8(99), None);
+    }
+
+    #[test]
+    fn test_single_import_file() {
+        let single_import = ImportFile {
+            version: 1,
+            files: vec![(
+                ImportPathType::STANDARD(5),
+                CString::new("Test\\File.mdx").unwrap(),
+            )],
+        };
+
+        let mut writer = BinaryWriter::new();
+        single_import
+            .write_version(&mut writer, &GameVersion::TFT)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let buffer = writer.into_buffer();
+
+        let mut reader = BinaryReader::new(buffer);
+        let reconstructed = ImportFile::read_version(&mut reader, &GameVersion::TFT)
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        assert_eq!(single_import.files.len(), 1);
+        assert_eq!(reconstructed.files.len(), 1);
+        assert_eq!(single_import.files[0].0, reconstructed.files[0].0);
+        assert_eq!(single_import.files[0].1, reconstructed.files[0].1);
+    }
+
+    fn get_path(path_resource: &str) -> String {
+        let base_path = crate::get_resources_path();
+        format!("{base_path}/{path_resource}")
+    }
+
+    #[test]
+    fn test_real_file_roc() {
+        use wce_formats::MapArchive;
+
+        let map_path = get_path("Scenario/Sandbox_1.w3m");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        let import_file =
+            ImportFile::read_file(&mut map, &GameVersion::RoC).unwrap_or_else(|e| panic!("{}", e));
+
+        assert!(import_file.is_some(), "RoC map should have import file");
+        let import_file = import_file.unwrap();
+
+        assert_eq!(import_file.files.len(), 1);
+
+        let (path_type, path) = &import_file.files[0];
+        assert_eq!(*path_type, ImportPathType::RoC(0));
+        assert_eq!(
+            path.to_str().unwrap(),
+            "Grid256.blp",
+            "Expected Grid256.blp import"
+        );
+    }
+
+    #[test]
+    fn test_real_file_tft() {
+        use wce_formats::MapArchive;
+
+        let map_path = get_path("Scenario/Sandbox_1.w3x");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        let import_file =
+            ImportFile::read_file(&mut map, &GameVersion::TFT).unwrap_or_else(|e| panic!("{}", e));
+
+        assert!(import_file.is_some(), "TFT map should have import file");
+        let import_file = import_file.unwrap();
+
+        assert_eq!(import_file.files.len(), 1);
+
+        let (path_type, path) = &import_file.files[0];
+        assert_eq!(*path_type, ImportPathType::STANDARD(8));
+        assert_eq!(
+            path.to_str().unwrap(),
+            "Grid256.blp",
+            "Expected Grid256.blp import"
+        );
+    }
+
+    #[test]
+    fn test_real_file_round_trip_roc() {
+        use wce_formats::MapArchive;
+
+        let map_path = get_path("Scenario/Sandbox_1.w3m");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        let original = ImportFile::read_file(&mut map, &GameVersion::RoC)
+            .unwrap_or_else(|e| panic!("{}", e))
+            .expect("RoC map should have import file");
+
+        // Write the loaded file
+        let mut writer = BinaryWriter::new();
+        original
+            .write_version(&mut writer, &GameVersion::RoC)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let buffer = writer.into_buffer();
+
+        // Read it back
+        let mut reader = BinaryReader::new(buffer);
+        let reconstructed = ImportFile::read_version(&mut reader, &GameVersion::RoC)
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        // Verify it matches the original
+        assert_eq!(original.files.len(), reconstructed.files.len());
+
+        for ((orig_type, orig_path), (recon_type, recon_path)) in
+            original.files.iter().zip(reconstructed.files.iter())
+        {
+            assert_eq!(orig_type, recon_type);
+            assert_eq!(orig_path, recon_path);
+        }
+    }
+
+    #[test]
+    fn test_real_file_round_trip_tft() {
+        use wce_formats::MapArchive;
+
+        let map_path = get_path("Scenario/Sandbox_1.w3x");
+        let mut map = MapArchive::open(map_path).unwrap_or_else(|e| panic!("{}", e));
+        let original = ImportFile::read_file(&mut map, &GameVersion::TFT)
+            .unwrap_or_else(|e| panic!("{}", e))
+            .expect("TFT map should have import file");
+
+        // Write the loaded file
+        let mut writer = BinaryWriter::new();
+        original
+            .write_version(&mut writer, &GameVersion::TFT)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let buffer = writer.into_buffer();
+
+        // Read it back
+        let mut reader = BinaryReader::new(buffer);
+        let reconstructed = ImportFile::read_version(&mut reader, &GameVersion::TFT)
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        // Verify it matches the original
+        assert_eq!(original.files.len(), reconstructed.files.len());
+
+        for ((orig_type, orig_path), (recon_type, recon_path)) in
+            original.files.iter().zip(reconstructed.files.iter())
+        {
+            assert_eq!(orig_type, recon_type);
+            assert_eq!(orig_path, recon_path);
+        }
+    }
+
+    #[test]
+    fn rejects_unknown_format_version() {
+        let mut writer = BinaryWriter::new();
+        writer.write_u32(7).unwrap_or_else(|e| panic!("{}", e)); // bogus format version
+        writer.write_u32(0).unwrap_or_else(|e| panic!("{}", e)); // count
+        let mut reader = BinaryReader::new(writer.into_buffer());
+
+        assert!(
+            ImportFile::read_version(&mut reader, &GameVersion::TFT).is_err(),
+            "a war3map.imp with an unknown format version must be rejected"
+        );
+    }
+
+    #[test]
+    fn roc_custom_path_type_survives_round_trip() {
+        let original = ImportFile {
+            version: 1,
+            files: vec![(
+                ImportPathType::RoC(13),
+                CString::new("war3mapImported\\custom\\tex.blp").unwrap(),
+            )],
+        };
+
+        let mut writer = BinaryWriter::new();
+        original
+            .write_version(&mut writer, &GameVersion::RoC)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let mut reader = BinaryReader::new(writer.into_buffer());
+        let reconstructed = ImportFile::read_version(&mut reader, &GameVersion::RoC)
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        assert_eq!(
+            reconstructed.files[0].0,
+            ImportPathType::RoC(13),
+            "a RoC custom path type byte must survive the round-trip"
+        );
     }
 }
