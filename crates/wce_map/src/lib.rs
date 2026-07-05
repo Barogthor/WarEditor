@@ -41,6 +41,8 @@ use crate::w3i_file::InfoError;
 pub enum MapError {
     #[error("Map is likely protecte. {0}")]
     Protected(MpqError),
+    #[error("Failed to write map archive. {0}")]
+    Archive(MpqError),
     #[error("Failed on terrain environment. {0}")]
     Environment(TerrainError),
     #[error("Failed on custom text triggers. {0}")]

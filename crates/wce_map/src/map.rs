@@ -1,8 +1,7 @@
 use std::fs::File;
 use std::io::Write;
 
-use wce_formats::binary_writer::{BinaryWriter, WriteResult};
-use wce_formats::MapArchive;
+use wce_formats::{MapArchive, MapArchiveWriter};
 
 use crate::camera_file::{self, CameraFile};
 use crate::custom_datas::ability::CustomAbilityFile;
@@ -31,6 +30,9 @@ use crate::{GameData, MapError};
 pub struct Map<'a> {
     game_data: &'a GameData,
     path: String,
+    /// Original 512-byte `HM3W` map header, preserved to be written back when
+    /// repackaging into an archive. Empty for a bare MPQ source.
+    header: Vec<u8>,
     infos: W3iFile,
     terrain: TerrainFile,
     cameras: Option<CameraFile>,
@@ -98,9 +100,12 @@ impl<'a> Map<'a> {
         let upgrade_datas = CustomUpgradeFile::read_file(&mut map, &game_version)?;
         // unit_datas.debug();
 
+        let header = map.header().to_vec();
+
         Ok(Self {
             game_data,
             path,
+            header,
             infos: w3i,
             terrain: environment,
             cameras,
@@ -126,115 +131,145 @@ impl<'a> Map<'a> {
         })
     }
 
-    fn save_file(writer: BinaryWriter, file_path: &str) {
+    fn save_file(bytes: &[u8], file_path: &str) {
         let mut f = File::create(file_path).unwrap();
-        f.write_all(&writer.into_buffer()).unwrap();
+        f.write_all(bytes).unwrap();
     }
 
-    pub fn save(&self, path: String, game_data: &'a GameData) -> Result<(), MapError> {
-        let path_fn = |file_name: &str| format!("{path}/{file_name}");
+    /// Emit every component file as `(file_name, bytes)`. Both `save` (loose
+    /// files) and `save_as_archive` (MPQ) route through here so the two can
+    /// never drift apart on which files they write.
+    fn for_each_component_file<F>(&self, game_data: &GameData, mut emit: F) -> Result<(), MapError>
+    where
+        F: FnMut(&str, Vec<u8>) -> Result<(), MapError>,
+    {
         let game_version = self.infos.game_version();
-        Self::save_file(self.infos.prepare_write()?, &path_fn(W3iFile::FILE_NAME));
-        Self::save_file(
-            self.terrain.prepare_write()?,
-            &path_fn(TerrainFile::FILE_NAME),
-        );
-        Self::save_file(
-            self.menu_minimap.prepare_write()?,
-            &path_fn(MMPFile::FILE_NAME),
-        );
-        Self::save_file(
-            self.minimap.prepare_write()?,
-            &path_fn(MinimapFile::FILE_NAME),
-        );
-        Self::save_file(
-            self.shaders.prepare_write()?,
-            &path_fn(ShadowMapFile::FILE_NAME),
-        );
-        Self::save_file(
-            self.strings.prepare_write()?,
-            &path_fn(MapStringFile::FILE_NAME),
-        );
-        Self::save_file(
-            self.custom_scripts.prepare_write()?,
-            &path_fn(TriggerJassFile::FILE_NAME),
-        );
+        emit(
+            W3iFile::FILE_NAME,
+            self.infos.prepare_write()?.into_buffer(),
+        )?;
+        emit(
+            TerrainFile::FILE_NAME,
+            self.terrain.prepare_write()?.into_buffer(),
+        )?;
+        emit(
+            MMPFile::FILE_NAME,
+            self.menu_minimap.prepare_write()?.into_buffer(),
+        )?;
+        emit(
+            MinimapFile::FILE_NAME,
+            self.minimap.prepare_write()?.into_buffer(),
+        )?;
+        emit(
+            ShadowMapFile::FILE_NAME,
+            self.shaders.prepare_write()?.into_buffer(),
+        )?;
+        emit(
+            MapStringFile::FILE_NAME,
+            self.strings.prepare_write()?.into_buffer(),
+        )?;
+        emit(
+            TriggerJassFile::FILE_NAME,
+            self.custom_scripts.prepare_write()?.into_buffer(),
+        )?;
+        emit(
+            PathMapFile::FILE_NAME,
+            self.path_map.prepare_write()?.into_buffer(),
+        )?;
+        emit(
+            TriggersFile::FILE_NAME,
+            self.triggers
+                .prepare_write(&game_data.trigger_data)?
+                .into_buffer(),
+        )?;
+        emit(
+            DoodadMap::FILE_NAME,
+            self.doodad_map.prepare_write()?.into_buffer(),
+        )?;
+        emit(
+            UnitItemMap::FILE_NAME,
+            self.unit_item_map.prepare_write()?.into_buffer(),
+        )?;
         if let Some(f) = &self.cameras {
-            Self::save_file(f.prepare_write()?, &path_fn(CameraFile::FILE_NAME));
+            emit(CameraFile::FILE_NAME, f.prepare_write()?.into_buffer())?;
         }
         if let Some(f) = &self.regions {
-            Self::save_file(f.prepare_write()?, &path_fn(RegionFile::FILE_NAME));
+            emit(RegionFile::FILE_NAME, f.prepare_write()?.into_buffer())?;
         }
         if let Some(f) = &self.sounds {
-            Self::save_file(f.prepare_write()?, &path_fn(SoundFile::FILE_NAME));
+            emit(SoundFile::FILE_NAME, f.prepare_write()?.into_buffer())?;
         }
         if let Some(f) = &self.import_listing {
-            Self::save_file(
-                f.prepare_write(&game_version)?,
-                &path_fn(ImportFile::FILE_NAME),
-            );
+            emit(
+                ImportFile::FILE_NAME,
+                f.prepare_write(&game_version)?.into_buffer(),
+            )?;
         }
-        Self::save_file(
-            self.path_map.prepare_write()?,
-            &path_fn(PathMapFile::FILE_NAME),
-        );
-        Self::save_file(
-            self.triggers
-                .prepare_write(&game_data.trigger_data)
-                .unwrap(),
-            &path_fn(TriggersFile::FILE_NAME),
-        );
-        Self::save_file(
-            self.doodad_map.prepare_write()?,
-            &path_fn(DoodadMap::FILE_NAME),
-        );
-        Self::save_file(
-            self.unit_item_map.prepare_write()?,
-            &path_fn(UnitItemMap::FILE_NAME),
-        );
         if let Some(f) = &self.unit_datas {
-            Self::save_file(
-                f.prepare_write(&game_version)?,
-                &path_fn(CustomUnitFile::FILE_NAME),
-            );
+            emit(
+                CustomUnitFile::FILE_NAME,
+                f.prepare_write(&game_version)?.into_buffer(),
+            )?;
         }
         if let Some(f) = &self.ability_datas {
-            Self::save_file(
-                f.prepare_write(&game_version)?,
-                &path_fn(CustomAbilityFile::FILE_NAME),
-            );
+            emit(
+                CustomAbilityFile::FILE_NAME,
+                f.prepare_write(&game_version)?.into_buffer(),
+            )?;
         }
         if let Some(f) = &self.buff_datas {
-            Self::save_file(
-                f.prepare_write(&game_version)?,
-                &path_fn(CustomBuffFile::FILE_NAME),
-            );
+            emit(
+                CustomBuffFile::FILE_NAME,
+                f.prepare_write(&game_version)?.into_buffer(),
+            )?;
         }
         if let Some(f) = &self.doodad_datas {
-            Self::save_file(
-                f.prepare_write(&game_version)?,
-                &path_fn(CustomDoodadFile::FILE_NAME),
-            );
+            emit(
+                CustomDoodadFile::FILE_NAME,
+                f.prepare_write(&game_version)?.into_buffer(),
+            )?;
         }
         if let Some(f) = &self.destructable_datas {
-            Self::save_file(
-                f.prepare_write(&game_version)?,
-                &path_fn(CustomDestructableFile::FILE_NAME),
-            );
+            emit(
+                CustomDestructableFile::FILE_NAME,
+                f.prepare_write(&game_version)?.into_buffer(),
+            )?;
         }
         if let Some(f) = &self.item_datas {
-            Self::save_file(
-                f.prepare_write(&game_version)?,
-                &path_fn(CustomItemFile::FILE_NAME),
-            );
+            emit(
+                CustomItemFile::FILE_NAME,
+                f.prepare_write(&game_version)?.into_buffer(),
+            )?;
         }
         if let Some(f) = &self.upgrade_datas {
-            Self::save_file(
-                f.prepare_write(&game_version)?,
-                &path_fn(CustomUpgradeFile::FILE_NAME),
-            );
+            emit(
+                CustomUpgradeFile::FILE_NAME,
+                f.prepare_write(&game_version)?.into_buffer(),
+            )?;
         }
         Ok(())
+    }
+
+    /// Save every component as a loose file under `path`.
+    pub fn save(&self, path: String, game_data: &'a GameData) -> Result<(), MapError> {
+        self.for_each_component_file(game_data, |file_name, bytes| {
+            Self::save_file(&bytes, &format!("{path}/{file_name}"));
+            Ok(())
+        })
+    }
+
+    /// Repackage the map into a single MPQ archive at `path`, preserving the
+    /// original 512-byte `HM3W` header. Produces a re-openable map as long as it
+    /// has no imported assets (those are not yet captured on open).
+    pub fn save_as_archive(&self, path: &str, game_data: &'a GameData) -> Result<(), MapError> {
+        let mut archive = MapArchiveWriter::new();
+        self.for_each_component_file(game_data, |file_name, bytes| {
+            archive.add_file(file_name, bytes);
+            Ok(())
+        })?;
+        archive
+            .save_archive(path, &self.header)
+            .map_err(MapError::Archive)
     }
 }
 
@@ -310,6 +345,68 @@ mod map_tests {
 
         // Clean up
         let _ = fs::remove_dir_all(&output_dir);
+    }
+
+    #[test]
+    fn map_save_as_archive_reopenable() {
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
+        let map_path = get_path("Scenario/Sandbox_1.w3m");
+        let map = Map::open(map_path, &game_data)
+            .unwrap_or_else(|e| panic!("Failed to open map: {:?}", e));
+
+        let output_dir = get_path("Scenario/archive-test");
+        let _ = fs::remove_dir_all(&output_dir);
+        fs::create_dir_all(&output_dir)
+            .unwrap_or_else(|e| panic!("Failed to create output directory: {:?}", e));
+        let out_path = format!("{}/repacked.w3m", output_dir);
+
+        // Repackage all component files into a single MPQ archive.
+        map.save_as_archive(&out_path, &game_data)
+            .unwrap_or_else(|e| panic!("Failed to save archive: {:?}", e));
+
+        // The archive must keep the original 512-byte HM3W header.
+        let bytes = fs::read(&out_path).unwrap_or_else(|e| panic!("{:?}", e));
+        assert_eq!(&bytes[0..4], b"HM3W", "archive must keep the HM3W header");
+
+        // The repackaged archive must be a real, re-openable Warcraft III map.
+        let reopened = Map::open(out_path.clone(), &game_data)
+            .unwrap_or_else(|e| panic!("Failed to re-open repacked archive: {:?}", e));
+        assert_eq!(
+            reopened.infos.game_version(),
+            map.infos.game_version(),
+            "re-opened map should report the same game version"
+        );
+
+        let _ = fs::remove_dir_all(&output_dir);
+    }
+
+    /// Recreate an MPQ archive and leave it on disk (in the git-ignored
+    /// `resources/repacked/`) so it can be opened in the World Editor or
+    /// Warcraft III for manual inspection. Ignored by default (persistent
+    /// output); run on demand:
+    ///
+    /// ```text
+    /// cargo test -p wce_map --lib repack_persistent -- --ignored --nocapture
+    /// ```
+    #[test]
+    #[ignore = "writes a repacked .w3m to resources/repacked/ for manual inspection"]
+    fn repack_persistent() {
+        let game_data = GameData::new(&get_resources_path()).unwrap_or_else(|e| panic!("{:?}", e));
+        let map = Map::open(get_path("Scenario/Sandbox_1.w3m"), &game_data)
+            .unwrap_or_else(|e| panic!("Failed to open map: {:?}", e));
+
+        let output_dir = get_path("repacked");
+        fs::create_dir_all(&output_dir).unwrap_or_else(|e| panic!("{:?}", e));
+        let out_path = format!("{}/Sandbox_1.w3m", output_dir);
+
+        map.save_as_archive(&out_path, &game_data)
+            .unwrap_or_else(|e| panic!("Failed to save archive: {:?}", e));
+        // Sanity: the persisted archive must re-open.
+        Map::open(out_path.clone(), &game_data)
+            .unwrap_or_else(|e| panic!("Repacked archive is not re-openable: {:?}", e));
+
+        println!("repacked archive written to: {out_path}");
+        // No cleanup: left on disk for manual inspection.
     }
 
     #[test]
