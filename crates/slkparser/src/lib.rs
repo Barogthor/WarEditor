@@ -20,8 +20,11 @@ pub const FIELD_SEPARATOR: &str = ";";
 pub enum SLKError {
     #[error("I/O error: {0}")]
     IoError(#[from] io::Error),
-    #[error("Invalid SLK record type: '{record_type}'")]
-    InvalidType { record_type: String },
+    #[error("record {record_index}: invalid SLK record type '{record_type}'")]
+    InvalidType {
+        record_index: usize,
+        record_type: String,
+    },
     #[error("Unexpected end of file while parsing SLK")]
     Eof,
     #[error("Failed to parse {record_type:?} record '{content}': {source}")]
@@ -30,6 +33,19 @@ pub enum SLKError {
         content: String,
         #[source]
         source: ParseIntError,
+    },
+    #[error("record {record_index}: invalid number in field '{field}' of {record_type:?} record: {source}")]
+    ParseInt {
+        record_index: usize,
+        record_type: RecordType,
+        field: String,
+        #[source]
+        source: ParseIntError,
+    },
+    #[error("record {record_index}: malformed record: {reason}")]
+    Malformed {
+        record_index: usize,
+        reason: String,
     },
 }
 
