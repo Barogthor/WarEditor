@@ -103,34 +103,16 @@ impl Iterator for SLKScanner {
 
 #[cfg(test)]
 mod big_sample {
-    use std::time::Instant;
-
-    use crate::document::Document;
-    use crate::elapsed_time;
     use crate::get_resources_path;
     use crate::SLKScanner;
 
     #[test]
-    fn test_ability_data() {
-        let now = Instant::now();
-        let slk_reader = SLKScanner::open(&format!("{}/slk/AbilityData.slk", get_resources_path()))
-            .unwrap_or_else(|e| panic!("{:?}", e));
-        let mut document = Document::default();
-        document.load(slk_reader);
-        elapsed_time(&now);
-        //        for _ in document.get_contents(){}
-        elapsed_time(&now);
+    fn ability_data_record_count() {
+        let slk_reader =
+            SLKScanner::open(&format!("{}slk/AbilityData.slk", get_resources_path()))
+                .unwrap_or_else(|e| panic!("{:?}", e));
+        assert_eq!(slk_reader.count(), 67387);
     }
-}
-
-#[cfg(test)]
-fn elapsed_time(instant: &std::time::Instant) {
-    let elasped = instant.elapsed().as_millis();
-    let millis = elasped % 1000;
-    let seconds = (elasped / 1000) % 60;
-    let mins = elasped / 60000;
-    let hours = elasped / 3600000;
-    println!("Elapsed time: {hours}:{mins}:{seconds}::{millis}");
 }
 
 #[cfg(test)]

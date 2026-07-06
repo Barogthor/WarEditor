@@ -8,7 +8,7 @@ use slkparser::SLKScanner;
 
 fn bench_scanning_ability_data(b: &mut Bencher) {
     b.iter(|| {
-        let slk_reader = SLKScanner::open("../resources/slk/AbilityData.slk");
+        let slk_reader = SLKScanner::open("../../resources/slk/AbilityData.slk").unwrap();
         for _ in slk_reader {}
     });
 }
