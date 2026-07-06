@@ -9,6 +9,7 @@ use crate::slk_type::{Record, RecordType};
 pub mod document;
 pub mod record;
 pub mod slk_type;
+mod fields;
 #[cfg(target_os = "macos")]
 pub const END_RECORD: &str = "\n";
 #[cfg(not(target_os = "macos"))]
