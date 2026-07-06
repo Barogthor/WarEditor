@@ -28,48 +28,6 @@ impl Cell {
         Cell { column, row, value }
     }
 
-    pub fn parse(fields: &[String], _line: Option<u32>) -> Result<Self, SLKError> {
-        let mut cell = Cell::default();
-        for field in fields.iter() {
-            let field_id = &field[0..1];
-            let field_content = &field[1..];
-            //            println!("{:?}",field_content);
-            match field_id {
-                "Y" => {
-                    cell.row =
-                        Some(
-                            field_content
-                                .parse::<u32>()
-                                .map_err(|e| SLKError::Parsing {
-                                    record_type: RecordType::CellContent,
-                                    content: "Y".into(),
-                                    source: e,
-                                })?,
-                        )
-                }
-                "X" => {
-                    cell.column = field_content
-                        .parse::<u32>()
-                        .map_err(|e| SLKError::Parsing {
-                            record_type: RecordType::CellContent,
-                            content: "X".into(),
-                            source: e,
-                        })?
-                }
-                "K" => {
-                    if field_content.starts_with("\"") {
-                        let slice = &field_content[1..field_content.len() - 1];
-                        cell.value = Some(String::from(slice));
-                    } else {
-                        cell.value = Some(String::from(field_content));
-                    }
-                }
-                _ => (),
-            }
-        }
-        Ok(cell)
-    }
-
     /// Valeur de la cellule (champ `K`), sans copie.
     pub fn value(&self) -> Option<&str> {
         self.value.as_deref()
