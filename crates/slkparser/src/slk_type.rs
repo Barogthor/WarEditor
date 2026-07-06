@@ -1,13 +1,13 @@
-//! Types d'enregistrements SLK ([`RecordType`]) et enregistrements
-//! parsés ([`Record`]).
+//! SLK record types ([`RecordType`]) and parsed
+//! records ([`Record`]).
 
 use std::borrow::Cow;
 
 use crate::{cell::Cell, SLKError};
 
-/// Un enregistrement SLK parsé, avec ses données utiles retenues
-/// (dimensions pour `Info`, cellule pour `CellContent`) ; les autres
-/// variantes sont reconnues mais n'embarquent aucune donnée.
+/// A parsed SLK record, with its useful data retained
+/// (dimensions for `Info`, cell for `CellContent`); the other
+/// variants are recognized but carry no data.
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Record {
     Header,
@@ -25,9 +25,9 @@ pub enum Record {
 }
 
 impl Record {
-    /// Construit un enregistrement depuis ses champs déjà découpés et
-    /// dé-échappés. Seuls Info (`B`) et CellContent (`C`) portent des
-    /// données ; les autres types sont reconnus mais leurs champs ignorés.
+    /// Builds a record from its already split and unescaped
+    /// fields. Only Info (`B`) and CellContent (`C`) carry
+    /// data; the other types are recognized but their fields ignored.
     pub fn from_fields<'a, I>(
         record_type: RecordType,
         fields: I,
@@ -71,8 +71,8 @@ impl Record {
     }
 }
 
-/// Type d'un enregistrement SLK (RTD, premier champ de la ligne), avant
-/// interprétation de ses données ([`Record`]).
+/// Type of an SLK record (RTD, first field of the line), before
+/// interpreting its data ([`Record`]).
 #[derive(Debug, PartialOrd, PartialEq, Clone, Copy)]
 pub enum RecordType {
     Header,
@@ -90,7 +90,7 @@ pub enum RecordType {
 }
 
 impl RecordType {
-    /// Identifie le type d'enregistrement depuis son RTD brut (premier champ).
+    /// Identifies the record type from its raw RTD (first field).
     pub fn from_bytes(id: &[u8], record_index: usize) -> Result<Self, SLKError> {
         match id {
             b"ID" => Ok(RecordType::Header),
@@ -113,10 +113,10 @@ impl RecordType {
     }
 }
 
-/// Parse un entier `u32` depuis les octets d'un contenu de champ.
+/// Parses a `u32` integer from the bytes of a field's content.
 ///
-/// Erreurs : [`SLKError::Malformed`] si les octets ne sont pas de l'UTF-8,
-/// [`SLKError::ParseInt`] si le texte n'est pas un entier.
+/// Errors: [`SLKError::Malformed`] if the bytes aren't valid UTF-8,
+/// [`SLKError::ParseInt`] if the text isn't an integer.
 pub(crate) fn parse_u32(
     bytes: &[u8],
     record_type: RecordType,

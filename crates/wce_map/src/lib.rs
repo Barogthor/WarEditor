@@ -172,7 +172,7 @@ impl GameData {
 
 #[cfg(test)]
 fn get_resources_path() -> String {
-    // Utilise CARGO_MANIFEST_DIR pour obtenir le répertoire racine du workspace
+    // Uses CARGO_MANIFEST_DIR to get the workspace root directory
 
     use std::path::Path;
     let manifest_dir = env!("CARGO_MANIFEST_DIR");

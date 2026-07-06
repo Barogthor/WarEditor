@@ -1,11 +1,11 @@
-//! Parser de fichiers SLK (SYLK), le format tabulaire des données de jeu
-//! de Warcraft III (voir `specs/SLKFormat.txt`).
+//! Parser for SLK (SYLK) files, the tabular game data format used by
+//! Warcraft III (see `specs/SLKFormat.txt`).
 //!
-//! Point d'entrée : [`SLKScanner`], un itérateur faillible de
-//! [`slk_type::Record`]s. Le scan travaille sur octets : les fins de ligne
-//! sont détectées (`\n`, `\r` optionnel devant), pas configurées par OS,
-//! et les échappements de la spec (`;;` dans un champ, `""` dans une
-//! valeur quotée) sont appliqués.
+//! Entry point: [`SLKScanner`], a fallible iterator of
+//! [`slk_type::Record`]s. The scan works on bytes: line endings
+//! are detected (`\n`, optional `\r` before it), not configured by OS,
+//! and the spec's escapes (`;;` within a field, `""` within a
+//! quoted value) are applied.
 //!
 //! ```no_run
 //! use slkparser::SLKScanner;
@@ -31,22 +31,22 @@ pub mod document;
 mod fields;
 pub mod slk_type;
 
-/// Erreurs de lecture et de parsing SLK.
+/// SLK reading and parsing errors.
 ///
-/// `record_index` est l'ordinal (base 1) du record dans le fichier,
-/// lignes vides exclues.
+/// `record_index` is the (1-based) ordinal of the record in the file,
+/// excluding blank lines.
 #[derive(Debug, Error)]
 pub enum SLKError {
-    /// Échec d'I/O à l'ouverture ou la lecture du fichier.
+    /// I/O failure when opening or reading the file.
     #[error("I/O error: {0}")]
     IoError(#[from] io::Error),
-    /// Type d'enregistrement (RTD) inconnu.
+    /// Unknown record type (RTD).
     #[error("record {record_index}: invalid SLK record type '{record_type}'")]
     InvalidType {
         record_index: usize,
         record_type: String,
     },
-    /// Champ numérique (`X`/`Y`) illisible.
+    /// Unreadable numeric field (`X`/`Y`).
     #[error("record {record_index}: invalid number in field '{field}' of {record_type:?} record: {source}")]
     ParseInt {
         record_index: usize,
@@ -55,11 +55,11 @@ pub enum SLKError {
         #[source]
         source: ParseIntError,
     },
-    /// Record structurellement invalide (octets non UTF-8 dans un champ
-    /// numérique, etc.).
+    /// Structurally invalid record (non-UTF-8 bytes in a numeric
+    /// field, etc.).
     #[error("record {record_index}: malformed record: {reason}")]
     Malformed { record_index: usize, reason: String },
-    /// Contexte fichier ajouté par l'appelant (p. ex. `SLKData::load` dans `wce_map`).
+    /// File context added by the caller (e.g. `SLKData::load` in `wce_map`).
     #[error("in file '{path}': {source}")]
     InFile {
         path: String,
@@ -68,10 +68,10 @@ pub enum SLKError {
     },
 }
 
-/// Scanner d'un fichier SLK : itère des [`Record`]s faillibles.
+/// Scanner for an SLK file: iterates over fallible [`Record`]s.
 ///
-/// L'itération s'arrête au record `E` (non yieldé) ou à la fin du tampon —
-/// un fichier tronqué sans `E` final est toléré.
+/// Iteration stops at the `E` record (not yielded) or at the end of the
+/// buffer — a truncated file with no final `E` is tolerated.
 pub struct SLKScanner {
     buffer: Vec<u8>,
     pos: usize,
@@ -80,12 +80,12 @@ pub struct SLKScanner {
 }
 
 impl SLKScanner {
-    /// Ouvre un fichier SLK et prépare le scan. Ne lit aucun record.
+    /// Opens an SLK file and prepares the scan. Reads no record.
     pub fn open(path: &str) -> Result<Self, SLKError> {
         Ok(Self::from_bytes(std::fs::read(path)?))
     }
 
-    /// Scanner sur un tampon en mémoire — testable sans fichier.
+    /// Scanner over an in-memory buffer — testable without a file.
     pub fn from_bytes(buffer: Vec<u8>) -> Self {
         SLKScanner {
             buffer,
@@ -95,10 +95,10 @@ impl SLKScanner {
         }
     }
 
-    /// Bornes `(début, longueur)` de la prochaine ligne non vide, fin de
-    /// ligne exclue. Un record se termine à `\n`, avec `\r` optionnel juste
-    /// avant, quel que soit l'OS. Les lignes vides sont ignorées (spec :
-    /// « Empty records are ignored »).
+    /// `(start, length)` bounds of the next non-empty line, line ending
+    /// excluded. A record ends at `\n`, with an optional `\r` just before
+    /// it, regardless of OS. Empty lines are ignored (spec:
+    /// "Empty records are ignored").
     fn next_line_bounds(&mut self) -> Option<(usize, usize)> {
         while self.pos < self.buffer.len() {
             let start = self.pos;
@@ -129,7 +129,7 @@ impl Iterator for SLKScanner {
         self.record_index += 1;
         let line = &self.buffer[start..start + len];
         let mut fields = FieldIter::new(line);
-        // FieldIter yield toujours au moins un champ sur une ligne non vide.
+        // FieldIter always yields at least one field on a non-empty line.
         let type_field = fields.next()?;
         let record_type = match RecordType::from_bytes(&type_field, self.record_index) {
             Ok(record_type) => record_type,
@@ -154,7 +154,7 @@ mod big_sample {
             .unwrap_or_else(|e| panic!("{:?}", e));
         let mut count = 0;
         for record in scanner {
-            record.expect("record invalide");
+            record.expect("invalid record");
             count += 1;
         }
         assert_eq!(count, 67387);
@@ -191,7 +191,7 @@ mod sample {
     #[test]
     fn parse_all_records() {
         let scanner = SLKScanner::open(&get_path("sample_1.slk")).unwrap();
-        let records: Vec<Record> = scanner.map(|r| r.expect("record invalide")).collect();
+        let records: Vec<Record> = scanner.map(|r| r.expect("invalid record")).collect();
         assert_eq!(records.len(), 92);
         assert_eq!(records[0], Record::Header);
         assert!(records.contains(&Record::Info(3, 4)));
@@ -203,7 +203,7 @@ mod sample {
     fn document_loads_sample() {
         let scanner = SLKScanner::open(&get_path("sample_1.slk")).unwrap();
         let mut document = Document::default();
-        document.load(scanner).expect("chargement sample_1");
+        document.load(scanner).expect("loading sample_1");
         assert_eq!(document.row_count(), 3);
         assert_eq!(document.column_count(), 4);
         let cells = document.get_contents();
@@ -257,7 +257,7 @@ mod malformed {
 
     #[test]
     fn truncated_last_record_is_parsed() {
-        // fichier coupé en plein record, sans fin de ligne ni record E
+        // file cut off mid-record, with no line ending or E record
         assert_eq!(
             only_cell_value(b"ID;PWXL\r\nC;X1;Y1;K\"tronqu"),
             Some(String::from("tronqu"))
@@ -298,17 +298,17 @@ mod malformed {
 
     #[test]
     fn double_semicolon_merges_fields_per_spec() {
-        // `X1;;Y2` = un seul champ `X1;Y2` → nombre invalide, erreur propre.
-        // (Un champ vide en milieu de record n'est pas représentable : `;;`
-        // est un échappement — c'est la spec, pas un choix.)
+        // `X1;;Y2` = a single field `X1;Y2` → invalid number, clean error.
+        // (An empty field in the middle of a record is not representable: `;;`
+        // is an escape — that's the spec, not a choice.)
         let recs = records(b"C;X1;;Y2;K\"v\"\r\nE\r\n");
         assert!(matches!(recs[0], Err(SLKError::ParseInt { .. })));
     }
 
     #[test]
     fn fuzz_mutations_never_panic() {
-        // Mini-fuzz déterministe : mutations xorshift d'un SLK valide.
-        // Le parser peut retourner Err, jamais paniquer.
+        // Deterministic mini-fuzz: xorshift mutations of a valid SLK.
+        // The parser may return Err, never panic.
         let base = b"ID;PWXL\r\nB;Y3;X4\r\nC;Y1;X1;K\"a;;b\"\r\nC;X2;K\"say \"\"hi\"\"\"\r\nC;Y2;X1;K12\r\nE\r\n".to_vec();
         let mut state: u64 = 0x9E37_79B9_7F4A_7C15;
         let mut next = move || {

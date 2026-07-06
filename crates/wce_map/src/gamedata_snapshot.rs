@@ -1,11 +1,11 @@
-//! Test de caractérisation du chargement `GameData` — juge de paix de la
-//! refonte du parser SLK (voir `todos/12_plan_refonte_slkparser.md`).
+//! Characterization test for `GameData` loading — arbiter for the
+//! SLK parser rewrite (see `todos/12_plan_refonte_slkparser.md`).
 //!
-//! Compare un condensé stable des 14 tables SLK chargées par `GameData::new`
-//! à la fixture `resources/test_fixtures/gamedata_snapshot.txt`.
+//! Compares a stable digest of the 14 SLK tables loaded by `GameData::new`
+//! against the fixture `resources/test_fixtures/gamedata_snapshot.txt`.
 //!
-//! Pour régénérer la fixture (uniquement après investigation documentée
-//! d'une divergence) :
+//! To regenerate the fixture (only after a documented investigation
+//! of a divergence):
 //! ```text
 //! cargo test -p wce_map generate_gamedata_snapshot -- --ignored
 //! ```
@@ -19,8 +19,8 @@ fn fixture_path() -> String {
     format!("{}test_fixtures/gamedata_snapshot.txt", get_resources_path())
 }
 
-/// FNV-1a 64 bits — déterministe entre versions de Rust,
-/// contrairement à `DefaultHasher`.
+/// 64-bit FNV-1a — deterministic across Rust versions,
+/// unlike `DefaultHasher`.
 fn fnv1a(bytes: &[u8]) -> u64 {
     let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
     for &b in bytes {
@@ -30,7 +30,7 @@ fn fnv1a(bytes: &[u8]) -> u64 {
     hash
 }
 
-/// Sérialisation canonique d'une table : headers triés puis lignes triées.
+/// Canonical serialization of a table: sorted headers then sorted lines.
 fn canonical(table: &SLKData) -> String {
     let mut out = String::new();
     for (col, label) in table.headers() {
@@ -58,15 +58,15 @@ fn digest_line(name: &str, table: &SLKData) -> String {
     )
 }
 
-/// Dump intégral d'une entrée connue — rend une divergence lisible
-/// là où le fnv ne dit que « quelque chose a changé ».
+/// Full dump of a known entry — makes a divergence readable
+/// where the fnv only says "something changed".
 fn dump_entry(out: &mut String, table_name: &str, table: &SLKData, id: &str) {
     writeln!(out, "[{table_name}:{id}]").unwrap();
     let formatted = table
         .get_formatted(&id.to_string())
-        // NB: forme positionnelle requise — wce_map est en édition 2018, où
-        // `panic!("... {id} ...")` n'interpole pas (lint `non_fmt_panics`).
-        .unwrap_or_else(|| panic!("id '{}' absent de {}", id, table_name));
+        // NB: positional form required — wce_map is on edition 2018, where
+        // `panic!("... {id} ...")` doesn't interpolate (lint `non_fmt_panics`).
+        .unwrap_or_else(|| panic!("id '{}' missing from {}", id, table_name));
     for (key, value) in formatted {
         writeln!(out, "{key}={value}").unwrap();
     }
@@ -102,13 +102,13 @@ fn snapshot() -> String {
 #[test]
 fn gamedata_snapshot_matches_fixture() {
     let expected = std::fs::read_to_string(fixture_path()).expect(
-        "fixture manquante : cargo test -p wce_map generate_gamedata_snapshot -- --ignored",
+        "missing fixture: cargo test -p wce_map generate_gamedata_snapshot -- --ignored",
     );
     pretty_assertions::assert_eq!(expected, snapshot());
 }
 
 #[test]
-#[ignore = "régénère la fixture — uniquement après investigation documentée"]
+#[ignore = "regenerates the fixture — only after a documented investigation"]
 fn generate_gamedata_snapshot() {
     std::fs::create_dir_all(format!("{}test_fixtures", get_resources_path())).unwrap();
     std::fs::write(fixture_path(), snapshot()).unwrap();

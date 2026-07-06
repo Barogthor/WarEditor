@@ -1,11 +1,11 @@
-//! Agrégat en mémoire d'un fichier SLK : dimensions (record `B`) et
-//! cellules (records `C`), dans l'ordre du fichier.
+//! In-memory aggregate of an SLK file: dimensions (`B` record) and
+//! cells (`C` records), in file order.
 
 use crate::cell::Cell;
 use crate::slk_type::Record;
 use crate::{SLKError, SLKScanner};
 
-/// Contenu d'un fichier SLK chargé : dimensions et cellules.
+/// Contents of a loaded SLK file: dimensions and cells.
 #[derive(Default, Debug)]
 pub struct Document {
     rows: u32,
@@ -14,8 +14,8 @@ pub struct Document {
 }
 
 impl Document {
-    /// Charge tous les records du scanner.
-    /// S'arrête à la première erreur et la propage.
+    /// Loads all records from the scanner.
+    /// Stops at the first error and propagates it.
     pub fn load(&mut self, scanner: SLKScanner) -> Result<(), SLKError> {
         for record in scanner {
             match record? {
@@ -30,17 +30,17 @@ impl Document {
         Ok(())
     }
 
-    /// Cellules dans l'ordre du fichier.
+    /// Cells in file order.
     pub fn get_contents(&self) -> &Vec<Cell> {
         &self.contents
     }
 
-    /// Nombre de lignes annoncé par le record `B`.
+    /// Row count announced by the `B` record.
     pub fn row_count(&self) -> u32 {
         self.rows
     }
 
-    /// Nombre de colonnes annoncé par le record `B`.
+    /// Column count announced by the `B` record.
     pub fn column_count(&self) -> u32 {
         self.columns
     }

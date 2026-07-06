@@ -1,16 +1,16 @@
-//! Découpe des champs d'un enregistrement SLK.
+//! Splits the fields of an SLK record.
 //!
-//! Règle de la spec (`specs/SLKFormat.txt:19-20`) : `;` sépare les champs,
-//! `;;` encode un `;` littéral dans un champ. Conséquence : un champ
-//! réellement vide n'est représentable qu'en fin de ligne (`...;`).
+//! Spec rule (`specs/SLKFormat.txt:19-20`): `;` separates fields,
+//! `;;` encodes a literal `;` within a field. Consequence: a truly
+//! empty field is only representable at the end of a line (`...;`).
 //!
-//! [`FieldIter`] yield des `Cow<[u8]>` : emprunté tant qu'aucun
-//! échappement n'est rencontré, alloué sinon.
+//! [`FieldIter`] yields `Cow<[u8]>`: borrowed as long as no escape
+//! is encountered, allocated otherwise.
 
 use std::borrow::Cow;
 
-/// Itérateur sur les champs d'une ligne de record (fin de ligne exclue),
-/// avec dé-échappement `;;` → `;`.
+/// Iterator over the fields of a record line (line ending excluded),
+/// with `;;` → `;` unescaping.
 pub(crate) struct FieldIter<'a> {
     line: &'a [u8],
     pos: usize,
@@ -18,7 +18,7 @@ pub(crate) struct FieldIter<'a> {
 }
 
 impl<'a> FieldIter<'a> {
-    /// Prépare l'itération sur les champs de `line` (fin de ligne exclue).
+    /// Prepares iteration over the fields of `line` (line ending excluded).
     pub(crate) fn new(line: &'a [u8]) -> Self {
         FieldIter {
             line,
@@ -93,13 +93,13 @@ mod tests {
 
     #[test]
     fn escape_then_separator() {
-        // `C;;` : `;;` = littéral, puis `;` = séparateur → ["C;", "X1"]
+        // `C;;`: `;;` = literal, then `;` = separator → ["C;", "X1"]
         assert_eq!(fields(b"C;;;X1"), vec![b"C;".to_vec(), b"X1".to_vec()]);
     }
 
     #[test]
     fn real_excel_format_string() {
-        // Cas réel d'AbilityBuffMetaData.slk / sample_1.slk (records P)
+        // Real case from AbilityBuffMetaData.slk / sample_1.slk (P records)
         assert_eq!(
             fields(b"P;P#,##0_);;\\-#,##0_)"),
             vec![b"P".to_vec(), b"P#,##0_);\\-#,##0_)".to_vec()]
