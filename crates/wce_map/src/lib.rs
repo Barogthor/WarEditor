@@ -96,6 +96,14 @@ pub enum MapError {
     CustomDestructable(CustomDestructableError),
 }
 
+/// Erreurs de chargement de la base de données du jeu ([`GameData::new`]).
+#[derive(Debug, Error)]
+pub enum GameDataError {
+    /// Échec de chargement ou de parsing d'une table SLK.
+    #[error("Failed to load SLK game data. {0}")]
+    Slk(#[from] SLKError),
+}
+
 pub fn path_to_data(prefix: &str, path: &str) -> String {
     format!("{prefix}datas/{path}")
 }
@@ -122,7 +130,7 @@ pub struct GameData {
 }
 
 impl GameData {
-    pub fn new(prefix: &str) -> Result<Self, SLKError> {
+    pub fn new(prefix: &str) -> Result<Self, GameDataError> {
         let mut trigger_data = DataIni::new();
         trigger_data.merge(&path_to_data(prefix, PROFILE_TRIGGER_DATA));
         let unit_meta = SLKData::load(&path_to_slk(prefix, SLK_UNIT_META_DATA))?;
@@ -197,7 +205,7 @@ pub mod mmp_file;
 pub mod pathmap_file;
 pub mod region_file;
 pub mod shadowmap_file;
-pub mod slk_datas;
+pub(crate) mod slk_datas;
 pub mod sound_file;
 pub mod terrain_file;
 pub mod trigger_jass_file;
