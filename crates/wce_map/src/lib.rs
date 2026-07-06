@@ -96,6 +96,14 @@ pub enum MapError {
     CustomDestructable(CustomDestructableError),
 }
 
+/// Game database loading errors (see [`GameData::new`]).
+#[derive(Debug, Error)]
+pub enum GameDataError {
+    /// Failed to load or parse an SLK table.
+    #[error("Failed to load SLK game data. {0}")]
+    Slk(#[from] SLKError),
+}
+
 pub fn path_to_data(prefix: &str, path: &str) -> String {
     format!("{prefix}datas/{path}")
 }
@@ -122,7 +130,7 @@ pub struct GameData {
 }
 
 impl GameData {
-    pub fn new(prefix: &str) -> Result<Self, SLKError> {
+    pub fn new(prefix: &str) -> Result<Self, GameDataError> {
         let mut trigger_data = DataIni::new();
         trigger_data.merge(&path_to_data(prefix, PROFILE_TRIGGER_DATA));
         let unit_meta = SLKData::load(&path_to_slk(prefix, SLK_UNIT_META_DATA))?;
@@ -172,7 +180,7 @@ impl GameData {
 
 #[cfg(test)]
 fn get_resources_path() -> String {
-    // Utilise CARGO_MANIFEST_DIR pour obtenir le répertoire racine du workspace
+    // Uses CARGO_MANIFEST_DIR to get the workspace root directory
 
     use std::path::Path;
     let manifest_dir = env!("CARGO_MANIFEST_DIR");
@@ -197,10 +205,13 @@ pub mod mmp_file;
 pub mod pathmap_file;
 pub mod region_file;
 pub mod shadowmap_file;
-pub mod slk_datas;
+pub(crate) mod slk_datas;
 pub mod sound_file;
 pub mod terrain_file;
 pub mod trigger_jass_file;
 pub mod triggers;
 pub mod unit_map;
 pub mod w3i_file;
+
+#[cfg(test)]
+mod gamedata_snapshot;

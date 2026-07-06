@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 
-use slkparser::{record::cell::Cell, SLKError};
+use slkparser::{cell::Cell, SLKError};
 
 use crate::slk_datas::adapter::{DocumentAdapter, ScannerAdapter};
 
@@ -9,9 +9,8 @@ type FieldColumn = u32;
 const HEADER_ROW: u32 = 1;
 
 mod adapter {
+    use slkparser::cell::Cell;
     use slkparser::document::Document;
-    use slkparser::record::cell::Cell;
-    use slkparser::slk_type::Record;
     use slkparser::{SLKError, SLKScanner};
 
     pub struct ScannerAdapter {
@@ -25,23 +24,16 @@ mod adapter {
             })
         }
     }
-    impl Iterator for ScannerAdapter {
-        type Item = Record;
-
-        fn next(&mut self) -> Option<Self::Item> {
-            self.scanner.next()
-        }
-    }
 
     pub struct DocumentAdapter {
         document: Document,
     }
 
     impl DocumentAdapter {
-        pub fn load(scanner: ScannerAdapter) -> DocumentAdapter {
+        pub fn load(scanner: ScannerAdapter) -> Result<DocumentAdapter, SLKError> {
             let mut document = Document::default();
-            document.load(scanner.scanner);
-            DocumentAdapter { document }
+            document.load(scanner.scanner)?;
+            Ok(DocumentAdapter { document })
         }
 
         pub fn get_contents(&self) -> &Vec<Cell> {
@@ -54,10 +46,6 @@ mod adapter {
             self.document.column_count()
         }
     }
-}
-
-pub enum SLKDataError {
-    SLKParsing(SLKError),
 }
 
 #[derive(Debug)]
@@ -78,25 +66,23 @@ fn process_cells(
     let mut row = 0;
     let mut meta_id_holder = String::default();
     for cell in cells {
-        if cell.get_value().is_none() {
-            println!("Value is none: {cell:?}, row: {row}");
+        let value = cell.value();
+        if value.is_none() {
+            log::warn!("Value is none: {cell:?}, row: {row}");
         }
-        if cell.get_row().is_some() {
-            row = cell.get_row().unwrap();
+        if let Some(cell_row) = cell.get_row() {
+            row = cell_row;
         }
         if row == HEADER_ROW {
             let header_pos = cell.get_column();
-            let header_label = cell.get_value().unwrap().to_string();
-            let header_label = if header_label.is_empty() {
-                String::from("Unknown")
-            } else {
-                header_label
+            let header_label = match value {
+                Some(label) if !label.is_empty() => label.to_owned(),
+                _ => String::from("Unknown"),
             };
-
             headers.insert(header_pos, header_label);
         } else {
             let column_header = cell.get_column();
-            let field_value = cell.get_value().unwrap_or(Default::default()).to_string();
+            let field_value = value.unwrap_or("").to_owned();
             if cell.get_row().is_some() {
                 meta_id_holder = field_value;
                 lines.insert(meta_id_holder.clone(), BTreeMap::new());
@@ -107,6 +93,13 @@ fn process_cells(
         }
     }
     (headers, lines)
+}
+
+fn in_file(path: &str, source: SLKError) -> SLKError {
+    SLKError::InFile {
+        path: path.to_string(),
+        source: Box::new(source),
+    }
 }
 
 impl Default for SLKData {
@@ -124,8 +117,8 @@ impl SLKData {
     }
     pub fn load(path: &str) -> Result<Self, SLKError> {
         // println!("========== Parse file: {}",path);
-        let scanner = ScannerAdapter::open(path)?;
-        let document = DocumentAdapter::load(scanner);
+        let scanner = ScannerAdapter::open(path).map_err(|e| in_file(path, e))?;
+        let document = DocumentAdapter::load(scanner).map_err(|e| in_file(path, e))?;
         let cells = document.get_contents();
 
         let (headers, lines) = process_cells(cells);
@@ -135,8 +128,8 @@ impl SLKData {
 
     pub fn merge(&mut self, path: &str) -> Result<(), SLKError> {
         // println!("========== Merge file: {}",path);
-        let scanner = ScannerAdapter::open(path)?;
-        let document = DocumentAdapter::load(scanner);
+        let scanner = ScannerAdapter::open(path).map_err(|e| in_file(path, e))?;
+        let document = DocumentAdapter::load(scanner).map_err(|e| in_file(path, e))?;
         let cells = document.get_contents();
         let (headers, lines) = process_cells(cells);
         let headers_count = self.headers.len() as u32;
@@ -173,6 +166,10 @@ impl SLKData {
 
     pub fn headers(&self) -> &BTreeMap<FieldColumn, String> {
         &self.headers
+    }
+
+    pub(crate) fn lines(&self) -> &HashMap<MetaID, BTreeMap<FieldColumn, String>> {
+        &self.lines
     }
 
     pub fn get_formatted(&self, id: &MetaID) -> Option<BTreeMap<String, String>> {
