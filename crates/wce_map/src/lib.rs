@@ -96,10 +96,10 @@ pub enum MapError {
     CustomDestructable(CustomDestructableError),
 }
 
-/// Erreurs de chargement de la base de données du jeu ([`GameData::new`]).
+/// Game database loading errors (see [`GameData::new`]).
 #[derive(Debug, Error)]
 pub enum GameDataError {
-    /// Échec de chargement ou de parsing d'une table SLK.
+    /// Failed to load or parse an SLK table.
     #[error("Failed to load SLK game data. {0}")]
     Slk(#[from] SLKError),
 }
