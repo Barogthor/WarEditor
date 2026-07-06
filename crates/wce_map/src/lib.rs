@@ -204,3 +204,6 @@ pub mod trigger_jass_file;
 pub mod triggers;
 pub mod unit_map;
 pub mod w3i_file;
+
+#[cfg(test)]
+mod gamedata_snapshot;

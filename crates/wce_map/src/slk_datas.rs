@@ -175,6 +175,10 @@ impl SLKData {
         &self.headers
     }
 
+    pub(crate) fn lines(&self) -> &HashMap<MetaID, BTreeMap<FieldColumn, String>> {
+        &self.lines
+    }
+
     pub fn get_formatted(&self, id: &MetaID) -> Option<BTreeMap<String, String>> {
         let v = self.get(id);
         let counter = 1;
