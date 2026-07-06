@@ -58,11 +58,8 @@ pub enum SLKError {
     /// Record structurellement invalide (octets non UTF-8 dans un champ
     /// numérique, etc.).
     #[error("record {record_index}: malformed record: {reason}")]
-    Malformed {
-        record_index: usize,
-        reason: String,
-    },
-    /// Contexte fichier ajouté par l'appelant (voir `SLKData::load`).
+    Malformed { record_index: usize, reason: String },
+    /// Contexte fichier ajouté par l'appelant (p. ex. `SLKData::load` dans `wce_map`).
     #[error("in file '{path}': {source}")]
     InFile {
         path: String,
@@ -155,7 +152,11 @@ mod big_sample {
     fn ability_data_record_count() {
         let scanner = SLKScanner::open(&format!("{}slk/AbilityData.slk", get_resources_path()))
             .unwrap_or_else(|e| panic!("{:?}", e));
-        let count = scanner.map(|r| r.expect("record invalide")).count();
+        let mut count = 0;
+        for record in scanner {
+            record.expect("record invalide");
+            count += 1;
+        }
         assert_eq!(count, 67387);
     }
 }
@@ -173,8 +174,8 @@ fn get_resources_path() -> String {
 
 #[cfg(test)]
 mod sample {
-    use crate::document::Document;
     use crate::cell::Cell;
+    use crate::document::Document;
     use crate::slk_type::Record;
     use crate::{get_resources_path, SLKScanner};
 
@@ -282,7 +283,10 @@ mod malformed {
         assert_eq!(recs.len(), 1);
         assert!(matches!(
             recs[0],
-            Err(SLKError::InvalidType { record_index: 1, .. })
+            Err(SLKError::InvalidType {
+                record_index: 1,
+                ..
+            })
         ));
     }
 

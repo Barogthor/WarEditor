@@ -1,7 +1,13 @@
+//! Types d'enregistrements SLK ([`RecordType`]) et enregistrements
+//! parsés ([`Record`]).
+
 use std::borrow::Cow;
 
 use crate::{cell::Cell, SLKError};
 
+/// Un enregistrement SLK parsé, avec ses données utiles retenues
+/// (dimensions pour `Info`, cellule pour `CellContent`) ; les autres
+/// variantes sont reconnues mais n'embarquent aucune donnée.
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Record {
     Header,
@@ -65,6 +71,8 @@ impl Record {
     }
 }
 
+/// Type d'un enregistrement SLK (RTD, premier champ de la ligne), avant
+/// interprétation de ses données ([`Record`]).
 #[derive(Debug, PartialOrd, PartialEq, Clone, Copy)]
 pub enum RecordType {
     Header,
@@ -129,20 +137,29 @@ pub(crate) fn parse_u32(
 
 #[cfg(test)]
 mod from_fields_tests {
-    use crate::fields::FieldIter;
     use crate::cell::Cell;
+    use crate::fields::FieldIter;
     use crate::slk_type::{Record, RecordType};
     use crate::SLKError;
 
     #[test]
     fn record_type_from_bytes() {
-        assert_eq!(RecordType::from_bytes(b"ID", 1).unwrap(), RecordType::Header);
+        assert_eq!(
+            RecordType::from_bytes(b"ID", 1).unwrap(),
+            RecordType::Header
+        );
         assert_eq!(RecordType::from_bytes(b"B", 1).unwrap(), RecordType::Info);
-        assert_eq!(RecordType::from_bytes(b"C", 1).unwrap(), RecordType::CellContent);
+        assert_eq!(
+            RecordType::from_bytes(b"C", 1).unwrap(),
+            RecordType::CellContent
+        );
         assert_eq!(RecordType::from_bytes(b"E", 1).unwrap(), RecordType::EOF);
         assert!(matches!(
             RecordType::from_bytes(b"ZZ", 7),
-            Err(SLKError::InvalidType { record_index: 7, .. })
+            Err(SLKError::InvalidType {
+                record_index: 7,
+                ..
+            })
         ));
     }
 
@@ -158,7 +175,10 @@ mod from_fields_tests {
         let fields = FieldIter::new(b"Yabc;X4");
         assert!(matches!(
             Record::from_fields(RecordType::Info, fields, 2),
-            Err(SLKError::ParseInt { record_index: 2, .. })
+            Err(SLKError::ParseInt {
+                record_index: 2,
+                ..
+            })
         ));
     }
 

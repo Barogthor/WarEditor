@@ -7,9 +7,10 @@ use bencher::Bencher;
 use slkparser::SLKScanner;
 
 fn bench_scanning_ability_data(b: &mut Bencher) {
+    let bytes = std::fs::read("../../resources/slk/AbilityData.slk").unwrap();
     b.iter(|| {
-        let slk_reader = SLKScanner::open("../../resources/slk/AbilityData.slk").unwrap();
-        for record in slk_reader {
+        let scanner = SLKScanner::from_bytes(bytes.clone());
+        for record in scanner {
             record.unwrap();
         }
     });

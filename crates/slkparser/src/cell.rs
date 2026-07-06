@@ -1,8 +1,14 @@
+//! Contenu d'une cellule SLK (record `C`) : colonne, ligne optionnelle et
+//! valeur (champ `K`), dé-échappée depuis les octets bruts du fichier.
+
 use std::borrow::Cow;
 
 use crate::slk_type::{parse_u32, RecordType};
 use crate::SLKError;
 
+/// Une cellule d'un fichier SLK : sa colonne (`X`), sa ligne optionnelle
+/// (`Y`, absente si inchangée depuis la cellule précédente) et sa valeur
+/// (`K`).
 #[derive(Default, Debug, PartialEq, PartialOrd, Clone)]
 pub struct Cell {
     column: u32,
@@ -11,15 +17,18 @@ pub struct Cell {
 }
 
 impl Cell {
+    /// Colonne de la cellule (champ `X`).
     pub fn get_column(&self) -> u32 {
         self.column
     }
+    /// Ligne de la cellule (champ `Y`), si présente dans le record.
     pub fn get_row(&self) -> Option<u32> {
         self.row
     }
 }
 
 impl Cell {
+    /// Construit une cellule à partir de ses composantes déjà résolues.
     pub fn new(column: u32, row: Option<u32>, value: Option<String>) -> Self {
         Cell { column, row, value }
     }
@@ -93,8 +102,8 @@ fn decode_value(content: &[u8]) -> String {
 
 #[cfg(test)]
 mod from_fields_tests {
-    use crate::fields::FieldIter;
     use super::Cell;
+    use crate::fields::FieldIter;
     use crate::SLKError;
 
     fn cell(line: &[u8]) -> Result<Cell, SLKError> {
@@ -145,14 +154,20 @@ mod from_fields_tests {
 
     #[test]
     fn non_utf8_value_is_lossy() {
-        assert_eq!(cell(b"X1;K\"caf\xe9\"").unwrap().value(), Some("caf\u{FFFD}"));
+        assert_eq!(
+            cell(b"X1;K\"caf\xe9\"").unwrap().value(),
+            Some("caf\u{FFFD}")
+        );
     }
 
     #[test]
     fn non_utf8_coordinate_is_error() {
         assert!(matches!(
             cell(b"X\xff;Y1"),
-            Err(SLKError::Malformed { record_index: 1, .. })
+            Err(SLKError::Malformed {
+                record_index: 1,
+                ..
+            })
         ));
     }
 

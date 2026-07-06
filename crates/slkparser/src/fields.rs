@@ -18,6 +18,7 @@ pub(crate) struct FieldIter<'a> {
 }
 
 impl<'a> FieldIter<'a> {
+    /// Prépare l'itération sur les champs de `line` (fin de ligne exclue).
     pub(crate) fn new(line: &'a [u8]) -> Self {
         FieldIter {
             line,
