@@ -1,7 +1,7 @@
 //! Agrégat en mémoire d'un fichier SLK : dimensions (record `B`) et
 //! cellules (records `C`), dans l'ordre du fichier.
 
-use crate::record::cell::Cell;
+use crate::cell::Cell;
 use crate::slk_type::Record;
 use crate::{SLKError, SLKScanner};
 

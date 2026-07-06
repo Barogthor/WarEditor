@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::{record::cell::Cell, SLKError};
+use crate::{cell::Cell, SLKError};
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Record {
@@ -130,7 +130,7 @@ pub(crate) fn parse_u32(
 #[cfg(test)]
 mod from_fields_tests {
     use crate::fields::FieldIter;
-    use crate::record::cell::Cell;
+    use crate::cell::Cell;
     use crate::slk_type::{Record, RecordType};
     use crate::SLKError;
 

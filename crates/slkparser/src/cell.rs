@@ -11,10 +11,6 @@ pub struct Cell {
 }
 
 impl Cell {
-    pub fn get_value(&self) -> Option<String> {
-        self.value.clone()
-    }
-
     pub fn get_column(&self) -> u32 {
         self.column
     }
@@ -98,7 +94,7 @@ fn decode_value(content: &[u8]) -> String {
 #[cfg(test)]
 mod from_fields_tests {
     use crate::fields::FieldIter;
-    use crate::record::cell::Cell;
+    use super::Cell;
     use crate::SLKError;
 
     fn cell(line: &[u8]) -> Result<Cell, SLKError> {

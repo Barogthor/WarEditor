@@ -26,9 +26,9 @@ use thiserror::Error;
 use crate::fields::FieldIter;
 use crate::slk_type::{Record, RecordType};
 
+pub mod cell;
 pub mod document;
 mod fields;
-pub mod record;
 pub mod slk_type;
 
 /// Erreurs de lecture et de parsing SLK.
@@ -174,7 +174,7 @@ fn get_resources_path() -> String {
 #[cfg(test)]
 mod sample {
     use crate::document::Document;
-    use crate::record::cell::Cell;
+    use crate::cell::Cell;
     use crate::slk_type::Record;
     use crate::{get_resources_path, SLKScanner};
 
