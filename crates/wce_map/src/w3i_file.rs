@@ -871,7 +871,7 @@ mod w3i_tests {
     fn w3i_roc_test() {
         let mut w3i = File::open(get_path("Scenario/Sandbox_roc/war3map.w3i"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3i);
+        let mut reader = BinaryReader::from(&mut w3i).unwrap();
         let w3i = reader.read::<W3iFile>().unwrap();
         let mock_w3i = get_roc_mock();
         assert_eq!(w3i, mock_w3i);
@@ -880,7 +880,7 @@ mod w3i_tests {
     fn w3i_tft_test() {
         let mut w3i = File::open(get_path("Scenario/Sandbox_tft/war3map.w3i"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3i);
+        let mut reader = BinaryReader::from(&mut w3i).unwrap();
         let w3i = reader.read::<W3iFile>().unwrap();
         let mock_w3i = get_tft_mock();
         assert_eq!(w3i, mock_w3i);
@@ -965,7 +965,7 @@ mod w3i_tests {
         // Read original data
         let mut w3i_file = File::open(get_path("Scenario/Sandbox_roc/war3map.w3i"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3i_file);
+        let mut reader = BinaryReader::from(&mut w3i_file).unwrap();
         let original_w3i = reader.read::<W3iFile>().unwrap_or_else(|e| panic!("{}", e));
 
         // Write to buffer
@@ -1048,7 +1048,7 @@ mod w3i_tests {
         // Read original data
         let mut w3i_file = File::open(get_path("Scenario/Sandbox_tft/war3map.w3i"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3i_file);
+        let mut reader = BinaryReader::from(&mut w3i_file).unwrap();
         let original_w3i = reader.read::<W3iFile>().unwrap_or_else(|e| panic!("{}", e));
 
         // Write to buffer

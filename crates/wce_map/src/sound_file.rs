@@ -366,7 +366,7 @@ mod w3s_test {
     fn no_failure() {
         let mut w3s = File::open(get_path("Scenario/Sandbox_roc/war3map.w3s"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3s);
+        let mut reader = BinaryReader::from(&mut w3s).unwrap();
         let _sound_file = reader.read::<SoundFile>();
     }
 
@@ -374,7 +374,7 @@ mod w3s_test {
     fn check_values() {
         let mut w3s = File::open(get_path("Scenario/Sandbox_roc/war3map.w3s"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3s);
+        let mut reader = BinaryReader::from(&mut w3s).unwrap();
         let sound_file = reader.read::<SoundFile>().unwrap();
         let mock = mock_sounds();
         assert_eq!(sound_file.sounds, mock);
@@ -622,7 +622,7 @@ mod w3s_test {
         // Test with actual file data to ensure compatibility
         let file_path = get_path("Scenario/Sandbox_roc/war3map.w3s");
         if let Ok(mut w3s) = File::open(&file_path) {
-            let mut reader = BinaryReader::from(&mut w3s);
+            let mut reader = BinaryReader::from(&mut w3s).unwrap();
             if let Ok(original) = reader.read::<SoundFile>() {
                 // Write the loaded file
                 let mut writer = BinaryWriter::new();

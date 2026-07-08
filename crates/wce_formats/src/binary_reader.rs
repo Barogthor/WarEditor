@@ -27,13 +27,13 @@ impl BinaryReader {
         }
     }
 
-    pub fn from(file: &mut File) -> BinaryReader {
+    pub fn from(file: &mut File) -> ReadResult<BinaryReader> {
         let mut buffer: Vec<u8> = vec![];
-        file.read_to_end(&mut buffer).unwrap();
-        BinaryReader {
+        file.read_to_end(&mut buffer)?;
+        Ok(BinaryReader {
             size: buffer.len(),
             buffer: Cursor::new(buffer),
-        }
+        })
     }
 
     pub fn read_char(&mut self) -> ReadResult<char> {
@@ -152,6 +152,8 @@ impl BinaryReader {
         Ok(chars)
     }
 
+    /// Seeks within the in-memory cursor. Infallible for the non-negative offsets used by all
+    /// callers; a negative seek past start would panic (unreachable here).
     pub fn skip(&mut self, bytes_to_skip: i64) {
         self.buffer.seek(SeekFrom::Current(bytes_to_skip)).unwrap();
     }
@@ -228,6 +230,8 @@ impl BinaryReader {
             .map_err(|e| to_read_error(self, e))?;
         Ok(vec)
     }
+    /// Seeks within the in-memory cursor. Infallible for the non-negative offsets used by all
+    /// callers; a negative seek past start would panic (unreachable here).
     pub fn seek_begin(&mut self) {
         self.buffer
             .seek(SeekFrom::Start(0))

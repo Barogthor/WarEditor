@@ -180,7 +180,7 @@ mod w3c_test {
     fn no_failure_roc() {
         let mut w3c = File::open(get_path("Scenario/Sandbox_Roc/war3map.w3c"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3c);
+        let mut reader = BinaryReader::from(&mut w3c).unwrap();
         reader
             .read::<CameraFile>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -190,7 +190,7 @@ mod w3c_test {
     fn no_failure_tft() {
         let mut w3c = File::open(get_path("Scenario/Sandbox_TFT/war3map.w3c"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3c);
+        let mut reader = BinaryReader::from(&mut w3c).unwrap();
         reader
             .read::<CameraFile>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -200,7 +200,7 @@ mod w3c_test {
     fn check_values_roc() {
         let mut w3c = File::open(get_path("Scenario/Sandbox_roc/war3map.w3c"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3c);
+        let mut reader = BinaryReader::from(&mut w3c).unwrap();
         let camera_file = reader
             .read::<CameraFile>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -212,7 +212,7 @@ mod w3c_test {
     fn check_values_tft() {
         let mut w3c = File::open(get_path("Scenario/Sandbox_tft/war3map.w3c"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3c);
+        let mut reader = BinaryReader::from(&mut w3c).unwrap();
         let camera_file = reader
             .read::<CameraFile>()
             .unwrap_or_else(|e| panic!("{}", e));

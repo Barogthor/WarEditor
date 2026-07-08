@@ -158,7 +158,7 @@ Force 1
     fn test_parsing_file_roc() {
         let mut f = File::open(get_path("Scenario/Sandbox_roc/war3map.wts"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut f);
+        let mut reader = BinaryReader::from(&mut f).unwrap();
         let buffer = reader
             .read_string_utf8_safe(reader.size())
             .unwrap_or_else(|e| panic!("{}", e));
@@ -176,7 +176,7 @@ Force 1
     fn test_parsing_file_tft() {
         let mut f = File::open(get_path("Scenario/Sandbox_tft/war3map.wts"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut f);
+        let mut reader = BinaryReader::from(&mut f).unwrap();
         let buffer = reader
             .read_string_utf8_safe(reader.size())
             .unwrap_or_else(|e| panic!("{}", e));

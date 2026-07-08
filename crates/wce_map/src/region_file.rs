@@ -210,7 +210,7 @@ mod w3r_test {
     fn no_failure() {
         let mut w3r = File::open(get_path("Scenario/Sandbox_roc/war3map.w3r"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3r);
+        let mut reader = BinaryReader::from(&mut w3r).unwrap();
         reader.read::<RegionFile>().unwrap();
     }
 
@@ -218,7 +218,7 @@ mod w3r_test {
     fn check_values() {
         let mut w3r = File::open(get_path("Scenario/Sandbox_roc/war3map.w3r"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3r);
+        let mut reader = BinaryReader::from(&mut w3r).unwrap();
         let region_file = reader
             .read::<RegionFile>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -379,7 +379,7 @@ mod w3r_test {
         // Test with real file data to ensure compatibility
         let file_path = get_path("Scenario/Sandbox_roc/war3map.w3r");
         if let Ok(mut w3r) = File::open(&file_path) {
-            let mut reader = BinaryReader::from(&mut w3r);
+            let mut reader = BinaryReader::from(&mut w3r).unwrap();
             if let Ok(original) = reader.read::<RegionFile>() {
                 // Write the loaded file
                 let mut writer = BinaryWriter::new();

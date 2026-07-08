@@ -338,7 +338,7 @@ mod doodads_test {
     fn no_failure_roc() {
         let mut doodad_file = File::open(get_path("Scenario/Sandbox_roc/war3map.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut doodad_file);
+        let mut reader = BinaryReader::from(&mut doodad_file).unwrap();
         let _doodad_map = reader.read::<DoodadMap>();
     }
 
@@ -346,7 +346,7 @@ mod doodads_test {
     fn check_roc() {
         let mut doodad_file = File::open(get_path("Scenario/Sandbox_roc/war3map.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut doodad_file);
+        let mut reader = BinaryReader::from(&mut doodad_file).unwrap();
         let doodad_map = reader.read::<DoodadMap>().unwrap();
         let mock_destructables = mock_destructable_roc();
         assert_eq!(doodad_map.id, "W3do".to_string());
@@ -366,7 +366,7 @@ mod doodads_test {
     fn no_failure_tft() {
         let mut doodad_file = File::open(get_path("Scenario/Sandbox_tft/war3map.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut doodad_file);
+        let mut reader = BinaryReader::from(&mut doodad_file).unwrap();
         let _doodad_map = reader
             .read::<DoodadMap>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -377,7 +377,7 @@ mod doodads_test {
         // Read original data
         let mut doodad_file = File::open(get_path("Scenario/Sandbox_roc/war3map.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut doodad_file);
+        let mut reader = BinaryReader::from(&mut doodad_file).unwrap();
         let original_map = reader
             .read::<DoodadMap>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -449,7 +449,7 @@ mod doodads_test {
         // Read original data
         let mut doodad_file = File::open(get_path("Scenario/Sandbox_tft/war3map.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut doodad_file);
+        let mut reader = BinaryReader::from(&mut doodad_file).unwrap();
         let original_map = reader
             .read::<DoodadMap>()
             .unwrap_or_else(|e| panic!("{}", e));

@@ -760,7 +760,7 @@ mod unitmap_tests {
     fn no_failure_roc() {
         let mut unititem_file = File::open(get_path("Scenario/Sandbox_roc/war3mapUnits.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut unititem_file);
+        let mut reader = BinaryReader::from(&mut unititem_file).unwrap();
         let _unititem_map = reader.read::<UnitItemMap>();
     }
 
@@ -768,7 +768,7 @@ mod unitmap_tests {
     fn check_roc() {
         let mut unititem_file = File::open(get_path("Scenario/Sandbox_roc/war3mapUnits.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut unititem_file);
+        let mut reader = BinaryReader::from(&mut unititem_file).unwrap();
         let unititem_map = reader
             .read::<UnitItemMap>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -790,7 +790,7 @@ mod unitmap_tests {
     fn no_failure_tft() {
         let mut unititem_file = File::open(get_path("Scenario/Sandbox_tft/war3mapUnits.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut unititem_file);
+        let mut reader = BinaryReader::from(&mut unititem_file).unwrap();
         let _unititem_map = reader
             .read::<UnitItemMap>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -801,7 +801,7 @@ mod unitmap_tests {
         // Read original data
         let mut unititem_file = File::open(get_path("Scenario/Sandbox_roc/war3mapUnits.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut unititem_file);
+        let mut reader = BinaryReader::from(&mut unititem_file).unwrap();
         let original_map = reader
             .read::<UnitItemMap>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -857,7 +857,7 @@ mod unitmap_tests {
         // Read original data
         let mut unititem_file = File::open(get_path("Scenario/Sandbox_tft/war3mapUnits.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut unititem_file);
+        let mut reader = BinaryReader::from(&mut unititem_file).unwrap();
         let original_map = reader
             .read::<UnitItemMap>()
             .unwrap_or_else(|e| panic!("{}", e));
