@@ -509,7 +509,8 @@ mod doodads_test {
         let result = reader.read::<DoodadMap>();
         assert!(
             matches!(result, Err(ReadError::TrailingBytes { .. })),
-            "expected TrailingBytes, got {result:?}"
+            "expected TrailingBytes, got {:?}",
+            result
         );
     }
 }

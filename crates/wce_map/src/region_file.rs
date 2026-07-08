@@ -380,7 +380,8 @@ mod w3r_test {
         let file_path = get_path("Scenario/Sandbox_roc/war3map.w3r");
         assert!(
             std::path::Path::new(&file_path).exists(),
-            "required test fixture missing: {file_path}"
+            "required test fixture missing: {}",
+            file_path
         );
         let mut w3r = File::open(&file_path).unwrap_or_else(|e| panic!("{}", e));
         let mut reader = BinaryReader::from(&mut w3r).unwrap();

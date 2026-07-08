@@ -206,21 +206,23 @@ mod tests {
         let base = format!("{}slk/UnitData.slk", crate::get_resources_path());
         assert!(
             std::path::Path::new(&base).exists(),
-            "fixture missing: {base}"
+            "fixture missing: {}",
+            base
         );
         let other = format!("{}slk/UnitBalance.slk", crate::get_resources_path());
         assert!(
             std::path::Path::new(&other).exists(),
-            "fixture missing: {other}"
+            "fixture missing: {}",
+            other
         );
 
         let a = SLKData::load(&base).unwrap();
-        assert!(!a.headers().is_empty(), "no headers parsed from {base}");
-        assert!(!a.lines().is_empty(), "no rows parsed from {base}");
+        assert!(!a.headers().is_empty(), "no headers parsed from {}", base);
+        assert!(!a.lines().is_empty(), "no rows parsed from {}", base);
 
         let b = SLKData::load(&other).unwrap();
-        assert!(!b.headers().is_empty(), "no headers parsed from {other}");
-        assert!(!b.lines().is_empty(), "no rows parsed from {other}");
+        assert!(!b.headers().is_empty(), "no headers parsed from {}", other);
+        assert!(!b.lines().is_empty(), "no rows parsed from {}", other);
 
         // Confirm the two tables actually share meta ids before relying on that to exercise the
         // same-key branch; a disjoint pair would make the rest of this test pass vacuously.
@@ -250,7 +252,7 @@ mod tests {
 
         let merged_fields = a
             .get(&meta_id)
-            .unwrap_or_else(|| panic!("row {meta_id} dropped by merge"));
+            .unwrap_or_else(|| panic!("row {} dropped by merge", meta_id));
 
         // (a) the base table's value for this id/column survives unchanged.
         assert_eq!(
@@ -262,7 +264,9 @@ mod tests {
         // (b) the same id gained columns from the second table (offset-merged, not replaced).
         assert!(
             merged_fields.len() > base_column_count,
-            "merge did not add UnitBalance columns to {meta_id} (still has only {base_column_count} columns)"
+            "merge did not add UnitBalance columns to {} (still has only {} columns)",
+            meta_id,
+            base_column_count
         );
     }
 }
