@@ -25,6 +25,13 @@ pub enum GameDataError {
     /// Failed to load or parse an SLK table.
     #[error("Failed to load SLK game data. {0}")]
     Slk(#[from] SLKError),
+    /// Failed to open or read an INI game-data file.
+    #[error("Failed to load INI game data '{path}'. {source}")]
+    Ini {
+        path: String,
+        #[source]
+        source: std::io::Error,
+    },
 }
 
 pub fn path_to_data(prefix: &str, path: &str) -> String {
@@ -73,7 +80,7 @@ pub struct GameData {
 impl GameData {
     pub fn new(prefix: &str) -> Result<Self, GameDataError> {
         let mut trigger_data = DataIni::new();
-        trigger_data.merge(&path_to_data(prefix, PROFILE_TRIGGER_DATA));
+        trigger_data.merge(&path_to_data(prefix, PROFILE_TRIGGER_DATA))?;
         let unit_meta = SLKData::load(&path_to_slk(prefix, SLK_UNIT_META_DATA))?;
 
         let doodad_meta = SLKData::load(&path_to_slk(prefix, SLK_DOODAD_META_DATA))?;
