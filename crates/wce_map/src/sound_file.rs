@@ -621,45 +621,47 @@ mod w3s_test {
     fn test_real_file_round_trip() {
         // Test with actual file data to ensure compatibility
         let file_path = get_path("Scenario/Sandbox_roc/war3map.w3s");
-        if let Ok(mut w3s) = File::open(&file_path) {
-            let mut reader = BinaryReader::from(&mut w3s).unwrap();
-            if let Ok(original) = reader.read::<SoundFile>() {
-                // Write the loaded file
-                let mut writer = BinaryWriter::new();
-                original.write(&mut writer).unwrap();
-                let buffer = writer.into_buffer();
+        assert!(
+            std::path::Path::new(&file_path).exists(),
+            "required test fixture missing: {file_path}"
+        );
+        let mut w3s = File::open(&file_path).unwrap_or_else(|e| panic!("{}", e));
+        let mut reader = BinaryReader::from(&mut w3s).unwrap();
+        let original = reader.read::<SoundFile>().unwrap();
 
-                // Read it back
-                let mut reader = BinaryReader::new(buffer);
-                let reconstructed = SoundFile::read(&mut reader).unwrap();
+        // Write the loaded file
+        let mut writer = BinaryWriter::new();
+        original.write(&mut writer).unwrap();
+        let buffer = writer.into_buffer();
 
-                // Verify it matches the original
-                assert_eq!(original.version, reconstructed.version);
-                assert_eq!(original.sounds.len(), reconstructed.sounds.len());
+        // Read it back
+        let mut reader = BinaryReader::new(buffer);
+        let reconstructed = SoundFile::read(&mut reader).unwrap();
 
-                for (i, (orig, recon)) in original
-                    .sounds
-                    .iter()
-                    .zip(reconstructed.sounds.iter())
-                    .enumerate()
-                {
-                    assert_eq!(orig.id, recon.id, "Sound {i}: id mismatch");
-                    assert_eq!(orig.file, recon.file, "Sound {i}: file mismatch");
-                    assert_eq!(orig.effect, recon.effect, "Sound {i}: effect mismatch");
-                    assert_eq!(orig.looping, recon.looping, "Sound {i}: looping mismatch");
-                    assert_eq!(
-                        orig.sound_3d, recon.sound_3d,
-                        "Sound {i}: sound_3d mismatch"
-                    );
-                    assert_eq!(
-                        orig.stop_oof, recon.stop_oof,
-                        "Sound {i}: stop_oof mismatch"
-                    );
-                    assert_eq!(orig.music, recon.music, "Sound {i}: music mismatch");
-                    assert_eq!(orig.volume, recon.volume, "Sound {i}: volume mismatch");
-                }
-            }
+        // Verify it matches the original
+        assert_eq!(original.version, reconstructed.version);
+        assert_eq!(original.sounds.len(), reconstructed.sounds.len());
+
+        for (i, (orig, recon)) in original
+            .sounds
+            .iter()
+            .zip(reconstructed.sounds.iter())
+            .enumerate()
+        {
+            assert_eq!(orig.id, recon.id, "Sound {i}: id mismatch");
+            assert_eq!(orig.file, recon.file, "Sound {i}: file mismatch");
+            assert_eq!(orig.effect, recon.effect, "Sound {i}: effect mismatch");
+            assert_eq!(orig.looping, recon.looping, "Sound {i}: looping mismatch");
+            assert_eq!(
+                orig.sound_3d, recon.sound_3d,
+                "Sound {i}: sound_3d mismatch"
+            );
+            assert_eq!(
+                orig.stop_oof, recon.stop_oof,
+                "Sound {i}: stop_oof mismatch"
+            );
+            assert_eq!(orig.music, recon.music, "Sound {i}: music mismatch");
+            assert_eq!(orig.volume, recon.volume, "Sound {i}: volume mismatch");
         }
-        // Note: Test will pass silently if file doesn't exist, which is fine for CI/environments without test data
     }
 }

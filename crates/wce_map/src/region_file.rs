@@ -378,50 +378,53 @@ mod w3r_test {
     fn test_real_file_round_trip() {
         // Test with real file data to ensure compatibility
         let file_path = get_path("Scenario/Sandbox_roc/war3map.w3r");
-        if let Ok(mut w3r) = File::open(&file_path) {
-            let mut reader = BinaryReader::from(&mut w3r).unwrap();
-            if let Ok(original) = reader.read::<RegionFile>() {
-                // Write the loaded file
-                let mut writer = BinaryWriter::new();
-                original
-                    .write(&mut writer)
-                    .unwrap_or_else(|e| panic!("{}", e));
-                let buffer = writer.into_buffer();
+        assert!(
+            std::path::Path::new(&file_path).exists(),
+            "required test fixture missing: {file_path}"
+        );
+        let mut w3r = File::open(&file_path).unwrap_or_else(|e| panic!("{}", e));
+        let mut reader = BinaryReader::from(&mut w3r).unwrap();
+        let original = reader
+            .read::<RegionFile>()
+            .unwrap_or_else(|e| panic!("{}", e));
 
-                // Read it back
-                let mut reader = BinaryReader::new(buffer);
-                let reconstructed =
-                    RegionFile::read(&mut reader).unwrap_or_else(|e| panic!("{}", e));
+        // Write the loaded file
+        let mut writer = BinaryWriter::new();
+        original
+            .write(&mut writer)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let buffer = writer.into_buffer();
 
-                // Verify it matches the original
-                assert_eq!(original.version, reconstructed.version);
-                assert_eq!(original.regions.len(), reconstructed.regions.len());
+        // Read it back
+        let mut reader = BinaryReader::new(buffer);
+        let reconstructed = RegionFile::read(&mut reader).unwrap_or_else(|e| panic!("{}", e));
 
-                for (i, (orig, recon)) in original
-                    .regions
-                    .iter()
-                    .zip(reconstructed.regions.iter())
-                    .enumerate()
-                {
-                    assert_eq!(orig.left, recon.left, "Region {i}: left mismatch");
-                    assert_eq!(orig.right, recon.right, "Region {i}: right mismatch");
-                    assert_eq!(orig.bottom, recon.bottom, "Region {i}: bottom mismatch");
-                    assert_eq!(orig.top, recon.top, "Region {i}: top mismatch");
-                    assert_eq!(orig.name, recon.name, "Region {i}: name mismatch");
-                    assert_eq!(orig.index, recon.index, "Region {i}: index mismatch");
-                    assert_eq!(
-                        orig.weather_effect, recon.weather_effect,
-                        "Region {i}: weather_effect mismatch"
-                    );
-                    assert_eq!(
-                        orig.ambient_sound, recon.ambient_sound,
-                        "Region {i}: ambient_sound mismatch"
-                    );
-                    assert_eq!(orig.color, recon.color, "Region {i}: color mismatch");
-                }
-            }
+        // Verify it matches the original
+        assert_eq!(original.version, reconstructed.version);
+        assert_eq!(original.regions.len(), reconstructed.regions.len());
+
+        for (i, (orig, recon)) in original
+            .regions
+            .iter()
+            .zip(reconstructed.regions.iter())
+            .enumerate()
+        {
+            assert_eq!(orig.left, recon.left, "Region {i}: left mismatch");
+            assert_eq!(orig.right, recon.right, "Region {i}: right mismatch");
+            assert_eq!(orig.bottom, recon.bottom, "Region {i}: bottom mismatch");
+            assert_eq!(orig.top, recon.top, "Region {i}: top mismatch");
+            assert_eq!(orig.name, recon.name, "Region {i}: name mismatch");
+            assert_eq!(orig.index, recon.index, "Region {i}: index mismatch");
+            assert_eq!(
+                orig.weather_effect, recon.weather_effect,
+                "Region {i}: weather_effect mismatch"
+            );
+            assert_eq!(
+                orig.ambient_sound, recon.ambient_sound,
+                "Region {i}: ambient_sound mismatch"
+            );
+            assert_eq!(orig.color, recon.color, "Region {i}: color mismatch");
         }
-        // Note: Test will pass silently if file doesn't exist, which is fine for CI/environments without test data
     }
 
     #[test]

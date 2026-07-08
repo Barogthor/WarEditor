@@ -273,6 +273,7 @@ mod doodads_test {
     use wce_formats::binary_writer::BinaryWriter;
     use wce_formats::BinaryConverter;
     use wce_formats::GameVersion::RoC;
+    use wce_formats::ReadError;
 
     use crate::{
         doodad_map::{Destructable, DoodadMap, Drops},
@@ -481,6 +482,34 @@ mod doodads_test {
         assert_eq!(
             original_map.special_doodads.len(),
             written_map.special_doodads.len()
+        );
+    }
+
+    #[test]
+    fn trailing_bytes_after_valid_doodads_returns_error_not_panic() {
+        // Read valid original data, same as write_read_roundtrip_roc
+        let mut doodad_file = File::open(get_path("Scenario/Sandbox_roc/war3map.doo"))
+            .unwrap_or_else(|e| panic!("{}", e));
+        let mut reader = BinaryReader::from(&mut doodad_file).unwrap();
+        let original_map = reader
+            .read::<DoodadMap>()
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        // Serialize back to a valid, fully-consumable buffer
+        let mut writer = BinaryWriter::new();
+        original_map
+            .write(&mut writer)
+            .expect("Failed to write DoodadMap");
+        let mut bytes = writer.into_buffer();
+
+        // Append junk bytes so pos() < size() once the real record is fully read
+        bytes.extend_from_slice(&[0xFF, 0xFF, 0xFF, 0xFF]);
+
+        let mut reader = BinaryReader::new(bytes);
+        let result = reader.read::<DoodadMap>();
+        assert!(
+            matches!(result, Err(ReadError::TrailingBytes { .. })),
+            "expected TrailingBytes, got {result:?}"
         );
     }
 }
