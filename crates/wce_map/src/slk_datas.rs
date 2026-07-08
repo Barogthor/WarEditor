@@ -199,44 +199,70 @@ mod tests {
 
     #[test]
     fn merge_preserves_prior_value_from_base_table() {
-        let base = format!("{}slk/AbilityData.slk", crate::get_resources_path());
+        // UnitData and UnitBalance are both keyed by unit id (see GameData::new, which merges
+        // UnitData -> UnitBalance -> UnitUI -> UnitAbilities -> UnitWeapons into `unit_data`),
+        // so merging them exercises the same-key column-offset branch of `merge` (as opposed to
+        // two tables with disjoint id namespaces, where every row would just be inserted fresh).
+        let base = format!("{}slk/UnitData.slk", crate::get_resources_path());
         assert!(
             std::path::Path::new(&base).exists(),
             "fixture missing: {base}"
         );
-        let other = format!("{}slk/AbilityBuffData.slk", crate::get_resources_path());
+        let other = format!("{}slk/UnitBalance.slk", crate::get_resources_path());
         assert!(
             std::path::Path::new(&other).exists(),
             "fixture missing: {other}"
         );
 
-        let mut a = SLKData::load(&base).unwrap();
+        let a = SLKData::load(&base).unwrap();
         assert!(!a.headers().is_empty(), "no headers parsed from {base}");
         assert!(!a.lines().is_empty(), "no rows parsed from {base}");
 
-        // Capture a real (MetaID, FieldColumn, value) triple parsed from the base table.
-        let (meta_id, column, value) = a
-            .lines()
-            .iter()
-            .find_map(|(id, fields)| {
-                fields
-                    .iter()
-                    .next()
-                    .map(|(col, val)| (id.clone(), *col, val.clone()))
-            })
-            .expect("expected at least one row with a field value");
+        let b = SLKData::load(&other).unwrap();
+        assert!(!b.headers().is_empty(), "no headers parsed from {other}");
+        assert!(!b.lines().is_empty(), "no rows parsed from {other}");
 
-        // Merge a different table; its columns are offset by the current header count, so it
-        // must never overwrite columns already populated by the base table.
+        // Confirm the two tables actually share meta ids before relying on that to exercise the
+        // same-key branch; a disjoint pair would make the rest of this test pass vacuously.
+        let shared_ids: Vec<&MetaID> = a
+            .lines()
+            .keys()
+            .filter(|id| b.lines().contains_key(*id))
+            .collect();
+        assert!(
+            !shared_ids.is_empty(),
+            "UnitData and UnitBalance share no ids; pick a different table pair"
+        );
+
+        let meta_id = shared_ids[0].clone();
+        let base_row = a.get(&meta_id).unwrap().clone();
+        let (column, value) = base_row
+            .iter()
+            .next()
+            .map(|(col, val)| (*col, val.clone()))
+            .expect("expected shared row to have at least one field value");
+        let base_column_count = base_row.len();
+
+        // Merge a table that shares this id; its columns are offset by the current header
+        // count, so it must never overwrite columns already populated by the base table.
+        let mut a = a;
         a.merge(&other).unwrap();
 
         let merged_fields = a
             .get(&meta_id)
             .unwrap_or_else(|| panic!("row {meta_id} dropped by merge"));
+
+        // (a) the base table's value for this id/column survives unchanged.
         assert_eq!(
             merged_fields.get(&column),
             Some(&value),
             "merge overwrote a prior value for {meta_id}/{column}"
+        );
+
+        // (b) the same id gained columns from the second table (offset-merged, not replaced).
+        assert!(
+            merged_fields.len() > base_column_count,
+            "merge did not add UnitBalance columns to {meta_id} (still has only {base_column_count} columns)"
         );
     }
 }
