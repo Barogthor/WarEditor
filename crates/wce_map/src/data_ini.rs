@@ -1,3 +1,6 @@
+//! Minimal INI-style parser for Warcraft III profile data files (e.g. `TriggerData.txt`),
+//! merging sections/key-value pairs from one or more files into a `DataIni` lookup table.
+
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;

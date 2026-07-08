@@ -1,3 +1,7 @@
+//! Generic reader/writer for Warcraft III's seven custom-object table formats
+//! (`war3map.w3u/.w3t/.w3a/.w3b/.w3d/.w3q/.w3h`), shared via the `CustomObjectKind` trait
+//! and implemented per kind by the `custom_datas::{unit, item, ability, …}` submodules.
+
 use std::convert::TryFrom;
 use std::ffi::CString;
 use std::fmt::Debug;

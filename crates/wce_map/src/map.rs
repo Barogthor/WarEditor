@@ -1,3 +1,6 @@
+//! The central `Map` struct: opens a `.w3m`/`.w3x` MPQ archive, parses every known
+//! component file into its typed representation, and repackages/saves them back out.
+
 use std::fs::File;
 use std::io::Write;
 

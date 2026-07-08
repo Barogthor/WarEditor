@@ -1,3 +1,5 @@
+//! Parser and writer for `war3map.shd` (per-tile cliff/terrain shadow map).
+
 use std::convert::TryFrom;
 use std::io::{self, Read};
 

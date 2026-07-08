@@ -1,3 +1,6 @@
+//! Parser and writer for `war3map.mmp` (menu-screen minimap icon markers: type, position
+//! and color of each ping shown on the map-selection preview).
+
 use std::convert::TryFrom;
 
 use thiserror::Error;

@@ -1,3 +1,6 @@
+//! Parser and writer for `war3mapMap.blp` (the in-game minimap preview image), backed by
+//! the shared BLP codec in `wce_formats`.
+
 use std::convert::TryFrom;
 
 use thiserror::Error;

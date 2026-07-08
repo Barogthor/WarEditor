@@ -1,3 +1,6 @@
+//! Parser and writer for `war3map.imp` (the list of imported asset paths and their
+//! storage-location flag).
+
 use std::convert::TryFrom;
 use std::ffi::CString;
 

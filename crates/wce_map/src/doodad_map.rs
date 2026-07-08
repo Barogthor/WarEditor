@@ -1,3 +1,5 @@
+//! Parser and writer for `war3map.doo` (terrain doodad and destructable placements).
+
 use std::convert::TryFrom;
 
 use thiserror::Error;

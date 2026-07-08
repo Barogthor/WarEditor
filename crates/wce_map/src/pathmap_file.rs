@@ -1,3 +1,6 @@
+//! Parser and writer for `war3map.wpm` (the pathing map: a grid of per-cell
+//! walkable/flyable/buildable flags).
+
 use std::convert::TryFrom;
 
 use thiserror::Error;

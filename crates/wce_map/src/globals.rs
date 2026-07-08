@@ -1,3 +1,6 @@
+//! Shared constants: map archive file names (`war3map.*`), MPQ special file names, and the
+//! game database (SLK/INI) resource paths used across `wce_map` components.
+
 pub const REG_PROPERTIES: &str = r"^([^=\r\n]+)=(.+)\r?\n?$";
 
 pub const MPQ_LISTFILES: &str = "(listfile)";

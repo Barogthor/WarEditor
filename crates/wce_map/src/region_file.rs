@@ -1,3 +1,5 @@
+//! Parser and writer for `war3map.w3r` (named rectangular map regions).
+
 use std::convert::TryFrom;
 
 use derivative::Derivative;

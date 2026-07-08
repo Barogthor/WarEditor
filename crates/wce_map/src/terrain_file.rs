@@ -1,3 +1,6 @@
+//! Parser and writer for `war3map.w3e` (heightmap, tileset palette and per-tile ground
+//! textures/cliffs that make up the map terrain).
+
 use std::convert::TryFrom;
 
 use thiserror::Error;

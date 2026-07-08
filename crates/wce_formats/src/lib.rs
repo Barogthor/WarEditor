@@ -1,3 +1,7 @@
+//! Crate root: MPQ archive access (`MapArchive`, `MapArchiveWriter`, `GameMpq`), the
+//! `GameVersion` enum, the `BinaryConverter`/`BinaryConverterVersion` traits, and the
+//! shared `ReadError`/`WriteError` types used across `binary_reader`, `binary_writer` and `blp`.
+
 use std::ffi::IntoStringError;
 use std::fmt::Debug;
 use std::fs::File;

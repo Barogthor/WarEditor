@@ -1,3 +1,5 @@
+//! Parser and writer for `war3map.w3c` (camera definitions).
+
 use std::convert::TryFrom;
 
 #[cfg(test)]

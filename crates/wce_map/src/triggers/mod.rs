@@ -1,3 +1,6 @@
+//! Parser and writer for `war3map.wtg` (GUI trigger definitions: categories, variables and
+//! trigger event/condition/action trees), driven by the `TriggerData.txt` schema.
+
 use std::convert::TryFrom;
 
 use thiserror::Error;

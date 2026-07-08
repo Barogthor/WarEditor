@@ -1,3 +1,8 @@
+//! Cursor-based binary reader over in-memory map file bytes.
+//!
+//! Provides typed little-endian reads (`read_u32`, `read_c_string`, …) returning [`ReadResult`],
+//! used by every `wce_map` component parser.
+
 use std::convert::TryFrom;
 use std::ffi::CString;
 use std::fs::File;

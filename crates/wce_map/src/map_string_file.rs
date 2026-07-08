@@ -1,3 +1,6 @@
+//! Parser and writer for `war3map.wts` (trigger string table, `TRIGSTR_###` entries
+//! referenced by triggers, object data, and map info).
+
 use std::{collections::HashMap, convert::TryFrom};
 
 use regex::Regex;

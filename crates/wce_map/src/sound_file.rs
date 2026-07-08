@@ -1,3 +1,6 @@
+//! Parser and writer for `war3map.w3s` (sound object definitions: file path, playback
+//! flags, volume/pitch and 3D falloff settings).
+
 use std::convert::TryFrom;
 
 #[cfg(test)]

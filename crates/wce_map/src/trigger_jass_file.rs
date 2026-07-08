@@ -1,3 +1,6 @@
+//! Parser and writer for `war3map.wct` (custom-script text bodies of GUI triggers, plus the
+//! map's global comment and global-variables script).
+
 use std::convert::TryFrom;
 
 use thiserror::Error;

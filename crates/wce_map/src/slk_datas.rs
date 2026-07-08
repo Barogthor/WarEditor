@@ -1,3 +1,6 @@
+//! Loads Warcraft III SLK game-data tables (unit/ability/doodad/upgrade metadata, …) into
+//! `SLKData`, a header-indexed lookup keyed by each row's meta ID; used by `GameData`.
+
 use std::collections::{BTreeMap, HashMap};
 
 use slkparser::{cell::Cell, SLKError};

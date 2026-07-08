@@ -1,3 +1,6 @@
+//! Parser and writer for `war3mapUnits.doo` (placed unit and item instances, including
+//! random-unit/item table entries and per-unit item drop tables).
+
 use std::convert::TryFrom;
 
 #[cfg(test)]

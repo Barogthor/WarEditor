@@ -1,3 +1,7 @@
+//! Crate root: declares the `wce_map` module tree and defines `GameData`, which loads and
+//! holds the Warcraft III SLK/INI game database (unit, ability, doodad, upgrade tables, …)
+//! consumed by the map component parsers.
+
 #[macro_use]
 extern crate derivative;
 // #[cfg(test)]

@@ -1,3 +1,6 @@
+//! BLP1 texture decoding and encoding (JPEG-content and paletted variants) for
+//! Warcraft III minimap and imported map assets.
+
 use rgb::RGBA8;
 use thiserror::Error;
 

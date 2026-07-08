@@ -1,3 +1,6 @@
+//! Parser and writer for `war3map.w3i` (map info: name, description, players, forces,
+//! camera bounds, and other global map settings).
+
 use derivative::Derivative;
 use std::convert::TryFrom;
 use std::fmt::Debug;
