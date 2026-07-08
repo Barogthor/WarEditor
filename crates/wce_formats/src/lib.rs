@@ -10,10 +10,9 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::string::FromUtf8Error;
 
-use ceres_mpq::FileOptions;
 use thiserror::Error;
 
-use mpq::Archive;
+use mpq_rs::{Archive, Creator, FileOptions};
 
 use crate::binary_reader::{BinaryReader, ReadResult};
 use crate::binary_writer::{BinaryWriter, WriteResult};
@@ -121,6 +120,13 @@ pub enum MpqError {
     Reason(String),
 }
 
+/// Map an `mpq_rs` error into the crate's `MpqError`. The underlying library's
+/// error carries its own context (bad header, missing file, unsupported
+/// compression), preserved here as text so callers keep a single error surface.
+fn to_mpq_err(err: mpq_rs::MpqError) -> MpqError {
+    MpqError::Reason(format!("{err:?}"))
+}
+
 pub struct MpqFileBuffer(Vec<u8>);
 
 impl MpqFileBuffer {
@@ -139,7 +145,7 @@ pub const MAP_HEADER_SIZE: usize = 512;
 const MAP_HEADER_MAGIC: &[u8; 4] = b"HM3W";
 
 pub struct MapArchive {
-    archive: Archive,
+    archive: Archive<File>,
     /// The original 512-byte `HM3W` header, preserved verbatim so it can be
     /// written back when repackaging. Empty when the file is a bare MPQ.
     header: Vec<u8>,
@@ -155,7 +161,10 @@ impl MapArchive {
 
         if ext == "w3m" || ext == "w3x" {
             let header = read_map_header(path)?;
-            let archive = Archive::open(path).map_err(MpqError::IoError)?;
+            // `mpq_rs` scans for the MPQ header, so it finds the archive behind
+            // the fixed `HM3W` map header on its own.
+            let file = File::open(path)?;
+            let archive = Archive::open(file).map_err(to_mpq_err)?;
             Ok(Self { archive, header })
         } else {
             Err(MpqError::NotMapArchive)
@@ -163,10 +172,7 @@ impl MapArchive {
     }
 
     pub fn read_file(&mut self, path: &str) -> Result<MpqFileBuffer, MpqError> {
-        let f = self.archive.open_file(path).map_err(MpqError::IoError)?;
-        let mut buffer: Vec<u8> = vec![0; f.size() as usize];
-        f.read(&mut self.archive, &mut buffer)
-            .map_err(MpqError::IoError)?;
+        let buffer = self.archive.read_file(path).map_err(to_mpq_err)?;
         Ok(MpqFileBuffer(buffer))
     }
 
@@ -179,17 +185,12 @@ impl MapArchive {
     /// Every file name listed in the archive's `(listfile)`, or `None` when the
     /// archive has no readable `(listfile)`. Used to carry imported assets
     /// (models, textures, sounds) that are not modelled as typed components.
-    ///
-    /// `mpq::Archive` exposes no enumeration, so the `(listfile)` is read and
-    /// parsed here — `str::lines()` tolerates both `\r\n` and a missing final
-    /// newline. Blank lines are dropped.
     pub fn files(&mut self) -> Option<Vec<String>> {
-        let listfile = self.read_file("(listfile)").ok()?;
-        let text = String::from_utf8(listfile.inner()).ok()?;
         Some(
-            text.lines()
-                .filter(|line| !line.is_empty())
-                .map(String::from)
+            self.archive
+                .files()?
+                .into_iter()
+                .filter(|name| !name.is_empty())
                 .collect(),
         )
     }
@@ -207,7 +208,7 @@ fn read_map_header(path: &Path) -> Result<Vec<u8>, MpqError> {
 }
 
 #[derive(Default)]
-pub struct MapArchiveWriter(ceres_mpq::Creator);
+pub struct MapArchiveWriter(Creator);
 
 impl MapArchiveWriter {
     pub fn new() -> Self {
@@ -230,31 +231,28 @@ impl MapArchiveWriter {
     }
 
     /// Write the archive to `path`. When `header` is non-empty it is written
-    /// first (the 512-byte `HM3W` map header); `ceres_mpq` then places the MPQ
-    /// at the next 512-byte boundary with offsets relative to it, so the header
+    /// first (the 512-byte `HM3W` map header); `mpq_rs` then places the MPQ at
+    /// the next 512-byte boundary with offsets relative to it, so the header
     /// and archive compose correctly.
     pub fn save_archive(&mut self, path: &str, header: &[u8]) -> Result<(), MpqError> {
-        let mut file = File::create(path).map_err(MpqError::IoError)?;
+        let mut file = File::create(path)?;
         if !header.is_empty() {
-            file.write_all(header).map_err(MpqError::IoError)?;
+            file.write_all(header)?;
         }
         self.0.write(&mut file).map_err(MpqError::IoError)?;
         Ok(())
     }
 }
 
-pub struct GameMpq(Archive);
+pub struct GameMpq(Archive<File>);
 impl GameMpq {
     pub fn open(path: String) -> Result<Self, MpqError> {
-        let archive = Archive::open(path).map_err(MpqError::IoError);
-        archive.map(Self)
+        let file = File::open(path)?;
+        Archive::open(file).map(Self).map_err(to_mpq_err)
     }
 
     pub fn read_file(&mut self, path: &str) -> Result<MpqFileBuffer, MpqError> {
-        let f = self.0.open_file(path).map_err(MpqError::IoError)?;
-        let mut buffer: Vec<u8> = vec![0; f.size() as usize];
-        f.read(&mut self.0, &mut buffer)
-            .map_err(MpqError::IoError)?;
+        let buffer = self.0.read_file(path).map_err(to_mpq_err)?;
         Ok(MpqFileBuffer(buffer))
     }
 }
