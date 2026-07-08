@@ -24,11 +24,6 @@ pub enum RegionError {
     #[error("Failed to save region data. {0}")]
     SaveError(WriteError),
 }
-impl From<RegionError> for MapError {
-    fn from(value: RegionError) -> Self {
-        MapError::Region(value)
-    }
-}
 
 #[derive(Debug, Derivative)]
 #[derivative(Default, PartialEq)]

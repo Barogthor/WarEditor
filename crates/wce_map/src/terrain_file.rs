@@ -20,11 +20,6 @@ pub enum TerrainError {
     #[error("Failed to save terrain data. {0}")]
     SaveError(WriteError),
 }
-impl From<TerrainError> for MapError {
-    fn from(value: TerrainError) -> Self {
-        MapError::Environment(value)
-    }
-}
 
 #[derive(Debug)]
 pub struct TilePoint {

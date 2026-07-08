@@ -21,12 +21,6 @@ pub enum MinimapError {
     SaveError(WriteError),
 }
 
-impl From<MinimapError> for MapError {
-    fn from(value: MinimapError) -> Self {
-        MapError::Minimap(value)
-    }
-}
-
 pub struct MinimapFile {
     minimap: BLP,
 }

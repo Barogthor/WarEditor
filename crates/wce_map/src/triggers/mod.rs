@@ -30,11 +30,6 @@ pub enum TriggersError {
     #[error("Failed to save trigger data. {0}")]
     SaveError(WriteError),
 }
-impl From<TriggersError> for MapError {
-    fn from(value: TriggersError) -> Self {
-        MapError::Triggers(value)
-    }
-}
 
 #[derive(Debug)]
 pub struct TriggerDefinition {

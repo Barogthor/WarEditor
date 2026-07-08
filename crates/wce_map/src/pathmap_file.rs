@@ -20,11 +20,6 @@ pub enum PathmapError {
     #[error("Failed to save pathmap data. {0}")]
     SaveError(WriteError),
 }
-impl From<PathmapError> for MapError {
-    fn from(value: PathmapError) -> Self {
-        MapError::PathingMap(value)
-    }
-}
 
 type Flag = u8;
 #[derive(Debug)]

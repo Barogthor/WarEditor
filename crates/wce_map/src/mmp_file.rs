@@ -21,11 +21,6 @@ pub enum MenuMinimapError {
     #[error("Failed to save menu minimap data. {0}")]
     SaveError(WriteError),
 }
-impl From<MenuMinimapError> for MapError {
-    fn from(value: MenuMinimapError) -> Self {
-        MapError::MenuMinimap(value)
-    }
-}
 
 #[derive(Debug)]
 pub struct MMPDataset {

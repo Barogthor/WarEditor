@@ -32,11 +32,6 @@ pub enum MapStringError {
     #[error("Failed to save map strings data. {0}")]
     SaveError(WriteError),
 }
-impl From<MapStringError> for MapError {
-    fn from(value: MapStringError) -> Self {
-        MapError::MapStrings(value)
-    }
-}
 
 #[derive(Debug)]
 pub struct MapStringFile {

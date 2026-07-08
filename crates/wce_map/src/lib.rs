@@ -39,7 +39,7 @@ use crate::w3i_file::InfoError;
 
 #[derive(Debug, Error)]
 pub enum MapError {
-    #[error("Map is likely protecte. {0}")]
+    #[error("Map is likely protected. {0}")]
     Protected(MpqError),
     #[error("Failed to write map archive. {0}")]
     Archive(MpqError),
@@ -51,49 +51,49 @@ pub enum MapError {
         source: std::io::Error,
     },
     #[error("Failed on terrain environment. {0}")]
-    Environment(TerrainError),
+    Environment(#[from] TerrainError),
     #[error("Failed on custom text triggers. {0}")]
-    CustomTextTrigger(TriggerJassError),
+    CustomTextTrigger(#[from] TriggerJassError),
     #[error("Failed on trigger data. {0}")]
-    Triggers(TriggersError),
+    Triggers(#[from] TriggersError),
     #[error("Failed on import file list. {0}")]
-    Import(ImportError),
+    Import(#[from] ImportError),
     #[error("Failed on minimap. {0}")]
-    Minimap(MinimapError),
+    Minimap(#[from] MinimapError),
     #[error("Failed on menu minimap. {0}")]
-    MenuMinimap(MenuMinimapError),
+    MenuMinimap(#[from] MenuMinimapError),
     #[error("Failed on pathing map. {0}")]
-    PathingMap(PathmapError),
+    PathingMap(#[from] PathmapError),
     #[error("Failed on regions. {0}")]
-    Region(RegionError),
+    Region(#[from] RegionError),
     #[error("Failed on shadow map. {0}")]
-    ShadowMap(ShadowMapError),
+    ShadowMap(#[from] ShadowMapError),
     #[error("Failed on doodads. {0}")]
-    Doodad(DoodadError),
+    Doodad(#[from] DoodadError),
     #[error("Failed on cameras. {0}")]
-    Camera(CameraError),
+    Camera(#[from] CameraError),
     #[error("Failed on units and items. {0}")]
-    UnitItem(UnitMapError),
+    UnitItem(#[from] UnitMapError),
     #[error("Failed on sounds. {0}")]
-    Sound(SoundError),
+    Sound(#[from] SoundError),
     #[error("Failed on map strings. {0}")]
-    MapStrings(MapStringError),
+    MapStrings(#[from] MapStringError),
     #[error("Failed on map info. {0}")]
-    Info(InfoError),
+    Info(#[from] InfoError),
     #[error("Failed on custom units. {0}")]
-    CustomUnit(CustomUnitError),
+    CustomUnit(#[from] CustomUnitError),
     #[error("Failed on custom items. {0}")]
-    CustomItem(CustomItemError),
+    CustomItem(#[from] CustomItemError),
     #[error("Failed on custom abilities. {0}")]
-    CustomAbility(CustomAbilityError),
+    CustomAbility(#[from] CustomAbilityError),
     #[error("Failed on custom buffs. {0}")]
-    CustomBuff(CustomBuffError),
+    CustomBuff(#[from] CustomBuffError),
     #[error("Failed on custom upgrades. {0}")]
-    CustomUpgrade(CustomUpgradeError),
+    CustomUpgrade(#[from] CustomUpgradeError),
     #[error("Failed on custom doodads. {0}")]
-    CustomDoodad(CustomDoodadError),
+    CustomDoodad(#[from] CustomDoodadError),
     #[error("Failed on custom destructables. {0}")]
-    CustomDestructable(CustomDestructableError),
+    CustomDestructable(#[from] CustomDestructableError),
 }
 
 /// Game database loading errors (see [`GameData::new`]).

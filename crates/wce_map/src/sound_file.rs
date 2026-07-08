@@ -25,11 +25,6 @@ pub enum SoundError {
     #[error("Failed to save sound data. {0}")]
     SaveError(WriteError),
 }
-impl From<SoundError> for MapError {
-    fn from(value: SoundError) -> Self {
-        MapError::Sound(value)
-    }
-}
 
 #[derive(Debug, Derivative)]
 #[derivative(Default(new = "true"), PartialEq)]

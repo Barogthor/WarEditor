@@ -34,12 +34,6 @@ pub enum UnitMapError {
     SaveError(WriteError),
 }
 
-impl From<UnitMapError> for MapError {
-    fn from(value: UnitMapError) -> Self {
-        MapError::UnitItem(value)
-    }
-}
-
 #[derive(Debug, PartialOrd, PartialEq)]
 pub enum Drops {
     PresetTable(TablePointer),

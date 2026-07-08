@@ -19,11 +19,6 @@ pub enum CustomUnitError {
     #[error("Failed to save custom unit data. {0}")]
     SaveError(WriteError),
 }
-impl From<CustomUnitError> for MapError {
-    fn from(value: CustomUnitError) -> Self {
-        MapError::CustomUnit(value)
-    }
-}
 
 /// Kind marker for the custom units table.
 #[derive(Debug)]

@@ -23,11 +23,6 @@ pub enum TriggerJassError {
     #[error("Failed to save trigger JASS data. {0}")]
     SaveError(WriteError),
 }
-impl From<TriggerJassError> for MapError {
-    fn from(value: TriggerJassError) -> Self {
-        MapError::CustomTextTrigger(value)
-    }
-}
 
 #[derive(Debug)]
 pub struct TriggerJassFile {

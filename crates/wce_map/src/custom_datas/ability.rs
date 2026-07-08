@@ -19,11 +19,6 @@ pub enum CustomAbilityError {
     #[error("Failed to save custom ability data. {0}")]
     SaveError(WriteError),
 }
-impl From<CustomAbilityError> for MapError {
-    fn from(value: CustomAbilityError) -> Self {
-        MapError::CustomAbility(value)
-    }
-}
 
 /// Kind marker for the custom abilities table.
 #[derive(Debug)]

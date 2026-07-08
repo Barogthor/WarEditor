@@ -25,11 +25,6 @@ pub enum CameraError {
     #[error("Failed to save cameras data. {0}")]
     SaveError(WriteError),
 }
-impl From<CameraError> for MapError {
-    fn from(value: CameraError) -> Self {
-        MapError::Camera(value)
-    }
-}
 
 #[derive(Debug, Derivative)]
 #[derivative(PartialEq, Default)]

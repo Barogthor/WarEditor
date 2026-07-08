@@ -19,11 +19,6 @@ pub enum CustomDestructableError {
     #[error("Failed to save custom destructable data. {0}")]
     SaveError(WriteError),
 }
-impl From<CustomDestructableError> for MapError {
-    fn from(value: CustomDestructableError) -> Self {
-        MapError::CustomDestructable(value)
-    }
-}
 
 /// Kind marker for the custom destructables table.
 #[derive(Debug)]

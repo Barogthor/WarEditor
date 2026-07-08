@@ -25,11 +25,6 @@ pub enum DoodadError {
     #[error("Failed to save doodads data. {0}")]
     SaveError(WriteError),
 }
-impl From<DoodadError> for MapError {
-    fn from(value: DoodadError) -> Self {
-        MapError::Doodad(value)
-    }
-}
 
 #[derive(PartialOrd, PartialEq, Clone, Debug)]
 pub enum DestructableFlag {

@@ -45,11 +45,6 @@ pub enum InfoError {
     #[error("Failed to save map info data. {0}")]
     SaveError(WriteError),
 }
-impl From<InfoError> for MapError {
-    fn from(value: InfoError) -> Self {
-        MapError::Info(value)
-    }
-}
 
 /// TFT flags:
 /// - Unknown 3

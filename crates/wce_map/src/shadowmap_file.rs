@@ -19,11 +19,6 @@ pub enum ShadowMapError {
     #[error("Failed to save shadowmap data. {0}")]
     SaveError(WriteError),
 }
-impl From<ShadowMapError> for MapError {
-    fn from(value: ShadowMapError) -> Self {
-        MapError::ShadowMap(value)
-    }
-}
 
 #[derive(Debug)]
 pub enum ShadowType {

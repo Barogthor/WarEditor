@@ -19,11 +19,6 @@ pub enum CustomBuffError {
     #[error("Failed to save custom buff data. {0}")]
     SaveError(WriteError),
 }
-impl From<CustomBuffError> for MapError {
-    fn from(value: CustomBuffError) -> Self {
-        MapError::CustomBuff(value)
-    }
-}
 
 /// Kind marker for the custom buffs table.
 #[derive(Debug)]

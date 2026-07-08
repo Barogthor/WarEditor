@@ -25,12 +25,6 @@ pub enum ImportError {
     SaveError(WriteError),
 }
 
-impl From<ImportError> for MapError {
-    fn from(value: ImportError) -> Self {
-        MapError::Import(value)
-    }
-}
-
 #[derive(Debug)]
 pub struct ImportFile {
     /// On-disk format version (0 or 1 in the wild), preserved for byte-exact
