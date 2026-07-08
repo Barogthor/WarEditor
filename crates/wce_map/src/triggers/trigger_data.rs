@@ -1,3 +1,6 @@
+//! `ECADefinition` (event/condition/action tree nodes) and their `Parameter`/sub-parameter
+//! types, parsed against `TriggerData.txt` while reading/writing `war3map.wtg`.
+
 // use log::{debug, error, info, trace, warn};
 use wce_formats::binary_reader::BinaryReader;
 use wce_formats::binary_writer::BinaryWriter;

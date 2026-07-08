@@ -1,3 +1,8 @@
+//! Cursor-based binary reader over in-memory map file bytes.
+//!
+//! Provides typed little-endian reads (`read_u32`, `read_c_string`, …) returning [`ReadResult`],
+//! used by every `wce_map` component parser.
+
 use std::convert::TryFrom;
 use std::ffi::CString;
 use std::fs::File;
@@ -22,13 +27,13 @@ impl BinaryReader {
         }
     }
 
-    pub fn from(file: &mut File) -> BinaryReader {
+    pub fn from(file: &mut File) -> ReadResult<BinaryReader> {
         let mut buffer: Vec<u8> = vec![];
-        file.read_to_end(&mut buffer).unwrap();
-        BinaryReader {
+        file.read_to_end(&mut buffer)?;
+        Ok(BinaryReader {
             size: buffer.len(),
             buffer: Cursor::new(buffer),
-        }
+        })
     }
 
     pub fn read_char(&mut self) -> ReadResult<char> {
@@ -147,6 +152,8 @@ impl BinaryReader {
         Ok(chars)
     }
 
+    /// Seeks within the in-memory cursor. Infallible for the non-negative offsets used by all
+    /// callers; a negative seek past start would panic (unreachable here).
     pub fn skip(&mut self, bytes_to_skip: i64) {
         self.buffer.seek(SeekFrom::Current(bytes_to_skip)).unwrap();
     }
@@ -223,6 +230,8 @@ impl BinaryReader {
             .map_err(|e| to_read_error(self, e))?;
         Ok(vec)
     }
+    /// Seeks within the in-memory cursor. Infallible for the non-negative offsets used by all
+    /// callers; a negative seek past start would panic (unreachable here).
     pub fn seek_begin(&mut self) {
         self.buffer
             .seek(SeekFrom::Start(0))
@@ -251,6 +260,33 @@ fn cstring_null(reader: &BinaryReader, string_size: usize) -> ReadError {
     ReadError::NullCString {
         position: pos,
         length: string_size,
+    }
+}
+
+#[cfg(test)]
+mod reader_tests {
+    use super::*;
+
+    #[test]
+    fn reads_u32_le_and_tracks_position() {
+        let mut r = BinaryReader::new(vec![0x01, 0x00, 0x00, 0x00]);
+        assert_eq!(r.read_u32().unwrap(), 1);
+        assert_eq!(r.pos() as usize, 4);
+        assert_eq!(r.size(), 4);
+    }
+
+    #[test]
+    fn read_past_end_returns_error_not_panic() {
+        let mut r = BinaryReader::new(vec![0x01]);
+        let _ = r.read_u8().unwrap();
+        assert!(r.read_u32().is_err());
+    }
+
+    #[test]
+    fn read_bytes_returns_exact_slice() {
+        let mut r = BinaryReader::new(vec![1, 2, 3, 4, 5]);
+        assert_eq!(r.read_bytes(3).unwrap(), vec![1, 2, 3]);
+        assert_eq!(r.pos() as usize, 3);
     }
 }
 

@@ -1,3 +1,6 @@
+//! Parser and writer for `war3map.w3e` (heightmap, tileset palette and per-tile ground
+//! textures/cliffs that make up the map terrain).
+
 use std::convert::TryFrom;
 
 use thiserror::Error;
@@ -19,11 +22,6 @@ pub enum TerrainError {
     Parsing(ReadError),
     #[error("Failed to save terrain data. {0}")]
     SaveError(WriteError),
-}
-impl From<TerrainError> for MapError {
-    fn from(value: TerrainError) -> Self {
-        MapError::Environment(value)
-    }
 }
 
 #[derive(Debug)]
@@ -138,10 +136,6 @@ impl TerrainFile {
         writer.write(self).map_err(TerrainError::SaveError)?;
         Ok(writer)
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 impl BinaryConverter for TerrainFile {
@@ -169,13 +163,13 @@ impl BinaryConverter for TerrainFile {
         let count_tilepoints: usize = (mx_width * my_height) as usize;
         let tilepoints = reader.read_vec::<TilePoint>(count_tilepoints)?;
 
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_TERRAIN,
-            reader.size() - reader.pos() as usize
-        );
+        if reader.size() != reader.pos() as usize {
+            return Err(ReadError::TrailingBytes {
+                file: MAP_TERRAIN.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
+        }
         Ok(TerrainFile {
             id,
             version,

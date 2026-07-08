@@ -19,11 +19,6 @@ pub enum CustomUpgradeError {
     #[error("Failed to save custom upgrade data. {0}")]
     SaveError(WriteError),
 }
-impl From<CustomUpgradeError> for MapError {
-    fn from(value: CustomUpgradeError) -> Self {
-        MapError::CustomUpgrade(value)
-    }
-}
 
 /// Kind marker for the custom upgrades table.
 #[derive(Debug)]

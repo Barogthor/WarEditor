@@ -1,3 +1,6 @@
+//! Parser and writer for `war3mapMap.blp` (the in-game minimap preview image), backed by
+//! the shared BLP codec in `wce_formats`.
+
 use std::convert::TryFrom;
 
 use thiserror::Error;
@@ -19,12 +22,6 @@ pub enum MinimapError {
     Blp(BLPError),
     #[error("Failed to save minimap data. {0}")]
     SaveError(WriteError),
-}
-
-impl From<MinimapError> for MapError {
-    fn from(value: MinimapError) -> Self {
-        MapError::Minimap(value)
-    }
 }
 
 pub struct MinimapFile {

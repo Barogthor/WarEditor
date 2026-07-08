@@ -1,7 +1,7 @@
+//! Parser and writer for `war3map.w3c` (camera definitions).
+
 use std::convert::TryFrom;
 
-#[cfg(test)]
-use pretty_assertions::assert_eq;
 
 use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
@@ -24,11 +24,6 @@ pub enum CameraError {
     Parsing(ReadError),
     #[error("Failed to save cameras data. {0}")]
     SaveError(WriteError),
-}
-impl From<CameraError> for MapError {
-    fn from(value: CameraError) -> Self {
-        MapError::Camera(value)
-    }
 }
 
 #[derive(Debug, Derivative)]
@@ -115,10 +110,6 @@ impl CameraFile {
         writer.write(self).map_err(CameraError::SaveError)?;
         Ok(writer)
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 impl BinaryConverter for CameraFile {
@@ -127,13 +118,13 @@ impl BinaryConverter for CameraFile {
         let count_camera = reader.read_u32()? as usize;
         let cameras = reader.read_vec::<Camera>(count_camera)?;
 
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_CAMERAS,
-            reader.size() - reader.pos() as usize
-        );
+        if reader.size() != reader.pos() as usize {
+            return Err(ReadError::TrailingBytes {
+                file: MAP_CAMERAS.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
+        }
         Ok(CameraFile { version, cameras })
     }
 
@@ -187,7 +178,7 @@ mod w3c_test {
     fn no_failure_roc() {
         let mut w3c = File::open(get_path("Scenario/Sandbox_Roc/war3map.w3c"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3c);
+        let mut reader = BinaryReader::from(&mut w3c).unwrap();
         reader
             .read::<CameraFile>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -197,7 +188,7 @@ mod w3c_test {
     fn no_failure_tft() {
         let mut w3c = File::open(get_path("Scenario/Sandbox_TFT/war3map.w3c"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3c);
+        let mut reader = BinaryReader::from(&mut w3c).unwrap();
         reader
             .read::<CameraFile>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -207,7 +198,7 @@ mod w3c_test {
     fn check_values_roc() {
         let mut w3c = File::open(get_path("Scenario/Sandbox_roc/war3map.w3c"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3c);
+        let mut reader = BinaryReader::from(&mut w3c).unwrap();
         let camera_file = reader
             .read::<CameraFile>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -219,7 +210,7 @@ mod w3c_test {
     fn check_values_tft() {
         let mut w3c = File::open(get_path("Scenario/Sandbox_tft/war3map.w3c"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3c);
+        let mut reader = BinaryReader::from(&mut w3c).unwrap();
         let camera_file = reader
             .read::<CameraFile>()
             .unwrap_or_else(|e| panic!("{}", e));

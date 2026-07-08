@@ -1,3 +1,6 @@
+//! Parser and writer for `war3map.wts` (trigger string table, `TRIGSTR_###` entries
+//! referenced by triggers, object data, and map info).
+
 use std::{collections::HashMap, convert::TryFrom};
 
 use regex::Regex;
@@ -31,11 +34,6 @@ pub enum MapStringError {
     CaptureContent,
     #[error("Failed to save map strings data. {0}")]
     SaveError(WriteError),
-}
-impl From<MapStringError> for MapError {
-    fn from(value: MapStringError) -> Self {
-        MapError::MapStrings(value)
-    }
 }
 
 #[derive(Debug)]
@@ -88,10 +86,6 @@ impl MapStringFile {
             trigger_strings.insert(id, content);
         }
         Ok(MapStringFile { trigger_strings })
-    }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
     }
 }
 
@@ -164,7 +158,7 @@ Force 1
     fn test_parsing_file_roc() {
         let mut f = File::open(get_path("Scenario/Sandbox_roc/war3map.wts"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut f);
+        let mut reader = BinaryReader::from(&mut f).unwrap();
         let buffer = reader
             .read_string_utf8_safe(reader.size())
             .unwrap_or_else(|e| panic!("{}", e));
@@ -182,7 +176,7 @@ Force 1
     fn test_parsing_file_tft() {
         let mut f = File::open(get_path("Scenario/Sandbox_tft/war3map.wts"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut f);
+        let mut reader = BinaryReader::from(&mut f).unwrap();
         let buffer = reader
             .read_string_utf8_safe(reader.size())
             .unwrap_or_else(|e| panic!("{}", e));

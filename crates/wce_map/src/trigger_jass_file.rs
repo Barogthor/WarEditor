@@ -1,3 +1,6 @@
+//! Parser and writer for `war3map.wct` (custom-script text bodies of GUI triggers, plus the
+//! map's global comment and global-variables script).
+
 use std::convert::TryFrom;
 
 use thiserror::Error;
@@ -22,11 +25,6 @@ pub enum TriggerJassError {
     Parsing(ReadError),
     #[error("Failed to save trigger JASS data. {0}")]
     SaveError(WriteError),
-}
-impl From<TriggerJassError> for MapError {
-    fn from(value: TriggerJassError) -> Self {
-        MapError::CustomTextTrigger(value)
-    }
 }
 
 #[derive(Debug)]
@@ -56,10 +54,6 @@ impl TriggerJassFile {
         writer.write(self).map_err(TriggerJassError::SaveError)?;
         Ok(writer)
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 impl BinaryConverter for TriggerJassFile {
@@ -86,13 +80,13 @@ impl BinaryConverter for TriggerJassFile {
                 text_triggers.push(reader.read_string_utf8(length)?);
             }
         }
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_TRIGGERS_SCRIPT,
-            reader.size() - reader.pos() as usize
-        );
+        if reader.size() != reader.pos() as usize {
+            return Err(ReadError::TrailingBytes {
+                file: MAP_TRIGGERS_SCRIPT.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
+        }
 
         Ok(TriggerJassFile {
             version,

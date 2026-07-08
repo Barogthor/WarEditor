@@ -1,3 +1,5 @@
+//! Parser and writer for `war3map.doo` (terrain doodad and destructable placements).
+
 use std::convert::TryFrom;
 
 use thiserror::Error;
@@ -24,11 +26,6 @@ pub enum DoodadError {
     Parsing(ReadError),
     #[error("Failed to save doodads data. {0}")]
     SaveError(WriteError),
-}
-impl From<DoodadError> for MapError {
-    fn from(value: DoodadError) -> Self {
-        MapError::Doodad(value)
-    }
 }
 
 #[derive(PartialOrd, PartialEq, Clone, Debug)]
@@ -222,13 +219,13 @@ impl BinaryConverter for DoodadMap {
         let special_doodad_version = reader.read_u32()?;
         let count_special_doodads = reader.read_u32()?;
         let special_doodads = reader.read_vec::<SpecialDoodad>(count_special_doodads as usize)?;
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_TERRAIN_DOODADS,
-            reader.size() - reader.pos() as usize
-        );
+        if reader.size() != reader.pos() as usize {
+            return Err(ReadError::TrailingBytes {
+                file: MAP_TERRAIN_DOODADS.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
+        }
         Ok(DoodadMap {
             id,
             version,
@@ -276,6 +273,7 @@ mod doodads_test {
     use wce_formats::binary_writer::BinaryWriter;
     use wce_formats::BinaryConverter;
     use wce_formats::GameVersion::RoC;
+    use wce_formats::ReadError;
 
     use crate::{
         doodad_map::{Destructable, DoodadMap, Drops},
@@ -341,7 +339,7 @@ mod doodads_test {
     fn no_failure_roc() {
         let mut doodad_file = File::open(get_path("Scenario/Sandbox_roc/war3map.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut doodad_file);
+        let mut reader = BinaryReader::from(&mut doodad_file).unwrap();
         let _doodad_map = reader.read::<DoodadMap>();
     }
 
@@ -349,7 +347,7 @@ mod doodads_test {
     fn check_roc() {
         let mut doodad_file = File::open(get_path("Scenario/Sandbox_roc/war3map.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut doodad_file);
+        let mut reader = BinaryReader::from(&mut doodad_file).unwrap();
         let doodad_map = reader.read::<DoodadMap>().unwrap();
         let mock_destructables = mock_destructable_roc();
         assert_eq!(doodad_map.id, "W3do".to_string());
@@ -369,7 +367,7 @@ mod doodads_test {
     fn no_failure_tft() {
         let mut doodad_file = File::open(get_path("Scenario/Sandbox_tft/war3map.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut doodad_file);
+        let mut reader = BinaryReader::from(&mut doodad_file).unwrap();
         let _doodad_map = reader
             .read::<DoodadMap>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -380,7 +378,7 @@ mod doodads_test {
         // Read original data
         let mut doodad_file = File::open(get_path("Scenario/Sandbox_roc/war3map.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut doodad_file);
+        let mut reader = BinaryReader::from(&mut doodad_file).unwrap();
         let original_map = reader
             .read::<DoodadMap>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -452,7 +450,7 @@ mod doodads_test {
         // Read original data
         let mut doodad_file = File::open(get_path("Scenario/Sandbox_tft/war3map.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut doodad_file);
+        let mut reader = BinaryReader::from(&mut doodad_file).unwrap();
         let original_map = reader
             .read::<DoodadMap>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -484,6 +482,35 @@ mod doodads_test {
         assert_eq!(
             original_map.special_doodads.len(),
             written_map.special_doodads.len()
+        );
+    }
+
+    #[test]
+    fn trailing_bytes_after_valid_doodads_returns_error_not_panic() {
+        // Read valid original data, same as write_read_roundtrip_roc
+        let mut doodad_file = File::open(get_path("Scenario/Sandbox_roc/war3map.doo"))
+            .unwrap_or_else(|e| panic!("{}", e));
+        let mut reader = BinaryReader::from(&mut doodad_file).unwrap();
+        let original_map = reader
+            .read::<DoodadMap>()
+            .unwrap_or_else(|e| panic!("{}", e));
+
+        // Serialize back to a valid, fully-consumable buffer
+        let mut writer = BinaryWriter::new();
+        original_map
+            .write(&mut writer)
+            .expect("Failed to write DoodadMap");
+        let mut bytes = writer.into_buffer();
+
+        // Append junk bytes so pos() < size() once the real record is fully read
+        bytes.extend_from_slice(&[0xFF, 0xFF, 0xFF, 0xFF]);
+
+        let mut reader = BinaryReader::new(bytes);
+        let result = reader.read::<DoodadMap>();
+        assert!(
+            matches!(result, Err(ReadError::TrailingBytes { .. })),
+            "expected TrailingBytes, got {:?}",
+            result
         );
     }
 }

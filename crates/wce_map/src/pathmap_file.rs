@@ -1,3 +1,6 @@
+//! Parser and writer for `war3map.wpm` (the pathing map: a grid of per-cell
+//! walkable/flyable/buildable flags).
+
 use std::convert::TryFrom;
 
 use thiserror::Error;
@@ -19,11 +22,6 @@ pub enum PathmapError {
     Parsing(ReadError),
     #[error("Failed to save pathmap data. {0}")]
     SaveError(WriteError),
-}
-impl From<PathmapError> for MapError {
-    fn from(value: PathmapError) -> Self {
-        MapError::PathingMap(value)
-    }
 }
 
 type Flag = u8;
@@ -84,10 +82,6 @@ impl PathMapFile {
         writer.write(self).map_err(PathmapError::SaveError)?;
         Ok(writer)
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 impl BinaryConverter for PathMapFile {
@@ -103,13 +97,13 @@ impl BinaryConverter for PathMapFile {
             //            println!("{:x}",flags);
             pathing.push(PathCell { flags });
         }
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_PATH_MAP,
-            reader.size() - reader.pos() as usize
-        );
+        if reader.size() != reader.pos() as usize {
+            return Err(ReadError::TrailingBytes {
+                file: MAP_PATH_MAP.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
+        }
         Ok(PathMapFile {
             id,
             version,

@@ -1,3 +1,7 @@
+//! Generic reader/writer for Warcraft III's seven custom-object table formats
+//! (`war3map.w3u/.w3t/.w3a/.w3b/.w3d/.w3q/.w3h`), shared via the `CustomObjectKind` trait
+//! and implemented per kind by the `custom_datas::{unit, item, ability, …}` submodules.
+
 use std::convert::TryFrom;
 use std::ffi::CString;
 use std::fmt::Debug;
@@ -256,11 +260,11 @@ impl<K: CustomObjectKind> CustomObjectsFile<K> {
             custom_objects.push(Self::read_object(reader, game_version)?);
         }
         if reader.size() != reader.pos() as usize {
-            return Err(ReadError::Reason(format!(
-                "reader for {} hasn't reached EOF. Missing {} bytes",
-                K::FILE_NAME,
-                reader.size() - reader.pos() as usize
-            )));
+            return Err(ReadError::TrailingBytes {
+                file: K::FILE_NAME.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
         }
         Ok(Self {
             version,
@@ -332,11 +336,6 @@ impl<K: CustomObjectKind> CustomObjectsFile<K> {
         } else {
             obj.write_without_optional(writer, game_version)
         }
-    }
-
-    /// Print the parsed table with `Debug` pretty-formatting.
-    pub fn debug(&self) {
-        println!("{self:#?}");
     }
 }
 
@@ -576,17 +575,4 @@ pub fn write_meta_opts(
     };
     writer.write_u32(0)?;
     Ok(())
-}
-
-fn assert_meta_end_format(reader: &BinaryReader, id: &ObjectId, end_meta_id: Vec<u8>) {
-    let end_format_zero = true;
-    match (end_format_zero, id) {
-        (false,ObjectId::Original(code)) => assert_eq!(code.0, end_meta_id.as_slice(),
-                                                       "format reading went wrong meta object end '{}' not equal to object id '{}' (byte position {})",
-                                                       String::from_utf8_lossy(end_meta_id.as_slice()), String::from_utf8_lossy(&code.0), reader.pos()),
-        (false,ObjectId::Custom(_, code)) => assert_eq!(code.0, end_meta_id.as_slice(),
-                                                        "format reading went wrong meta object end '{}' not equal to object id '{}' (byte position {})",
-                                                        String::from_utf8_lossy(end_meta_id.as_slice()), String::from_utf8_lossy(&code.0), reader.pos()),
-        _ => ()
-    }
 }

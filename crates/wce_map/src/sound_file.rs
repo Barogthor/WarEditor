@@ -1,7 +1,8 @@
+//! Parser and writer for `war3map.w3s` (sound object definitions: file path, playback
+//! flags, volume/pitch and 3D falloff settings).
+
 use std::convert::TryFrom;
 
-#[cfg(test)]
-use pretty_assertions::assert_eq;
 
 use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
@@ -24,11 +25,6 @@ pub enum SoundError {
     Parsing(ReadError),
     #[error("Failed to save sound data. {0}")]
     SaveError(WriteError),
-}
-impl From<SoundError> for MapError {
-    fn from(value: SoundError) -> Self {
-        MapError::Sound(value)
-    }
 }
 
 #[derive(Debug, Derivative)]
@@ -177,10 +173,6 @@ impl SoundFile {
         writer.write(self).map_err(SoundError::SaveError)?;
         Ok(writer)
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 impl BinaryConverter for SoundFile {
@@ -188,13 +180,13 @@ impl BinaryConverter for SoundFile {
         let version = reader.read_u32()?;
         let count_sound = reader.read_u32()? as usize;
         let sounds = reader.read_vec::<Sound>(count_sound)?;
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_SOUNDS,
-            reader.size() - reader.pos() as usize
-        );
+        if reader.size() != reader.pos() as usize {
+            return Err(ReadError::TrailingBytes {
+                file: MAP_SOUNDS.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
+        }
         Ok(SoundFile { version, sounds })
     }
 
@@ -372,7 +364,7 @@ mod w3s_test {
     fn no_failure() {
         let mut w3s = File::open(get_path("Scenario/Sandbox_roc/war3map.w3s"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3s);
+        let mut reader = BinaryReader::from(&mut w3s).unwrap();
         let _sound_file = reader.read::<SoundFile>();
     }
 
@@ -380,7 +372,7 @@ mod w3s_test {
     fn check_values() {
         let mut w3s = File::open(get_path("Scenario/Sandbox_roc/war3map.w3s"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3s);
+        let mut reader = BinaryReader::from(&mut w3s).unwrap();
         let sound_file = reader.read::<SoundFile>().unwrap();
         let mock = mock_sounds();
         assert_eq!(sound_file.sounds, mock);
@@ -627,45 +619,48 @@ mod w3s_test {
     fn test_real_file_round_trip() {
         // Test with actual file data to ensure compatibility
         let file_path = get_path("Scenario/Sandbox_roc/war3map.w3s");
-        if let Ok(mut w3s) = File::open(&file_path) {
-            let mut reader = BinaryReader::from(&mut w3s);
-            if let Ok(original) = reader.read::<SoundFile>() {
-                // Write the loaded file
-                let mut writer = BinaryWriter::new();
-                original.write(&mut writer).unwrap();
-                let buffer = writer.into_buffer();
+        assert!(
+            std::path::Path::new(&file_path).exists(),
+            "required test fixture missing: {}",
+            file_path
+        );
+        let mut w3s = File::open(&file_path).unwrap_or_else(|e| panic!("{}", e));
+        let mut reader = BinaryReader::from(&mut w3s).unwrap();
+        let original = reader.read::<SoundFile>().unwrap();
 
-                // Read it back
-                let mut reader = BinaryReader::new(buffer);
-                let reconstructed = SoundFile::read(&mut reader).unwrap();
+        // Write the loaded file
+        let mut writer = BinaryWriter::new();
+        original.write(&mut writer).unwrap();
+        let buffer = writer.into_buffer();
 
-                // Verify it matches the original
-                assert_eq!(original.version, reconstructed.version);
-                assert_eq!(original.sounds.len(), reconstructed.sounds.len());
+        // Read it back
+        let mut reader = BinaryReader::new(buffer);
+        let reconstructed = SoundFile::read(&mut reader).unwrap();
 
-                for (i, (orig, recon)) in original
-                    .sounds
-                    .iter()
-                    .zip(reconstructed.sounds.iter())
-                    .enumerate()
-                {
-                    assert_eq!(orig.id, recon.id, "Sound {i}: id mismatch");
-                    assert_eq!(orig.file, recon.file, "Sound {i}: file mismatch");
-                    assert_eq!(orig.effect, recon.effect, "Sound {i}: effect mismatch");
-                    assert_eq!(orig.looping, recon.looping, "Sound {i}: looping mismatch");
-                    assert_eq!(
-                        orig.sound_3d, recon.sound_3d,
-                        "Sound {i}: sound_3d mismatch"
-                    );
-                    assert_eq!(
-                        orig.stop_oof, recon.stop_oof,
-                        "Sound {i}: stop_oof mismatch"
-                    );
-                    assert_eq!(orig.music, recon.music, "Sound {i}: music mismatch");
-                    assert_eq!(orig.volume, recon.volume, "Sound {i}: volume mismatch");
-                }
-            }
+        // Verify it matches the original
+        assert_eq!(original.version, reconstructed.version);
+        assert_eq!(original.sounds.len(), reconstructed.sounds.len());
+
+        for (i, (orig, recon)) in original
+            .sounds
+            .iter()
+            .zip(reconstructed.sounds.iter())
+            .enumerate()
+        {
+            assert_eq!(orig.id, recon.id, "Sound {i}: id mismatch");
+            assert_eq!(orig.file, recon.file, "Sound {i}: file mismatch");
+            assert_eq!(orig.effect, recon.effect, "Sound {i}: effect mismatch");
+            assert_eq!(orig.looping, recon.looping, "Sound {i}: looping mismatch");
+            assert_eq!(
+                orig.sound_3d, recon.sound_3d,
+                "Sound {i}: sound_3d mismatch"
+            );
+            assert_eq!(
+                orig.stop_oof, recon.stop_oof,
+                "Sound {i}: stop_oof mismatch"
+            );
+            assert_eq!(orig.music, recon.music, "Sound {i}: music mismatch");
+            assert_eq!(orig.volume, recon.volume, "Sound {i}: volume mismatch");
         }
-        // Note: Test will pass silently if file doesn't exist, which is fine for CI/environments without test data
     }
 }

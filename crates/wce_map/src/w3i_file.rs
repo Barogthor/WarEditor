@@ -1,3 +1,6 @@
+//! Parser and writer for `war3map.w3i` (map info: name, description, players, forces,
+//! camera bounds, and other global map settings).
+
 use derivative::Derivative;
 use std::convert::TryFrom;
 use std::fmt::Debug;
@@ -44,11 +47,6 @@ pub enum InfoError {
     Parsing(ReadError),
     #[error("Failed to save map info data. {0}")]
     SaveError(WriteError),
-}
-impl From<InfoError> for MapError {
-    fn from(value: InfoError) -> Self {
-        MapError::Info(value)
-    }
 }
 
 /// TFT flags:
@@ -451,10 +449,6 @@ impl W3iFile {
     pub fn game_version(&self) -> GameVersion {
         self.version
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 fn read_c_string_safe(reader: &mut BinaryReader) -> Result<String, ReadError> {
@@ -541,11 +535,11 @@ impl BinaryConverter for W3iFile {
             w3i.random_item_tables = reader.read_vec::<RandomItemTable>(random_item_table_count)?;
         }
         if reader.size() != reader.pos() as usize {
-            return Err(ReadError::Reason(format!(
-                "reader for {} hasn't reached EOF. Missing {} bytes",
-                MAP_INFOS,
-                reader.size() - reader.pos() as usize
-            )));
+            return Err(ReadError::TrailingBytes {
+                file: MAP_INFOS.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
         }
         Ok(w3i)
     }
@@ -877,7 +871,7 @@ mod w3i_tests {
     fn w3i_roc_test() {
         let mut w3i = File::open(get_path("Scenario/Sandbox_roc/war3map.w3i"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3i);
+        let mut reader = BinaryReader::from(&mut w3i).unwrap();
         let w3i = reader.read::<W3iFile>().unwrap();
         let mock_w3i = get_roc_mock();
         assert_eq!(w3i, mock_w3i);
@@ -886,7 +880,7 @@ mod w3i_tests {
     fn w3i_tft_test() {
         let mut w3i = File::open(get_path("Scenario/Sandbox_tft/war3map.w3i"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3i);
+        let mut reader = BinaryReader::from(&mut w3i).unwrap();
         let w3i = reader.read::<W3iFile>().unwrap();
         let mock_w3i = get_tft_mock();
         assert_eq!(w3i, mock_w3i);
@@ -971,7 +965,7 @@ mod w3i_tests {
         // Read original data
         let mut w3i_file = File::open(get_path("Scenario/Sandbox_roc/war3map.w3i"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3i_file);
+        let mut reader = BinaryReader::from(&mut w3i_file).unwrap();
         let original_w3i = reader.read::<W3iFile>().unwrap_or_else(|e| panic!("{}", e));
 
         // Write to buffer
@@ -1054,7 +1048,7 @@ mod w3i_tests {
         // Read original data
         let mut w3i_file = File::open(get_path("Scenario/Sandbox_tft/war3map.w3i"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut w3i_file);
+        let mut reader = BinaryReader::from(&mut w3i_file).unwrap();
         let original_w3i = reader.read::<W3iFile>().unwrap_or_else(|e| panic!("{}", e));
 
         // Write to buffer

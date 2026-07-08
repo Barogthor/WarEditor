@@ -19,11 +19,6 @@ pub enum CustomDoodadError {
     #[error("Failed to save custom doodad data. {0}")]
     SaveError(WriteError),
 }
-impl From<CustomDoodadError> for MapError {
-    fn from(value: CustomDoodadError) -> Self {
-        MapError::CustomDoodad(value)
-    }
-}
 
 /// Kind marker for the custom doodads table.
 #[derive(Debug)]

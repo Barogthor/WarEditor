@@ -19,11 +19,6 @@ pub enum CustomItemError {
     #[error("Failed to save custom item data. {0}")]
     SaveError(WriteError),
 }
-impl From<CustomItemError> for MapError {
-    fn from(value: CustomItemError) -> Self {
-        MapError::CustomItem(value)
-    }
-}
 
 /// Kind marker for the custom items table.
 #[derive(Debug)]

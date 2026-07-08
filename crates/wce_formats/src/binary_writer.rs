@@ -1,3 +1,8 @@
+//! Cursor-based binary writer producing in-memory map file bytes.
+//!
+//! Mirrors [`crate::binary_reader::BinaryReader`] with typed little-endian writes
+//! (`write_u32`, `write_c_string_converted`, …) returning [`WriteResult`].
+
 use std::ffi::CString;
 use std::io::{Cursor, Seek, SeekFrom, Write};
 

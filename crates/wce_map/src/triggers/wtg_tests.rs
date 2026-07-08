@@ -1,3 +1,6 @@
+//! Unit tests for `war3map.wtg` trigger parsing, exercising `TriggerDefinition` against
+//! raw byte fixtures for trigger events, conditions and actions.
+
 // use log::{debug, error, info, trace, warn};
 
 #[cfg(test)]

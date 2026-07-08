@@ -1,3 +1,6 @@
+//! `WtgError` and the trigger-format enums (parameter/sub-parameter/ECA/condition types)
+//! used while parsing and writing `war3map.wtg`.
+
 use thiserror::Error;
 use wce_formats::{ReadError, WriteError};
 

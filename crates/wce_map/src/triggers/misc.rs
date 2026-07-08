@@ -1,3 +1,6 @@
+//! `VariableDefinition` and `TriggerCategory`: the global-variable and trigger-category
+//! records read/written as part of the `war3map.wtg` trigger file.
+
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
 use wce_formats::binary_writer::BinaryWriter;
 use wce_formats::GameVersion::{self};

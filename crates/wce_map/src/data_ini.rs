@@ -1,3 +1,6 @@
+//! Minimal INI-style parser for Warcraft III profile data files (e.g. `TriggerData.txt`),
+//! merging sections/key-value pairs from one or more files into a `DataIni` lookup table.
+
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
@@ -11,11 +14,10 @@ lazy_static! {
     static ref SEC_PROP: Regex = Regex::new(r"^\s*([^=]+)=(.*)\s*$").unwrap();
 }
 
-fn parse_ini(path: &str) -> HashMap<String, HashMap<String, String>> {
-    let mut f = File::open(path).unwrap_or_else(|_| panic!("Unknown file: {}.", path));
+fn parse_ini(path: &str) -> Result<HashMap<String, HashMap<String, String>>, std::io::Error> {
+    let mut f = File::open(path)?;
     let mut buffer = String::new();
-    f.read_to_string(&mut buffer)
-        .unwrap_or_else(|e| panic!("{}", e));
+    f.read_to_string(&mut buffer)?;
     let buffer: Vec<&str> = buffer.split(EOL).collect();
 
     let mut map: HashMap<String, HashMap<String, String>> = HashMap::new();
@@ -36,7 +38,7 @@ fn parse_ini(path: &str) -> HashMap<String, HashMap<String, String>> {
             map.get_mut(&current_section).unwrap().insert(id, value);
         }
     }
-    map
+    Ok(map)
 }
 
 #[derive(Debug)]
@@ -61,9 +63,11 @@ impl DataIni {
         self.datas.shrink_to_fit();
     }
 
-    pub fn merge(&mut self, path: &str) {
-        //        let ini = Ini::load_from_file(path).unwrap();
-        let ini = parse_ini(path);
+    pub fn merge(&mut self, path: &str) -> Result<(), crate::GameDataError> {
+        let ini = parse_ini(path).map_err(|source| crate::GameDataError::Ini {
+            path: path.to_string(),
+            source,
+        })?;
         // println!("========== Parse file: {}",path);
         for (sec, prop) in ini.iter() {
             let mut sec_props = HashMap::new();
@@ -88,10 +92,7 @@ impl DataIni {
             };
             self.datas.insert(sec.to_owned(), sec_props);
         }
-    }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
+        Ok(())
     }
 
     pub fn get_sector(&self, sector: &str) -> Option<&HashMap<String, String>> {
@@ -101,5 +102,29 @@ impl DataIni {
     pub fn get_prop(&self, sector: &str, id: &str) -> Option<&String> {
         let sector_res = self.datas.get(sector);
         sector_res?.get(id)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn merge_missing_file_returns_err_not_panic() {
+        let mut d = DataIni::new();
+        let r = d.merge("does/not/exist.ini");
+        assert!(r.is_err());
+    }
+
+    #[test]
+    fn merge_parses_sections_and_props_without_panic() {
+        let path = std::env::temp_dir().join("wce_c2_parse.ini");
+        std::fs::write(&path, "[Sec]\r\nkey=val\r\nother=42\r\n").unwrap();
+        let mut d = DataIni::new();
+        let r = d.merge(path.to_str().unwrap());
+        assert!(r.is_ok());
+        assert_eq!(d.get_prop("Sec", "key"), Some(&String::from("val")));
+        assert_eq!(d.get_prop("Sec", "other"), Some(&String::from("42")));
+        std::fs::remove_file(&path).ok();
     }
 }

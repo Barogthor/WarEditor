@@ -1,3 +1,5 @@
+//! Parser and writer for `war3map.shd` (per-tile cliff/terrain shadow map).
+
 use std::convert::TryFrom;
 use std::io::{self, Read};
 
@@ -18,11 +20,6 @@ pub enum ShadowMapError {
     Parsing(ReadError),
     #[error("Failed to save shadowmap data. {0}")]
     SaveError(WriteError),
-}
-impl From<ShadowMapError> for MapError {
-    fn from(value: ShadowMapError) -> Self {
-        MapError::ShadowMap(value)
-    }
 }
 
 #[derive(Debug)]
@@ -83,10 +80,6 @@ impl ShadowMapFile {
                 .map_err(ShadowMapError::SaveError)?;
         }
         Ok(writer)
-    }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
     }
 }
 

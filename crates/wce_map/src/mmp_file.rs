@@ -1,3 +1,6 @@
+//! Parser and writer for `war3map.mmp` (menu-screen minimap icon markers: type, position
+//! and color of each ping shown on the map-selection preview).
+
 use std::convert::TryFrom;
 
 use thiserror::Error;
@@ -20,11 +23,6 @@ pub enum MenuMinimapError {
     Parsing(ReadError),
     #[error("Failed to save menu minimap data. {0}")]
     SaveError(WriteError),
-}
-impl From<MenuMinimapError> for MapError {
-    fn from(value: MenuMinimapError) -> Self {
-        MapError::MenuMinimap(value)
-    }
 }
 
 #[derive(Debug)]
@@ -97,10 +95,6 @@ impl MMPFile {
         let mut writer = BinaryWriter::new();
         writer.write(self).map_err(MenuMinimapError::SaveError)?;
         Ok(writer)
-    }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
     }
 }
 

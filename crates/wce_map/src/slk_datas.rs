@@ -1,3 +1,6 @@
+//! Loads Warcraft III SLK game-data tables (unit/ability/doodad/upgrade metadata, …) into
+//! `SLKData`, a header-indexed lookup keyed by each row's meta ID; used by `GameData`.
+
 use std::collections::{BTreeMap, HashMap};
 
 use slkparser::{cell::Cell, SLKError};
@@ -38,12 +41,6 @@ mod adapter {
 
         pub fn get_contents(&self) -> &Vec<Cell> {
             self.document.get_contents()
-        }
-        pub fn row_count(&self) -> u32 {
-            self.document.row_count()
-        }
-        pub fn column_count(&self) -> u32 {
-            self.document.column_count()
         }
     }
 }
@@ -153,25 +150,27 @@ impl SLKData {
         Ok(())
     }
 
-    // pub fn debug(&self){
-    //     println!("[Header]: {:?}",self.headers);
-    //     for (id, value) in self.lines.iter() {
-    //         println!("[{:?}] : {:?}",*id,*value);
-    //     }
-    // }
-
+    // Reachable only from the cfg(test) gamedata_snapshot regression test
+    // (no production accessor consumes per-row lookups yet).
+    #[allow(dead_code)]
     pub fn get(&self, id: &MetaID) -> Option<&BTreeMap<FieldColumn, String>> {
         self.lines.get(id)
     }
 
+    // Reachable only from the cfg(test) gamedata_snapshot regression test.
+    #[allow(dead_code)]
     pub fn headers(&self) -> &BTreeMap<FieldColumn, String> {
         &self.headers
     }
 
+    // Reachable only from the cfg(test) gamedata_snapshot regression test.
+    #[allow(dead_code)]
     pub(crate) fn lines(&self) -> &HashMap<MetaID, BTreeMap<FieldColumn, String>> {
         &self.lines
     }
 
+    // Reachable only from the cfg(test) gamedata_snapshot regression test.
+    #[allow(dead_code)]
     pub fn get_formatted(&self, id: &MetaID) -> Option<BTreeMap<String, String>> {
         let v = self.get(id);
         let counter = 1;
@@ -192,4 +191,82 @@ impl SLKData {
     //    pub fn get_mut(&mut self, id: &str) -> Option<&mut HashMap<FieldName,CellValue>>{
     //        self.map.get_mut(id)
     //    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn merge_preserves_prior_value_from_base_table() {
+        // UnitData and UnitBalance are both keyed by unit id (see GameData::new, which merges
+        // UnitData -> UnitBalance -> UnitUI -> UnitAbilities -> UnitWeapons into `unit_data`),
+        // so merging them exercises the same-key column-offset branch of `merge` (as opposed to
+        // two tables with disjoint id namespaces, where every row would just be inserted fresh).
+        let base = format!("{}slk/UnitData.slk", crate::get_resources_path());
+        assert!(
+            std::path::Path::new(&base).exists(),
+            "fixture missing: {}",
+            base
+        );
+        let other = format!("{}slk/UnitBalance.slk", crate::get_resources_path());
+        assert!(
+            std::path::Path::new(&other).exists(),
+            "fixture missing: {}",
+            other
+        );
+
+        let a = SLKData::load(&base).unwrap();
+        assert!(!a.headers().is_empty(), "no headers parsed from {}", base);
+        assert!(!a.lines().is_empty(), "no rows parsed from {}", base);
+
+        let b = SLKData::load(&other).unwrap();
+        assert!(!b.headers().is_empty(), "no headers parsed from {}", other);
+        assert!(!b.lines().is_empty(), "no rows parsed from {}", other);
+
+        // Confirm the two tables actually share meta ids before relying on that to exercise the
+        // same-key branch; a disjoint pair would make the rest of this test pass vacuously.
+        let shared_ids: Vec<&MetaID> = a
+            .lines()
+            .keys()
+            .filter(|id| b.lines().contains_key(*id))
+            .collect();
+        assert!(
+            !shared_ids.is_empty(),
+            "UnitData and UnitBalance share no ids; pick a different table pair"
+        );
+
+        let meta_id = shared_ids[0].clone();
+        let base_row = a.get(&meta_id).unwrap().clone();
+        let (column, value) = base_row
+            .iter()
+            .next()
+            .map(|(col, val)| (*col, val.clone()))
+            .expect("expected shared row to have at least one field value");
+        let base_column_count = base_row.len();
+
+        // Merge a table that shares this id; its columns are offset by the current header
+        // count, so it must never overwrite columns already populated by the base table.
+        let mut a = a;
+        a.merge(&other).unwrap();
+
+        let merged_fields = a
+            .get(&meta_id)
+            .unwrap_or_else(|| panic!("row {} dropped by merge", meta_id));
+
+        // (a) the base table's value for this id/column survives unchanged.
+        assert_eq!(
+            merged_fields.get(&column),
+            Some(&value),
+            "merge overwrote a prior value for {meta_id}/{column}"
+        );
+
+        // (b) the same id gained columns from the second table (offset-merged, not replaced).
+        assert!(
+            merged_fields.len() > base_column_count,
+            "merge did not add UnitBalance columns to {} (still has only {} columns)",
+            meta_id,
+            base_column_count
+        );
+    }
 }

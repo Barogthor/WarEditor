@@ -1,3 +1,6 @@
+//! Shared constants: map archive file names (`war3map.*`), MPQ special file names, and the
+//! game database (SLK/INI) resource paths used across `wce_map` components.
+
 pub const REG_PROPERTIES: &str = r"^([^=\r\n]+)=(.+)\r?\n?$";
 
 pub const MPQ_LISTFILES: &str = "(listfile)";
@@ -12,9 +15,7 @@ pub const MAP_SCRIPT: &str = "war3map.j";
 pub const MAP_SHADERS: &str = "war3map.shd";
 pub const MAP_MINIMAP: &str = "war3mapMap.blp";
 pub const MAP_OLD_MINIMAP: &str = "war3mapMap.blp";
-//pub const a:                                      &str = "war3mapMap.b00";
 pub const MAP_OLD_PATH_MAP: &str = "war3mapPath.tga";
-//pub const a:                                      &str = "war3mapPreview.tga";
 pub const MAP_MENU_MINIMAP: &str = "war3map.mmp";
 pub const MAP_PATH_MAP: &str = "war3map.wpm";
 pub const MAP_TERRAIN_DOODADS: &str = "war3map.doo";

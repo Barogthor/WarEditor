@@ -1,7 +1,8 @@
+//! Parser and writer for `war3mapUnits.doo` (placed unit and item instances, including
+//! random-unit/item table entries and per-unit item drop tables).
+
 use std::convert::TryFrom;
 
-#[cfg(test)]
-use pretty_assertions::assert_eq;
 
 use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};
@@ -17,9 +18,6 @@ use crate::unit_map::RandomUnitItemFlag::{
 };
 use crate::MapError;
 
-const RANDOM_ITEM_ID: &str = "iDNR";
-const RANDOM_UNIT_ID: &str = "uDNR";
-
 pub type TablePointer = i32;
 
 #[derive(Debug, Error)]
@@ -32,12 +30,6 @@ pub enum UnitMapError {
     Parsing(ReadError),
     #[error("Failed to save units and items data. {0}")]
     SaveError(WriteError),
-}
-
-impl From<UnitMapError> for MapError {
-    fn from(value: UnitMapError) -> Self {
-        MapError::UnitItem(value)
-    }
 }
 
 #[derive(Debug, PartialOrd, PartialEq)]
@@ -244,13 +236,6 @@ impl RandomUnitItemFlag {
     const LEVEL_MASK: u32 = 0x00FFFFFF;
     const CLASS_MASK: u32 = 0xFF000000;
     const CLASS_SHIFT: u32 = 24;
-
-    fn is_none(&self) -> bool {
-        match self {
-            NotRandom => true,
-            _ => false,
-        }
-    }
 }
 
 impl BinaryConverterVersion for RandomUnitItemFlag {
@@ -335,10 +320,6 @@ struct UnitItem {
     color: i32,
     waygate_region_id: i32,
     creation_id: u32,
-}
-
-impl UnitItem {
-    const DEFAULT_GOLD_AMOUNT: i32 = 12500;
 }
 
 impl BinaryConverterVersion for UnitItem {
@@ -499,13 +480,13 @@ impl BinaryConverter for UnitItemMap {
         let count_units_items = reader.read_u32()?;
         let units_items =
             reader.read_vec_version::<UnitItem>(count_units_items as usize, &version)?;
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_TERRAIN_UNITS,
-            reader.size() - reader.pos() as usize
-        );
+        if reader.size() != reader.pos() as usize {
+            return Err(ReadError::TrailingBytes {
+                file: MAP_TERRAIN_UNITS.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
+        }
         Ok(Self {
             id,
             version,
@@ -777,7 +758,7 @@ mod unitmap_tests {
     fn no_failure_roc() {
         let mut unititem_file = File::open(get_path("Scenario/Sandbox_roc/war3mapUnits.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut unititem_file);
+        let mut reader = BinaryReader::from(&mut unititem_file).unwrap();
         let _unititem_map = reader.read::<UnitItemMap>();
     }
 
@@ -785,7 +766,7 @@ mod unitmap_tests {
     fn check_roc() {
         let mut unititem_file = File::open(get_path("Scenario/Sandbox_roc/war3mapUnits.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut unititem_file);
+        let mut reader = BinaryReader::from(&mut unititem_file).unwrap();
         let unititem_map = reader
             .read::<UnitItemMap>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -807,7 +788,7 @@ mod unitmap_tests {
     fn no_failure_tft() {
         let mut unititem_file = File::open(get_path("Scenario/Sandbox_tft/war3mapUnits.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut unititem_file);
+        let mut reader = BinaryReader::from(&mut unititem_file).unwrap();
         let _unititem_map = reader
             .read::<UnitItemMap>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -818,7 +799,7 @@ mod unitmap_tests {
         // Read original data
         let mut unititem_file = File::open(get_path("Scenario/Sandbox_roc/war3mapUnits.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut unititem_file);
+        let mut reader = BinaryReader::from(&mut unititem_file).unwrap();
         let original_map = reader
             .read::<UnitItemMap>()
             .unwrap_or_else(|e| panic!("{}", e));
@@ -874,7 +855,7 @@ mod unitmap_tests {
         // Read original data
         let mut unititem_file = File::open(get_path("Scenario/Sandbox_tft/war3mapUnits.doo"))
             .unwrap_or_else(|e| panic!("{}", e));
-        let mut reader = BinaryReader::from(&mut unititem_file);
+        let mut reader = BinaryReader::from(&mut unititem_file).unwrap();
         let original_map = reader
             .read::<UnitItemMap>()
             .unwrap_or_else(|e| panic!("{}", e));
