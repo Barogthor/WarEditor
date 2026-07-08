@@ -115,4 +115,16 @@ mod tests {
         let r = d.merge("does/not/exist.ini");
         assert!(r.is_err());
     }
+
+    #[test]
+    fn merge_parses_sections_and_props_without_panic() {
+        let path = std::env::temp_dir().join("wce_c2_parse.ini");
+        std::fs::write(&path, "[Sec]\r\nkey=val\r\nother=42\r\n").unwrap();
+        let mut d = DataIni::new();
+        let r = d.merge(path.to_str().unwrap());
+        assert!(r.is_ok());
+        assert_eq!(d.get_prop("Sec", "key"), Some(&String::from("val")));
+        assert_eq!(d.get_prop("Sec", "other"), Some(&String::from("42")));
+        std::fs::remove_file(&path).ok();
+    }
 }

@@ -192,3 +192,51 @@ impl SLKData {
     //        self.map.get_mut(id)
     //    }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn merge_preserves_prior_value_from_base_table() {
+        let base = format!("{}slk/AbilityData.slk", crate::get_resources_path());
+        assert!(
+            std::path::Path::new(&base).exists(),
+            "fixture missing: {base}"
+        );
+        let other = format!("{}slk/AbilityBuffData.slk", crate::get_resources_path());
+        assert!(
+            std::path::Path::new(&other).exists(),
+            "fixture missing: {other}"
+        );
+
+        let mut a = SLKData::load(&base).unwrap();
+        assert!(!a.headers().is_empty(), "no headers parsed from {base}");
+        assert!(!a.lines().is_empty(), "no rows parsed from {base}");
+
+        // Capture a real (MetaID, FieldColumn, value) triple parsed from the base table.
+        let (meta_id, column, value) = a
+            .lines()
+            .iter()
+            .find_map(|(id, fields)| {
+                fields
+                    .iter()
+                    .next()
+                    .map(|(col, val)| (id.clone(), *col, val.clone()))
+            })
+            .expect("expected at least one row with a field value");
+
+        // Merge a different table; its columns are offset by the current header count, so it
+        // must never overwrite columns already populated by the base table.
+        a.merge(&other).unwrap();
+
+        let merged_fields = a
+            .get(&meta_id)
+            .unwrap_or_else(|| panic!("row {meta_id} dropped by merge"));
+        assert_eq!(
+            merged_fields.get(&column),
+            Some(&value),
+            "merge overwrote a prior value for {meta_id}/{column}"
+        );
+    }
+}

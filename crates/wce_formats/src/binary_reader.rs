@@ -263,6 +263,33 @@ fn cstring_null(reader: &BinaryReader, string_size: usize) -> ReadError {
     }
 }
 
+#[cfg(test)]
+mod reader_tests {
+    use super::*;
+
+    #[test]
+    fn reads_u32_le_and_tracks_position() {
+        let mut r = BinaryReader::new(vec![0x01, 0x00, 0x00, 0x00]);
+        assert_eq!(r.read_u32().unwrap(), 1);
+        assert_eq!(r.pos() as usize, 4);
+        assert_eq!(r.size(), 4);
+    }
+
+    #[test]
+    fn read_past_end_returns_error_not_panic() {
+        let mut r = BinaryReader::new(vec![0x01]);
+        let _ = r.read_u8().unwrap();
+        assert!(r.read_u32().is_err());
+    }
+
+    #[test]
+    fn read_bytes_returns_exact_slice() {
+        let mut r = BinaryReader::new(vec![1, 2, 3, 4, 5]);
+        assert_eq!(r.read_bytes(3).unwrap(), vec![1, 2, 3]);
+        assert_eq!(r.pos() as usize, 3);
+    }
+}
+
 impl TryFrom<MpqFileBuffer> for BinaryReader {
     type Error = ReadError;
 
