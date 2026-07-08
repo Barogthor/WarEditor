@@ -97,13 +97,13 @@ impl BinaryConverter for PathMapFile {
             //            println!("{:x}",flags);
             pathing.push(PathCell { flags });
         }
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_PATH_MAP,
-            reader.size() - reader.pos() as usize
-        );
+        if reader.size() != reader.pos() as usize {
+            return Err(ReadError::TrailingBytes {
+                file: MAP_PATH_MAP.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
+        }
         Ok(PathMapFile {
             id,
             version,

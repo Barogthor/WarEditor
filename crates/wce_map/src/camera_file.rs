@@ -120,13 +120,13 @@ impl BinaryConverter for CameraFile {
         let count_camera = reader.read_u32()? as usize;
         let cameras = reader.read_vec::<Camera>(count_camera)?;
 
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_CAMERAS,
-            reader.size() - reader.pos() as usize
-        );
+        if reader.size() != reader.pos() as usize {
+            return Err(ReadError::TrailingBytes {
+                file: MAP_CAMERAS.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
+        }
         Ok(CameraFile { version, cameras })
     }
 

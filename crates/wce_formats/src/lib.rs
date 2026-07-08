@@ -79,9 +79,24 @@ pub trait BinaryConverterVersion {
 
 #[cfg(test)]
 mod tests {
+    use crate::ReadError;
+
     #[test]
     fn it_works() {
         assert_eq!(2 + 2, 4);
+    }
+
+    #[test]
+    fn trailing_bytes_error_formats_file_and_counts() {
+        let e = ReadError::TrailingBytes {
+            file: "war3map.doo".into(),
+            expected: 100,
+            actual: 96,
+        };
+        let msg = format!("{e}");
+        assert!(msg.contains("war3map.doo"));
+        assert!(msg.contains("96"));
+        assert!(msg.contains("100"));
     }
 }
 
@@ -267,6 +282,12 @@ pub enum ReadError {
     },
     #[error("Read error: {0}")]
     Reason(String),
+    #[error("reader for {file} hasn't reached EOF: read {actual} of {expected} bytes")]
+    TrailingBytes {
+        file: String,
+        expected: usize,
+        actual: usize,
+    },
     #[error("I/O error: {0}")]
     IoError(#[from] io::Error),
 }

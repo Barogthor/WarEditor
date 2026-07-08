@@ -163,13 +163,13 @@ impl BinaryConverter for TerrainFile {
         let count_tilepoints: usize = (mx_width * my_height) as usize;
         let tilepoints = reader.read_vec::<TilePoint>(count_tilepoints)?;
 
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_TERRAIN,
-            reader.size() - reader.pos() as usize
-        );
+        if reader.size() != reader.pos() as usize {
+            return Err(ReadError::TrailingBytes {
+                file: MAP_TERRAIN.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
+        }
         Ok(TerrainFile {
             id,
             version,

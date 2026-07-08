@@ -260,11 +260,11 @@ impl<K: CustomObjectKind> CustomObjectsFile<K> {
             custom_objects.push(Self::read_object(reader, game_version)?);
         }
         if reader.size() != reader.pos() as usize {
-            return Err(ReadError::Reason(format!(
-                "reader for {} hasn't reached EOF. Missing {} bytes",
-                K::FILE_NAME,
-                reader.size() - reader.pos() as usize
-            )));
+            return Err(ReadError::TrailingBytes {
+                file: K::FILE_NAME.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
         }
         Ok(Self {
             version,

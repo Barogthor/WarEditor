@@ -191,13 +191,13 @@ impl TriggersFile {
             // for _ in 0..3{
             triggers.push(TriggerDefinition::from(reader, &version, trigger_data)?)
         }
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_TRIGGERS,
-            reader.size() - reader.pos() as usize
-        );
+        if reader.size() != reader.pos() as usize {
+            return Err(WtgError::ErrorReader(ReadError::TrailingBytes {
+                file: MAP_TRIGGERS.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            }));
+        }
         Ok(Self {
             id,
             version,

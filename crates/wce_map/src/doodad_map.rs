@@ -219,13 +219,13 @@ impl BinaryConverter for DoodadMap {
         let special_doodad_version = reader.read_u32()?;
         let count_special_doodads = reader.read_u32()?;
         let special_doodads = reader.read_vec::<SpecialDoodad>(count_special_doodads as usize)?;
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_TERRAIN_DOODADS,
-            reader.size() - reader.pos() as usize
-        );
+        if reader.size() != reader.pos() as usize {
+            return Err(ReadError::TrailingBytes {
+                file: MAP_TERRAIN_DOODADS.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
+        }
         Ok(DoodadMap {
             id,
             version,

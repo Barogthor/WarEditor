@@ -535,11 +535,11 @@ impl BinaryConverter for W3iFile {
             w3i.random_item_tables = reader.read_vec::<RandomItemTable>(random_item_table_count)?;
         }
         if reader.size() != reader.pos() as usize {
-            return Err(ReadError::Reason(format!(
-                "reader for {} hasn't reached EOF. Missing {} bytes",
-                MAP_INFOS,
-                reader.size() - reader.pos() as usize
-            )));
+            return Err(ReadError::TrailingBytes {
+                file: MAP_INFOS.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
         }
         Ok(w3i)
     }

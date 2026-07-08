@@ -80,13 +80,13 @@ impl BinaryConverter for TriggerJassFile {
                 text_triggers.push(reader.read_string_utf8(length)?);
             }
         }
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_TRIGGERS_SCRIPT,
-            reader.size() - reader.pos() as usize
-        );
+        if reader.size() != reader.pos() as usize {
+            return Err(ReadError::TrailingBytes {
+                file: MAP_TRIGGERS_SCRIPT.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
+        }
 
         Ok(TriggerJassFile {
             version,

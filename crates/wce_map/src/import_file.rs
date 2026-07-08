@@ -105,13 +105,13 @@ impl BinaryConverterVersion for ImportFile {
             files.push((path_type, path));
         }
 
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_IMPORT_LIST,
-            reader.size() - reader.pos() as usize
-        );
+        if reader.size() != reader.pos() as usize {
+            return Err(ReadError::TrailingBytes {
+                file: MAP_IMPORT_LIST.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
+        }
         Ok(ImportFile { version, files })
     }
 

@@ -482,13 +482,13 @@ impl BinaryConverter for UnitItemMap {
         let count_units_items = reader.read_u32()?;
         let units_items =
             reader.read_vec_version::<UnitItem>(count_units_items as usize, &version)?;
-        assert_eq!(
-            reader.size(),
-            reader.pos() as usize,
-            "reader for {} hasn't reached EOF. Missing {} bytes",
-            MAP_TERRAIN_UNITS,
-            reader.size() - reader.pos() as usize
-        );
+        if reader.size() != reader.pos() as usize {
+            return Err(ReadError::TrailingBytes {
+                file: MAP_TERRAIN_UNITS.into(),
+                expected: reader.size(),
+                actual: reader.pos() as usize,
+            });
+        }
         Ok(Self {
             id,
             version,
