@@ -133,10 +133,6 @@ impl TerrainFile {
         writer.write(self).map_err(TerrainError::SaveError)?;
         Ok(writer)
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 impl BinaryConverter for TerrainFile {

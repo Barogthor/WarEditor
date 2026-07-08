@@ -1,6 +1,4 @@
-#![allow(dead_code)]
-
-use rgb::{RGB8, RGBA8};
+use rgb::RGBA8;
 use thiserror::Error;
 
 use crate::binary_reader::BinaryReader;
@@ -270,24 +268,6 @@ impl BLP {
             }
         }
         Ok(())
-    }
-}
-
-fn cmyk_to_rgb(cmyk: &mut [u8]) -> RGB8 {
-    let c = cmyk[0] as f32 / 255.0;
-    let y = cmyk[1] as f32 / 255.0;
-    let m = cmyk[2] as f32 / 255.0;
-    let k = cmyk[3] as f32 / 255.0;
-    let red = 255.0 * (1. - c) * (1. - k);
-    //        let red = 255.0 - c;
-    let green = 255.0 * (1. - y) * (1. - k);
-    //        let green = 255.0 - y;
-    let blue = 255.0 * (1. - m) * (1. - k);
-    //        let blue = 255.0 - m;
-    RGB8 {
-        r: red as u8,
-        b: blue as u8,
-        g: green as u8,
     }
 }
 

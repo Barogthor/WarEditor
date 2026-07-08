@@ -93,10 +93,6 @@ impl MMPFile {
         writer.write(self).map_err(MenuMinimapError::SaveError)?;
         Ok(writer)
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 #[cfg(test)]

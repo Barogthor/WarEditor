@@ -49,7 +49,6 @@ fn main() {
     let local_game_data = &GameData::new(prefix).unwrap_or_else(|e| panic!("{e:?}"));
     // let mut trigger_data = DataIni::new();
     // trigger_data.merge(PROFILE_TRIGGER_DATA);
-    // // trigger_datas.debug();
 
     let mut ini = DataIni::new();
 
@@ -84,7 +83,6 @@ fn main() {
     ini.merge(&path_to_data(prefix, PROFILE_MISC_DATA));
     ini.merge(&path_to_data(prefix, PROFILE_AIEDITOR_DATA));
     ini.fit();
-    // ini.debug();
 
     elapsed_time(&now);
     println!("Hello, world!");

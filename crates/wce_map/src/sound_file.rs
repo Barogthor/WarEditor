@@ -172,10 +172,6 @@ impl SoundFile {
         writer.write(self).map_err(SoundError::SaveError)?;
         Ok(writer)
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 impl BinaryConverter for SoundFile {

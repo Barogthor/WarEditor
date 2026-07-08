@@ -446,10 +446,6 @@ impl W3iFile {
     pub fn game_version(&self) -> GameVersion {
         self.version
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 fn read_c_string_safe(reader: &mut BinaryReader) -> Result<String, ReadError> {

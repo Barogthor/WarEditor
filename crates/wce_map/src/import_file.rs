@@ -71,10 +71,6 @@ impl ImportFile {
             .map_err(ImportError::SaveError)?;
         Ok(writer)
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 impl BinaryConverterVersion for ImportFile {

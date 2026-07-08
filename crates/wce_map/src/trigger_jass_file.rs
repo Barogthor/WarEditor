@@ -51,10 +51,6 @@ impl TriggerJassFile {
         writer.write(self).map_err(TriggerJassError::SaveError)?;
         Ok(writer)
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 impl BinaryConverter for TriggerJassFile {

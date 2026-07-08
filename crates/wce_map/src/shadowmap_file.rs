@@ -79,10 +79,6 @@ impl ShadowMapFile {
         }
         Ok(writer)
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 #[cfg(test)]

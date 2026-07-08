@@ -90,10 +90,6 @@ impl DataIni {
         }
     }
 
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
-
     pub fn get_sector(&self, sector: &str) -> Option<&HashMap<String, String>> {
         self.datas.get(sector)
     }

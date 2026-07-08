@@ -110,10 +110,6 @@ impl CameraFile {
         writer.write(self).map_err(CameraError::SaveError)?;
         Ok(writer)
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 impl BinaryConverter for CameraFile {

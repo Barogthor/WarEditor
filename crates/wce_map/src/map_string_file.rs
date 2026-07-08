@@ -84,10 +84,6 @@ impl MapStringFile {
         }
         Ok(MapStringFile { trigger_strings })
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

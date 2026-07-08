@@ -39,12 +39,6 @@ mod adapter {
         pub fn get_contents(&self) -> &Vec<Cell> {
             self.document.get_contents()
         }
-        pub fn row_count(&self) -> u32 {
-            self.document.row_count()
-        }
-        pub fn column_count(&self) -> u32 {
-            self.document.column_count()
-        }
     }
 }
 
@@ -153,25 +147,27 @@ impl SLKData {
         Ok(())
     }
 
-    // pub fn debug(&self){
-    //     println!("[Header]: {:?}",self.headers);
-    //     for (id, value) in self.lines.iter() {
-    //         println!("[{:?}] : {:?}",*id,*value);
-    //     }
-    // }
-
+    // Reachable only from the cfg(test) gamedata_snapshot regression test
+    // (no production accessor consumes per-row lookups yet).
+    #[allow(dead_code)]
     pub fn get(&self, id: &MetaID) -> Option<&BTreeMap<FieldColumn, String>> {
         self.lines.get(id)
     }
 
+    // Reachable only from the cfg(test) gamedata_snapshot regression test.
+    #[allow(dead_code)]
     pub fn headers(&self) -> &BTreeMap<FieldColumn, String> {
         &self.headers
     }
 
+    // Reachable only from the cfg(test) gamedata_snapshot regression test.
+    #[allow(dead_code)]
     pub(crate) fn lines(&self) -> &HashMap<MetaID, BTreeMap<FieldColumn, String>> {
         &self.lines
     }
 
+    // Reachable only from the cfg(test) gamedata_snapshot regression test.
+    #[allow(dead_code)]
     pub fn get_formatted(&self, id: &MetaID) -> Option<BTreeMap<String, String>> {
         let v = self.get(id);
         let counter = 1;

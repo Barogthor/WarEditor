@@ -204,10 +204,6 @@ impl TriggersFile {
             triggers,
         })
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 fn to_game_version(value: u32) -> Result<GameVersion, WtgError> {

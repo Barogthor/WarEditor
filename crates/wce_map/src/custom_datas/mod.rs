@@ -333,11 +333,6 @@ impl<K: CustomObjectKind> CustomObjectsFile<K> {
             obj.write_without_optional(writer, game_version)
         }
     }
-
-    /// Print the parsed table with `Debug` pretty-formatting.
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 fn cstring_to_string_meta(
@@ -576,17 +571,4 @@ pub fn write_meta_opts(
     };
     writer.write_u32(0)?;
     Ok(())
-}
-
-fn assert_meta_end_format(reader: &BinaryReader, id: &ObjectId, end_meta_id: Vec<u8>) {
-    let end_format_zero = true;
-    match (end_format_zero, id) {
-        (false,ObjectId::Original(code)) => assert_eq!(code.0, end_meta_id.as_slice(),
-                                                       "format reading went wrong meta object end '{}' not equal to object id '{}' (byte position {})",
-                                                       String::from_utf8_lossy(end_meta_id.as_slice()), String::from_utf8_lossy(&code.0), reader.pos()),
-        (false,ObjectId::Custom(_, code)) => assert_eq!(code.0, end_meta_id.as_slice(),
-                                                        "format reading went wrong meta object end '{}' not equal to object id '{}' (byte position {})",
-                                                        String::from_utf8_lossy(end_meta_id.as_slice()), String::from_utf8_lossy(&code.0), reader.pos()),
-        _ => ()
-    }
 }

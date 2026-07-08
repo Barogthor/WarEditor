@@ -17,9 +17,6 @@ use crate::unit_map::RandomUnitItemFlag::{
 };
 use crate::MapError;
 
-const RANDOM_ITEM_ID: &str = "iDNR";
-const RANDOM_UNIT_ID: &str = "uDNR";
-
 pub type TablePointer = i32;
 
 #[derive(Debug, Error)]
@@ -238,13 +235,6 @@ impl RandomUnitItemFlag {
     const LEVEL_MASK: u32 = 0x00FFFFFF;
     const CLASS_MASK: u32 = 0xFF000000;
     const CLASS_SHIFT: u32 = 24;
-
-    fn is_none(&self) -> bool {
-        match self {
-            NotRandom => true,
-            _ => false,
-        }
-    }
 }
 
 impl BinaryConverterVersion for RandomUnitItemFlag {
@@ -329,10 +319,6 @@ struct UnitItem {
     color: i32,
     waygate_region_id: i32,
     creation_id: u32,
-}
-
-impl UnitItem {
-    const DEFAULT_GOLD_AMOUNT: i32 = 12500;
 }
 
 impl BinaryConverterVersion for UnitItem {

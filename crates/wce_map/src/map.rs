@@ -3,7 +3,7 @@ use std::io::Write;
 
 use wce_formats::{MapArchive, MapArchiveWriter};
 
-use crate::camera_file::{self, CameraFile};
+use crate::camera_file::CameraFile;
 use crate::custom_datas::ability::CustomAbilityFile;
 use crate::custom_datas::buff::CustomBuffFile;
 use crate::custom_datas::destructable::CustomDestructableFile;
@@ -17,7 +17,7 @@ use crate::map_string_file::MapStringFile;
 use crate::minimap_file::MinimapFile;
 use crate::mmp_file::MMPFile;
 use crate::pathmap_file::PathMapFile;
-use crate::region_file::{self, RegionFile};
+use crate::region_file::RegionFile;
 use crate::shadowmap_file::ShadowMapFile;
 use crate::sound_file::SoundFile;
 use crate::terrain_file::TerrainFile;
@@ -28,8 +28,10 @@ use crate::w3i_file::W3iFile;
 use crate::{GameData, MapError};
 
 pub struct Map<'a> {
+    // Stored to keep the `'a` lifetime on `Map` for a future save-without-args
+    // API; `save`/`save_as_archive` currently take their own `game_data` param.
+    #[allow(dead_code)]
     game_data: &'a GameData,
-    path: String,
     /// Original 512-byte `HM3W` map header, preserved to be written back when
     /// repackaging into an archive. Empty for a bare MPQ source.
     header: Vec<u8>,
@@ -138,29 +140,19 @@ impl<'a> Map<'a> {
 
         let w3i = W3iFile::read_file(&mut map)?;
         let game_version = w3i.game_version();
-        // w3i.debug();
         let mmp = MMPFile::read_file(&mut map)?;
-        //        mmp.debug();
         let regions = RegionFile::read_file(&mut map)?;
         // println!("{:#?}", regions);
-        //        regions.debug();
         let cameras = CameraFile::read_file(&mut map)?;
         // println!("{:#?}", cameras);
-        //        cameras.debug();
         let sounds = SoundFile::read_file(&mut map)?;
         // println!("{:#?}", sounds);
         let path_map = PathMapFile::read_file(&mut map)?;
-        //        pathing.debug();
         let shaders = ShadowMapFile::read_file(&mut map)?;
-        //        shaders.debug();
         let environment = TerrainFile::read_file(&mut map)?;
-        //        environment.debug();
         let minimap = MinimapFile::read_file(&mut map)?;
-        //        mmap.debug();
         let trigstrs = MapStringFile::read_file(&mut map)?;
-        //        trigstrs.debug();
         let triggers_ct = TriggerJassFile::read_file(&mut map)?;
-        //        triggers_ct.debug();
         let triggers = TriggersFile::read_file(&mut map, game_data.get_trigger_data())?;
         let doodad_map = DoodadMap::read_file(&mut map)?;
         // println!("{:#?}", doodad_map);
@@ -173,14 +165,12 @@ impl<'a> Map<'a> {
         let doodad_datas = CustomDoodadFile::read_file(&mut map, &game_version)?;
         let buff_datas = CustomBuffFile::read_file(&mut map, &game_version)?;
         let upgrade_datas = CustomUpgradeFile::read_file(&mut map, &game_version)?;
-        // unit_datas.debug();
 
         let header = map.header().to_vec();
         let (extra_files, unreadable_files) = Self::capture_extra_files(&mut map);
 
         Ok(Self {
             game_data,
-            path,
             header,
             infos: w3i,
             terrain: environment,

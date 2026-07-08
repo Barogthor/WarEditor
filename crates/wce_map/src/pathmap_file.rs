@@ -79,10 +79,6 @@ impl PathMapFile {
         writer.write(self).map_err(PathmapError::SaveError)?;
         Ok(writer)
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 impl BinaryConverter for PathMapFile {

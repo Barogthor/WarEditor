@@ -116,10 +116,6 @@ impl RegionFile {
         writer.write(self).map_err(RegionError::SaveError)?;
         Ok(writer)
     }
-
-    pub fn debug(&self) {
-        println!("{self:#?}");
-    }
 }
 
 impl BinaryConverter for RegionFile {
