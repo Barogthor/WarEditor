@@ -3,8 +3,6 @@
 
 use std::convert::TryFrom;
 
-#[cfg(test)]
-use pretty_assertions::assert_eq;
 
 use thiserror::Error;
 use wce_formats::binary_reader::{BinaryReader, ReadResult};

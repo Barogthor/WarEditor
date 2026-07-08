@@ -587,7 +587,7 @@ mod map_tests {
         assert!(
             matches!(&archive_err, crate::MapError::UnreadableArchiveEntries(files)
                 if files == &[r"war3mapImported\Huffman.wav".to_string()]),
-            "unexpected error: {archive_err:?}"
+            "{}", "unexpected error: {archive_err:?}"
         );
         let save_err = map
             .save(output_dir.clone(), &game_data)
