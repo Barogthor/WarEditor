@@ -274,11 +274,6 @@ impl BLP {
     }
 }
 
-//     data.chunks(4).for_each(|cmyk| {
-
-//         println!("[{:.0}, {:.0}, {:.0}] or [{:.0}, {:.0}, {:.0}, {:.0}]", red, green, blue, c*100., m*100. , y*100., k*100.);
-//     });
-
 #[cfg(test)]
 mod blp_parse {
     use std::fs::File;

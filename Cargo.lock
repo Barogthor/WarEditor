@@ -613,8 +613,7 @@ dependencies = [
 [[package]]
 name = "mpq-rs"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a3000a780f130453b089a320670c37e12d459cb1d2b0c92d7525d245dd7bfca"
+source = "git+https://github.com/Barogthor/mpq-rs.git?branch=bugfix%2Foverflow-all-sectors#a56a28e2a22d00568f51afa9218a3d6f998b9a90"
 dependencies = [
  "byte-slice-cast",
  "byteorder",
